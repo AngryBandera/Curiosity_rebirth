@@ -1,2 +1,5 @@
-idf_component_register(SRCS "mars-rover-code.c"
+idf_component_register(SRCS "main.c"
+                            "spp_task.c"
+                            "motors.cpp"
+                    PRIV_REQUIRES bt nvs_flash vfs
                     INCLUDE_DIRS ".")
