@@ -29,6 +29,7 @@
 #include "esp_spp_api.h"
 #include "spp_task.h"
 #include "motors.h"
+#include "servoController/servoInterface.h"
 
 #include "time.h"
 #include "sys/time.h"
@@ -44,6 +45,20 @@ static const esp_spp_sec_t sec_mask = ESP_SPP_SEC_AUTHENTICATE;
 static const esp_spp_role_t role_slave = ESP_SPP_ROLE_SLAVE;
 
 #define SPP_DATA_LEN 100
+
+// The command currently being executed repeatedly by background task.
+static void (*volatile currentCommand)(void) = stopMotors;
+
+static void command_runner_task(void *param)
+{
+    (void)param;
+    const TickType_t delay = pdMS_TO_TICKS(100);
+    for (;;) {
+        void (*cmd)(void) = currentCommand; // read volatile once
+        if (cmd) cmd();
+        vTaskDelay(delay);
+    }
+}
 
 static char *bda2str(uint8_t * bda, char *str, size_t size)
 {
@@ -101,6 +116,8 @@ static void spp_read_handle(void * param)
                         break;
                     case 0x30: // '0'
                         lastCommand = stopMotors;
+                        // stop servos as well when stopping motion
+                        servos_stop();
                         break;
                     case 0x53: // 'S'
                         lastCommand = frontServoLeft;
@@ -120,7 +137,8 @@ static void spp_read_handle(void * param)
                 }
             }
 
-            lastCommand();
+            // set the current repeating command (will be called by runner task)
+            currentCommand = lastCommand;
             /* To avoid task watchdog */
             vTaskDelay(10 / portTICK_PERIOD_MS);
         }
@@ -300,6 +318,10 @@ void app_main(void)
     }
 
     spp_task_task_start_up();
+    servos_init();
+
+    // start command runner task which repeatedly calls the current command
+    xTaskCreate(command_runner_task, "cmd_runner", 2048, NULL, tskIDLE_PRIORITY + 1, NULL);
 
     esp_spp_cfg_t bt_spp_cfg = BT_SPP_DEFAULT_CONFIG();
     if (esp_spp_enhanced_init(&bt_spp_cfg) != ESP_OK) {
