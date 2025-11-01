@@ -1,22 +1,13 @@
-#ifndef MOTORS_H
-#define MOTORS_H
+#pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "driver/gpio.h"
 
-void moveForward(void);
-void moveBackward(void);
-void turnLeftMotors(void);
-void turnRightMotors(void);
-void stopMotors(void);
-void frontServoLeft(void);
-void frontServoRight(void);
-void backServoLeft(void);
-void backServoRight(void);
+class WheelDriver {
+private:
+    gpio_num_t pin1;
+    gpio_num_t pin2;
+    const char *TAG;
 
-#ifdef __cplusplus
-}
-#endif
-
-#endif
+public:
+    WheelDriver(gpio_num_t pin_1, gpio_num_t pin_2, const char *new_TAG);
+};

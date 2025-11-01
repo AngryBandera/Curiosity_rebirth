@@ -28,8 +28,8 @@
 #include "esp_bt_device.h"
 #include "esp_spp_api.h"
 #include "spp_task.h"
-#include "motors.h"
-#include "servoController/servoInterface.h"
+#include "motorsInterface.h"
+#include "servoInterface.h"
 
 #include "time.h"
 #include "sys/time.h"
