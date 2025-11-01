@@ -116,8 +116,6 @@ static void spp_read_handle(void * param)
                         break;
                     case 0x30: // '0'
                         lastCommand = stopMotors;
-                        // stop servos as well when stopping motion
-                        servos_stop();
                         break;
                     case 0x53: // 'S'
                         lastCommand = frontServoLeft;
@@ -137,7 +135,6 @@ static void spp_read_handle(void * param)
                 }
             }
 
-            // set the current repeating command (will be called by runner task)
             currentCommand = lastCommand;
             /* To avoid task watchdog */
             vTaskDelay(10 / portTICK_PERIOD_MS);

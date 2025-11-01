@@ -5,7 +5,6 @@ extern "C" {
 #endif
 
 void servos_init(void);
-void servos_stop(void);
 
 void backServoRight(void);
 void backServoLeft(void);
