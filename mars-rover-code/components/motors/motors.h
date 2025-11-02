@@ -1,8 +1,39 @@
 #include "hal/ledc_types.h"
 #include "soc/gpio_num.h"
+#include <cstdint>
+
+namespace Servo {
+    // Серво параметри    
+    constexpr uint16_t MIN_PULSE_US = 1000;
+    constexpr uint16_t MAX_PULSE_US = 2000;
+    constexpr uint16_t PERIOD_US = 20000;
+    constexpr uint8_t  FREQ = 50;
+    constexpr ledc_timer_bit_t RESOLUTION = LEDC_TIMER_14_BIT;
+}
+
+namespace Cfg {
+    // Кути в градусах
+    constexpr float WHEEL_CENTER_ANGLE = 90.0f;
+    constexpr float WHEEL_MAX_DEVIATION = 45.0f;
+    
+    // Геометрія марсохода (в міліметрах)
+    constexpr float WHEELBASE_MM = 573.0f;        // відстань між передніми і задніми колесами
+    constexpr float TRACK_WIDTH_MM = 538.0f;      // відстань між лівими і правими колесами
+    
+    // Координати коліс відносно центру
+    constexpr float FRONT_Y = 300.0f;       // мм від центру (вперед +)
+    constexpr float BACK_Y = -273.0f;       // мм від центру (назад -)
+    constexpr float LEFT_X = -269.0f;       // мм від центру (ліво -)
+    constexpr float RIGHT_X = 269.0f;       // мм від центру (право +)
+
+    constexpr float PI = 3.14159265358979323846f;
+
+    constexpr float ANGLE_DEVIATION = 1.0f;
+}
+
 
 class WheelMotor {
-private:
+protected:
     gpio_num_t pwm_pin;
     /*
      Move direction
@@ -14,17 +45,17 @@ private:
 
     const char *TAG;
 
-    const uint16_t l;
-    const uint16_t d;
+    const float l;
+    const float d;
 
-    uint16_t inner_radius;
+    uint32_t inner_radius;
 
 public:
     static ledc_timer_t shared_timer;
 
     WheelMotor(gpio_num_t pin_1, gpio_num_t pin_2,
             const char *TAG_init, ledc_channel_t channel_init,
-            uint16_t l_init = 0, uint16_t d_init = 0);
+            float l_init = 0, float d_init = 0);
 
     /*
      * just makes it to move forward with no calculations
@@ -36,10 +67,10 @@ public:
      * Class has calculated radius for this class, so
      * it moves forward with radius calculated
     */
-    void forward_rot(uint16_t rot_speed);
-    void backward_rot(uint16_t rot_speed);
+    void forward_rot(uint8_t speed, int32_t med_radius);
+    void backward_rot(uint8_t speed, int32_t med_radius);
 
-    void change_radius(uint16_t radius);
+    void update_radius(int32_t med_radius);
 
     void stop();
 };
@@ -53,17 +84,27 @@ class SteerableWheel: public WheelMotor {
 private:
     gpio_num_t servo_pin;
     ledc_channel_t servo_channel;
-    uint16_t current_angle{0};
+    float current_angle{0.0f};
 
 public:
     static ledc_timer_t servo_timer;
 
     SteerableWheel(gpio_num_t pin_1, gpio_num_t pin_2,
             const char *TAG_init, ledc_channel_t channel_init,
-            uint16_t l_init, uint16_t d_init,
+            float l_init, float d_init,
             gpio_num_t servo_pin_init, ledc_channel_t servo_channel_init);
 
-    void set_angle(int16_t angle);
+    /*
+     * angle - in interval [-45.00, 45.00]
+     *  STRONGLY RECOMMENDED TO GIVE ONLY VALUES AS 1.0, 2.00, 30.0...
+     */
+    void rotate_on_relative_angle();
+
+    void update_radius(int32_t med_radius) = delete;
+
+    //TODO: keep in mind that when alpha does to 0, radius goes to infinity
+    //min(alpha)=100, max(med_radius) = 17186
+    void update_radius_and_angle(int32_t med_radius, float angle);
 };
 
 
@@ -75,38 +116,16 @@ public:
 class DriveSystem {
 private:
     uint16_t radius{0};
+    float prev_angle{0.0f};
+    const char* TAG = "DriverSystem";
 
-    //WheelMotor LeftMiddleMotor{GPIO_NUM_4, GPIO_NUM_5, "LeftMiddleMotor", LEDC_CHANNEL_0};
-    SteerableWheel LeftEdgeMotors[2] = {
-        SteerableWheel{
-            GPIO_NUM_4, GPIO_NUM_5,
-            "LeftBackWheel", LEDC_CHANNEL_0,
-            1, 2,
-            GPIO_NUM_6, LEDC_CHANNEL_1
-        },
-        SteerableWheel{
-            GPIO_NUM_4, GPIO_NUM_5,
-            "LeftFrontWheel", LEDC_CHANNEL_2,
-            1, 2,
-            GPIO_NUM_6, LEDC_CHANNEL_3
-        }
-    };
+    SteerableWheel right_back;
+    //WheelMotor right_middle;
+    SteerableWheel right_front;
 
-    //WheelMotor RightMiddleMotor{GPIO_NUM_4, GPIO_NUM_5, "RightMiddleMotor", LEDC_CHANNEL_3};
-    SteerableWheel RightEdgeMotors[2] = {
-        SteerableWheel{
-            GPIO_NUM_4, GPIO_NUM_5,
-            "LeftBackWheel", LEDC_CHANNEL_4,
-            1, 2,
-            GPIO_NUM_6, LEDC_CHANNEL_5
-        },
-        SteerableWheel{
-            GPIO_NUM_4, GPIO_NUM_5,
-            "LeftFrontWheel", LEDC_CHANNEL_6,
-            1, 2,
-            GPIO_NUM_6, LEDC_CHANNEL_7
-        }
-    };
+    SteerableWheel left_back;
+    //WheelMotor left_middle;
+    SteerableWheel left_front;
 
 public:
     /*
@@ -117,12 +136,12 @@ public:
      *angle - angle at which motors turn. It determines pwm duty cycle
      *here we call subclasses to recalculate value of inner classes
     */
-    void rotate(int16_t angle);
+    void rotate(float angle);
 
     /*
      * speed - determines pwm duty cycle
     */
-    void forward(int16_t speed);
-    void backward(int16_t speed);
+    void forward(int8_t speed);
+    void backward(int8_t speed);
 };
 
