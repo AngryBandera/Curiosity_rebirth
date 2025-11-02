@@ -14,21 +14,21 @@ namespace Servo {
 namespace Cfg {
     // Кути в градусах
     constexpr float WHEEL_CENTER_ANGLE = 90.0f;
-    constexpr float WHEEL_MAX_DEVIATION = 45.0f;
+    constexpr float WHEEL_MAX_DEVIATION = 80.0f;
     
     // Геометрія марсохода (в міліметрах)
     constexpr float WHEELBASE_MM = 573.0f;        // відстань між передніми і задніми колесами
     constexpr float TRACK_WIDTH_MM = 538.0f;      // відстань між лівими і правими колесами
     
     // Координати коліс відносно центру
-    constexpr float FRONT_Y = 300.0f;       // мм від центру (вперед +)
-    constexpr float BACK_Y = -273.0f;       // мм від центру (назад -)
-    constexpr float LEFT_X = -269.0f;       // мм від центру (ліво -)
-    constexpr float RIGHT_X = 269.0f;       // мм від центру (право +)
+    constexpr int16_t FRONT_Y = 300;       // мм від центру (вперед +)
+    constexpr int16_t BACK_Y = -273;       // мм від центру (назад -)
+    constexpr int16_t LEFT_X = -269;       // мм від центру (ліво -)
+    constexpr int16_t RIGHT_X = 269;       // мм від центру (право +)
 
     constexpr float PI = 3.14159265358979323846f;
 
-    constexpr float ANGLE_DEVIATION = 1.0f;
+    constexpr float ANGLE_DEVIATION = 0.5f;
 }
 
 
@@ -45,8 +45,8 @@ protected:
 
     const char *TAG;
 
-    const float l;
-    const float d;
+    const int16_t l;
+    const int16_t d;
 
     uint32_t inner_radius;
 
@@ -55,7 +55,7 @@ public:
 
     WheelMotor(gpio_num_t pin_1, gpio_num_t pin_2,
             const char *TAG_init, ledc_channel_t channel_init,
-            float l_init = 0, float d_init = 0);
+            int16_t l_init = 0, int16_t d_init = 0);
 
     /*
      * just makes it to move forward with no calculations
@@ -71,6 +71,7 @@ public:
     void backward_rot(uint8_t speed, int32_t med_radius);
 
     void update_radius(int32_t med_radius);
+    uint32_t get_radius();
 
     void stop();
 };
@@ -91,7 +92,7 @@ public:
 
     SteerableWheel(gpio_num_t pin_1, gpio_num_t pin_2,
             const char *TAG_init, ledc_channel_t channel_init,
-            float l_init, float d_init,
+            int16_t l_init, int16_t d_init,
             gpio_num_t servo_pin_init, ledc_channel_t servo_channel_init);
 
     /*
@@ -105,6 +106,8 @@ public:
     //TODO: keep in mind that when alpha does to 0, radius goes to infinity
     //min(alpha)=100, max(med_radius) = 17186
     void update_radius_and_angle(int32_t med_radius, float angle);
+
+    float get_angle();
 };
 
 
@@ -131,7 +134,7 @@ public:
     /*
      * timer - shared timer that wheel motors will use
     */
-    DriveSystem(ledc_timer_t timer);
+    DriveSystem(ledc_timer_t timer, ledc_timer_t servo_timer);
     /*
      *angle - angle at which motors turn. It determines pwm duty cycle
      *here we call subclasses to recalculate value of inner classes
@@ -141,7 +144,9 @@ public:
     /*
      * speed - determines pwm duty cycle
     */
-    void forward(int8_t speed);
-    void backward(int8_t speed);
+    //void forward(int8_t speed);
+    //void backward(int8_t speed);
+
+    void print_angles();
 };
 
