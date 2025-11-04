@@ -130,6 +130,8 @@ private:
     //WheelMotor left_middle;
     SteerableWheel left_front;
 
+    SteerableWheel* all_steerable_wheels[4];
+
 public:
     /*
      * timer - shared timer that wheel motors will use
@@ -144,8 +146,8 @@ public:
     /*
      * speed - determines pwm duty cycle
     */
-    //void forward(int8_t speed);
-    //void backward(int8_t speed);
+    void forward(int8_t speed);
+    void backward(int8_t speed);
 
     void print_angles();
 };

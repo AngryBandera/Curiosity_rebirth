@@ -33,7 +33,7 @@ WheelMotor::WheelMotor(gpio_num_t pin_pwm, gpio_num_t pin_dir,
       l{l_new},
       d{d_new}
 {
-    /*ledc_channel_config_t channel_config = {
+    ledc_channel_config_t channel_config = {
         .gpio_num = pwm_pin,
         .speed_mode = LEDC_LOW_SPEED_MODE,
         .channel = channel,
@@ -44,7 +44,7 @@ WheelMotor::WheelMotor(gpio_num_t pin_pwm, gpio_num_t pin_dir,
         .sleep_mode = LEDC_SLEEP_MODE_NO_ALIVE_NO_PD,
         .flags = {.output_invert = 0}
     };
-    ledc_channel_config(&channel_config);*/
+    ledc_channel_config(&channel_config);
 
     gpio_config_t dir_conf{
         .pin_bit_mask = (1ULL << dir_pin),
@@ -218,6 +218,11 @@ DriveSystem::DriveSystem(ledc_timer_t timer, ledc_timer_t servo_timer)
         GPIO_NUM_10, LEDC_CHANNEL_7
     }
 {
+    all_steerable_wheels[0] = &right_back;
+    all_steerable_wheels[1] = &right_front;
+    all_steerable_wheels[2] = &left_back;
+    all_steerable_wheels[3] = &left_front;
+
     WheelMotor::shared_timer = timer;
     SteerableWheel::servo_timer = servo_timer;
 }
@@ -231,15 +236,13 @@ void DriveSystem::rotate(float rvr_angle) {
     if (fabsf(rvr_angle) < 1.0f) {
         ESP_LOGI("ZERO ANGLE", "rotate(): driving straight (angle %.2f° < 0.5°)", rvr_angle);
 
-        right_front.update_radius_and_angle(10000, 0.0f);
-        right_back.update_radius_and_angle(10000, 0.0f);
-        left_front.update_radius_and_angle(10000, 0.0f);
-        left_back.update_radius_and_angle(10000, 0.0f);
+        for (SteerableWheel* wheel : all_steerable_wheels) {
+            wheel->update_radius_and_angle(10000, 0.0f);
+        }
 
-        right_front.rotate_on_relative_angle();
-        right_back.rotate_on_relative_angle();
-        left_front.rotate_on_relative_angle();
-        left_back.rotate_on_relative_angle();
+        for (SteerableWheel* wheel : all_steerable_wheels) {
+            wheel->rotate_on_relative_angle();
+        }
 
         prev_angle = 0.0f;
         return;
@@ -250,17 +253,10 @@ void DriveSystem::rotate(float rvr_angle) {
     int32_t med_radius = (int32_t)(Cfg::FRONT_Y / tanf(alpha_rad));
     // theoreticly there shouldn't be overflow
 
-    right_front.update_radius_and_angle(med_radius, rvr_angle);
-    right_front.rotate_on_relative_angle();
-
-    right_back.update_radius_and_angle(med_radius, rvr_angle);
-    right_back.rotate_on_relative_angle();
-
-    left_front.update_radius_and_angle(med_radius, rvr_angle);
-    left_front.rotate_on_relative_angle();
-
-    left_back.update_radius_and_angle(med_radius, rvr_angle);
-    left_back.rotate_on_relative_angle();
+    for (SteerableWheel* wheel : all_steerable_wheels) {
+        wheel->update_radius_and_angle(med_radius, rvr_angle);
+        wheel->rotate_on_relative_angle();
+    }
 
     prev_angle = rvr_angle;
 
@@ -269,4 +265,8 @@ void DriveSystem::rotate(float rvr_angle) {
 void DriveSystem::print_angles() {
     ESP_LOGI(TAG, "rightBack: %.2f | rightFront: %.2f | leftBack: %.2f | lefftFront: %.2f",
             right_back.get_angle(), right_front.get_angle(), left_back.get_angle(), left_front.get_angle());
+}
+
+void DriveSystem::forward(int8_t speed) {
+    
 }
