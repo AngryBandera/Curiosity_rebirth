@@ -1,4 +1,5 @@
 idf_component_register(SRCS "mars-rover-code.cpp"
                     INCLUDE_DIRS "."
-                    REQUIRES driver motors)
+                    REQUIRES driver motors pca9685
+)
 
