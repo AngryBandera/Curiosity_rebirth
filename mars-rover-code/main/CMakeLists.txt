@@ -1,6 +1,6 @@
-idf_component_register(SRCS "main.c"
+idf_component_register(SRCS "main.cpp"
                             "bluetooth/spp_task.c"
-                            "motors/motors.cpp"
-                            "servoController/servoController.cpp"
                     PRIV_REQUIRES driver esp_driver_mcpwm bt nvs_flash vfs
-                    INCLUDE_DIRS "." "bluetooth" "motors" "servoController")
+                    REQUIRES driver motors pca9685
+                    INCLUDE_DIRS "." "bluetooth")
+
