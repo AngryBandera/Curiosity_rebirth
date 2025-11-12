@@ -99,6 +99,7 @@ public:
 
     /*
      * speed - determines pwm duty cycle
+     * angle in bounds [-511, 511]
     */
     void move(int16_t speed);
 

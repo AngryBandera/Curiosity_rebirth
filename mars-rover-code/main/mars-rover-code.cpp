@@ -1,5 +1,6 @@
 #include "esp_err.h"
 #include "esp_log.h"
+#include "freertos/projdefs.h"
 #include "hal/ledc_types.h"
 #include "motors.h"
 #include "driver/ledc.h"
@@ -9,6 +10,7 @@
 #include "soc/clk_tree_defs.h"
 #include "pca9685.h"
 #include <cstdint>
+#include <sys/types.h>
 
 #define SERVO_FREQ 50
 #define SERVO_RESOLUTION LEDC_TIMER_14_BIT
@@ -35,18 +37,6 @@ extern "C" void app_main(void)
     ESP_ERROR_CHECK(pca9685_init(&pca9685));
     ESP_ERROR_CHECK(pca9685_set_pwm_frequency(&pca9685, 50));
 
-    
-    /*while (1) {
-        for (uint16_t pos = 0; pos<4096; pos+=1) {
-            pca9685_set_pwm_value(&pca9685, 0, pos);
-            vTaskDelay(pdMS_TO_TICKS(30));
-            ESP_LOGI("BEBE", "%d", pos);
-        }
-        
-
-        ESP_LOGI("aaa", "cycle ended");
-
-    }*/
 
     /*constexpr uint16_t MIN_DUTY = (500 * 4096) / 20000;   // ~102 (500 μs)
     constexpr uint16_t MAX_DUTY = (2500 * 4096) / 20000;  // ~512 (2500 μs)
@@ -67,8 +57,7 @@ extern "C" void app_main(void)
     
     DriveSystem rover{&pca9685};
 
-    float angle = 0.0f;
-    uint16_t a = 0;
+    /*float angle = 0.0f;
     while (true) {
         rover.print_angles();
         rover.rotate(angle);
@@ -76,7 +65,21 @@ extern "C" void app_main(void)
         ESP_LOGI("be", "Angle: %.2f", angle);
 
         if (angle > 45.0f) angle = -45.0f;
-        vTaskDelay(pdMS_TO_TICKS(100));
+        vTaskDelay(pdMS_TO_TICKS(50));
+
+    }*/
+
+    while (true) {
+
+        for (uint16_t i = 100; i < 4096; i++) {
+            rover.move(i);
+            vTaskDelay(pdMS_TO_TICKS(10));
+        }
+        for (uint16_t i = 4096; i> 100; i++) {
+            rover.move(i);
+            vTaskDelay(pdMS_TO_TICKS(10));
+        }
+        ESP_LOGI("MAIN", "LOOOOP");
 
     }
 

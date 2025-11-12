@@ -1,12 +1,8 @@
-
 #include "motors.h"
-#include "driver/gpio.h"
-#include "driver/ledc.h"
 #include "esp_log.h"
 #include "hal/ledc_types.h"
 #include "i2cdev.h"
 #include "pca9685.h"
-#include "soc/gpio_num.h"
 #include <math.h>
 #include <cstdint>
 #include <sys/types.h>
@@ -140,7 +136,7 @@ DriveSystem::DriveSystem(i2c_dev_t* pca9685)
     right_middle{
         6, 7, 
        "RightMiddleMotor",
-       LEDC_CHANNEL_2, LEDC_CHANNEL_3},
+       0, Cfg::RIGHT_X},
     right_front{
         8, 9,
         "RightFrontWheel", 
@@ -155,7 +151,7 @@ DriveSystem::DriveSystem(i2c_dev_t* pca9685)
     left_middle {
         12, 13,
         "LeftMiddleMotor",
-        LEDC_CHANNEL_6, LEDC_CHANNEL_7},
+        0, Cfg::LEFT_X},
     left_front {
         14, 15,
         "LeftFrontWheel",
@@ -215,21 +211,12 @@ void DriveSystem::print_angles() {
 void DriveSystem::move(int16_t speed) {
     if (abs(speed) < 2) {
         for (uint8_t i = 0; i < 6; i++) all_wheels[i]->stop(pca9685);
-        return;
-    }
-
-    if (fabsf(prev_angle) <= 1.0f) {
-        right_front.move(speed, pca9685);
-        right_middle.move(speed, pca9685);
-        right_back.move(speed, pca9685);
-
-        left_front.move(speed, pca9685);
-        left_middle.move(speed, pca9685);
-        right_back.move(speed, pca9685);
+    } else if (fabsf(prev_angle) <= 1.0f) {
+        for (uint8_t i = 0; i < 6; i++) all_wheels[i]->move(speed, pca9685);
     } else {
         uint32_t radii[6];
         for (int i = 0; i < 6; i++) {
-            radii[i] = all_steerable_wheels[i]->get_radius();
+            radii[i] = all_wheels[i]->get_radius();
         }
 
         uint32_t maxR = radii[0];
