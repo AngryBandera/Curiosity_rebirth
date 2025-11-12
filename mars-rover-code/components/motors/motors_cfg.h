@@ -3,11 +3,11 @@
 
 namespace Servo {
     // Серво параметри    
-    constexpr uint16_t MIN_PULSE_US = 1000;
-    constexpr uint16_t MAX_PULSE_US = 2000;
+    constexpr uint16_t MIN_PULSE_US = 500;
+    constexpr uint16_t MAX_PULSE_US = 2500;
     constexpr uint16_t PERIOD_US = 20000;
     constexpr uint8_t  FREQ = 50;
-    constexpr uint8_t RESOLUTION = 12;
+    constexpr uint8_t RESOLUTION = 8;
 }
 
 namespace Cfg {
