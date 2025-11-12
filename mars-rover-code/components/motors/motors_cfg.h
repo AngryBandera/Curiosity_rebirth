@@ -7,7 +7,7 @@ namespace Servo {
     constexpr uint16_t MAX_PULSE_US = 2500;
     constexpr uint16_t PERIOD_US = 20000;
     constexpr uint8_t  FREQ = 50;
-    constexpr uint8_t RESOLUTION = 8;
+    constexpr uint8_t RESOLUTION = 12;
 }
 
 namespace Cfg {
