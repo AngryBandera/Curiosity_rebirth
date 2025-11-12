@@ -26,7 +26,7 @@ WheelMotor::WheelMotor(uint8_t pca1, uint8_t pca2,
       TAG{TAG},
       l{l}, d{d}
 {
-    ESP_LOGI(TAG, "Configured pca channels (%d and %d) for motor", pca1, pca2);
+    //ESP_LOGI(TAG, "Configured pca channels (%d and %d) for motor", pca1, pca2);
 }
 
 void WheelMotor::move(int16_t speed, i2c_dev_t* pca9685) {
@@ -37,7 +37,7 @@ void WheelMotor::move(int16_t speed, i2c_dev_t* pca9685) {
         pca9685_set_pwm_value(pca9685, pca1, 0);
         pca9685_set_pwm_value(pca9685, pca2, -speed);
     }
-    ESP_LOGI(TAG, "Speed: %d", speed);
+    //ESP_LOGI(TAG, "Speed: %d", speed);
 }
 
 
@@ -83,8 +83,8 @@ void SteerableWheel::rotate_on_relative_angle(i2c_dev_t* pca9685) {
     uint16_t duty = (max_duty * pulse_width_us) / Servo::PERIOD_US;
 
     //TODO: return data to write it in common array and send through i2c
+    //ESP_LOGI(TAG, "duty: %d", duty);
     pca9685_set_pwm_value(pca9685, servo_pca, duty);
-    ESP_LOGI(TAG, "duty: %d", duty);
 }
 
 void SteerableWheel::update_radius_and_angle(int32_t med_radius, float rvr_angle) {
@@ -178,7 +178,7 @@ DriveSystem::DriveSystem(i2c_dev_t* pca9685)
 
 void DriveSystem::rotate(float rvr_angle) {
     if (fabsf(rvr_angle) < 1.0f) {
-        ESP_LOGI("ZERO ANGLE", "rotate(): driving straight (angle %.2f° < 0.5°)", rvr_angle);
+        //ESP_LOGI("ZERO ANGLE", "rotate(): driving straight (angle %.2f° < 0.5°)", rvr_angle);
 
         for (SteerableWheel* wheel : all_steerable_wheels) {
             wheel->update_radius_and_angle(10000, 0.0f);
@@ -193,6 +193,8 @@ void DriveSystem::rotate(float rvr_angle) {
         prev_angle = 0.0f;
         return;
     }
+
+    //ESP_LOGI("ZERO ANGLE", "rotate(): (angle %.2f°)", rvr_angle);
 
     constexpr float PI = 3.14159265f;
     float alpha_rad = rvr_angle * PI / 180.0f;
@@ -212,7 +214,7 @@ void DriveSystem::rotate(float rvr_angle) {
 
 void DriveSystem::print_angles() {
     ESP_LOGI(TAG, "rightBack: %.2f | rightFront: %.2f | leftBack: %.2f | lefftFront: %.2f",
-            right_back.get_angle(), right_front.get_angle(), left_back.get_angle(), left_front.get_angle());
+           right_back.get_angle(), right_front.get_angle(), left_back.get_angle(), left_front.get_angle());
 }
 
 void DriveSystem::move(int16_t speed) {
@@ -231,10 +233,10 @@ void DriveSystem::move(int16_t speed) {
         }
 
         float rot_speed = static_cast<float>(speed) /  static_cast<float>(maxR);
-        ESP_LOGI(TAG, "maxR=%u, speed=%d", maxR, speed);
+        //ESP_LOGI(TAG, "maxR=%u, speed=%d", maxR, speed);
         for (int i = 0; i < 6; i++) {
             int16_t wheel_speed = static_cast<int16_t>(rot_speed * static_cast<float>(radii[i]));
-            ESP_LOGI("DriveSystem", "wheel %d: radius=%u, wheel_speed=%d, rot_speed=%.2f", i, radii[i], wheel_speed, rot_speed);
+            //ESP_LOGI("DriveSystem", "wheel %d: radius=%u, wheel_speed=%d, rot_speed=%.2f", i, radii[i], wheel_speed, rot_speed);
 
             all_wheels[i]->move(wheel_speed, pca9685);
         }

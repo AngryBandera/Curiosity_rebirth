@@ -74,14 +74,8 @@ extern "C" void app_main(void)
     vTaskDelay(pdMS_TO_TICKS(1000));
     
 
-    for (uint16_t i = 100; i < 1000; i+=10) {
-        rover.move(i);
-        vTaskDelay(pdMS_TO_TICKS(10));
-    }
-
     for (float i = 0.0f; i < 45.0f; i += 3.0f) {
         rover.rotate(i);
-        rover.move(1000);
         vTaskDelay(pdMS_TO_TICKS(100));
     };
     rover.rotate(45.0f);
@@ -90,15 +84,10 @@ extern "C" void app_main(void)
 
     for (float i = 45.0f; i > 0.0f; i -= 4.0f) {
         rover.rotate(i);
-        rover.move(1000);
         vTaskDelay(pdMS_TO_TICKS(100));
     };
 
 
-    for (uint16_t i = 1000; i> 100; i-=50) {
-        rover.move(i);
-        vTaskDelay(pdMS_TO_TICKS(10));
-    }
     ESP_LOGI("MAIN", "LOOOOP");
 
     
