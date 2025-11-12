@@ -19,6 +19,7 @@
 #define PCA9685_ADDR         PCA9685_ADDR_BASE  // 0x40
 
 
+
 extern "C" void app_main(void)
 {
     i2c_dev_t pca9685;
@@ -32,81 +33,51 @@ extern "C" void app_main(void)
                                       I2C_MASTER_SCL_IO));
 
     ESP_ERROR_CHECK(pca9685_init(&pca9685));
-    ESP_ERROR_CHECK(pca9685_set_pwm_frequency(&pca9685, 500));
+    ESP_ERROR_CHECK(pca9685_set_pwm_frequency(&pca9685, 50));
 
     
-    while (1) {
-        /*for (uint16_t pos = 1000; pos<4012; pos+=10) {
+    /*while (1) {
+        for (uint16_t pos = 0; pos<4096; pos+=1) {
             pca9685_set_pwm_value(&pca9685, 0, pos);
-            vTaskDelay(pdMS_TO_TICKS(10));
+            vTaskDelay(pdMS_TO_TICKS(30));
             ESP_LOGI("BEBE", "%d", pos);
-        }*/
-        pca9685_set_pwm_value(&pca9685, 0, 4096);
+        }
         
 
         ESP_LOGI("aaa", "cycle ended");
 
-    }
+    }*/
+
+    /*constexpr uint16_t MIN_DUTY = (500 * 4096) / 20000;   // ~102 (500 μs)
+    constexpr uint16_t MAX_DUTY = (2500 * 4096) / 20000;  // ~512 (2500 μs)
+
+    while (1) {
+        for (uint16_t pos = 70; pos <= MAX_DUTY; pos += 1) {
+            pca9685_set_pwm_value(&pca9685, 0, pos);
+            vTaskDelay(pdMS_TO_TICKS(50));
+            ESP_LOGI("SERVO_POS", "duty=%d, pulse≈%d μs", 
+                    pos, (pos * 20000) / 4096);
+        }
 
 
-    ledc_timer_config_t servo_timer_conf = {
-        .speed_mode = LEDC_LOW_SPEED_MODE,
-        .duty_resolution = LEDC_TIMER_8_BIT,
-        .timer_num = LEDC_TIMER_0,
-        .freq_hz = 50,
-        .clk_cfg = LEDC_AUTO_CLK,
-        .deconfigure = false
-    };
-
-    ESP_ERROR_CHECK(ledc_timer_config(&servo_timer_conf));
-
-
-    ledc_timer_config_t dc_timer_config = {
-        .speed_mode = LEDC_HIGH_SPEED_MODE,
-        .duty_resolution = LEDC_TIMER_8_BIT,
-        .timer_num = LEDC_TIMER_1,
-        .freq_hz = 1000,
-        .clk_cfg = LEDC_AUTO_CLK,
-        .deconfigure = false,
-    };
-
-    ESP_ERROR_CHECK(ledc_timer_config(&dc_timer_config));
-    // gpio_set_direction();
+        
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }*/
 
     
-    DriveSystem rover{LEDC_TIMER_1, LEDC_TIMER_0};
+    DriveSystem rover{&pca9685};
 
+    float angle = 0.0f;
+    uint16_t a = 0;
     while (true) {
+        rover.print_angles();
+        rover.rotate(angle);
+        angle += 1.0f;
+        ESP_LOGI("be", "Angle: %.2f", angle);
 
-        for (float i = -40.0f; i <= 40.0f; i++) {
-            rover.rotate(i);
-            ESP_LOGI("Angle", "%.2f", i);
-            rover.print_angles();
-            vTaskDelay(200 / portTICK_PERIOD_MS);
-        }
-
-        for (float i = 40.0f; i >= -40.0f; i--) {
-            rover.rotate(i);
-            ESP_LOGI("Angle", "%.2f", i);
-            rover.print_angles();
-            vTaskDelay(200 / portTICK_PERIOD_MS);
-        }
+        if (angle > 45.0f) angle = -45.0f;
+        vTaskDelay(pdMS_TO_TICKS(100));
 
     }
 
-    /*WheelMotor motor{GPIO_NUM_5, GPIO_NUM_6, "TAG", LEDC_CHANNEL_0};
-
-    WheelMotor::shared_timer = LEDC_TIMER_0;
-    while (true) {
-        for (uint8_t i = 0; i < 255; i++) {
-            motor.forward(255);
-            vTaskDelay(10 / portTICK_PERIOD_MS);
-            ESP_LOGI("motor", "%d", i);
-        }
-
-        for (uint8_t i = 255; i > 0; i--) {
-            motor.backward(255);
-            vTaskDelay(10 / portTICK_PERIOD_MS);
-        }
-    }*/
 }

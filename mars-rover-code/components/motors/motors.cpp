@@ -1,16 +1,16 @@
+
 #include "motors.h"
 #include "driver/gpio.h"
 #include "driver/ledc.h"
 #include "esp_log.h"
 #include "hal/ledc_types.h"
+#include "i2cdev.h"
+#include "pca9685.h"
 #include "soc/gpio_num.h"
 #include <math.h>
 #include <cstdint>
 #include <sys/types.h>
 
-
-ledc_timer_t WheelMotor::shared_timer = LEDC_TIMER_0;
-ledc_timer_t SteerableWheel::servo_timer = LEDC_TIMER_0;
 
 uint32_t isqrt(uint32_t n) {
     if (n == 0) return 0;
@@ -23,77 +23,26 @@ uint32_t isqrt(uint32_t n) {
     return x;
 }
 
-WheelMotor::WheelMotor(gpio_num_t pin_1, gpio_num_t pin_2,
-        const char *new_TAG,
-        ledc_channel_t channel_1, ledc_channel_t channel_2,
-            int16_t l_new, int16_t d_new)
-    : pin1{pin_1},
-      pin2{pin_2},
-      channel1{channel_1},
-      channel2{channel_2},
-      TAG{new_TAG},
-      l{l_new},
-      d{d_new}
+WheelMotor::WheelMotor(uint8_t pca1, uint8_t pca2,
+        const char *TAG,
+        int16_t l, int16_t d)
+    : pca1{pca1}, pca2{pca2},
+      TAG{TAG},
+      l{l}, d{d}
 {
-    ledc_channel_config_t pin_1_config = {
-        .gpio_num = pin1,
-        .speed_mode = LEDC_HIGH_SPEED_MODE,
-        .channel = channel1,
-        .intr_type = LEDC_INTR_DISABLE,
-        .timer_sel = shared_timer,
-        .duty = 0,
-        .hpoint = 0,
-        .sleep_mode = LEDC_SLEEP_MODE_NO_ALIVE_NO_PD,
-        .flags = {.output_invert = 0}
-    };
-    ledc_channel_config(&pin_1_config);
-
-    ledc_channel_config_t pin_2_config = {
-        .gpio_num = pin2,
-        .speed_mode = LEDC_HIGH_SPEED_MODE,
-        .channel = channel2,
-        .intr_type = LEDC_INTR_DISABLE,
-        .timer_sel = shared_timer,
-        .duty = 0,
-        .hpoint = 0,
-        .sleep_mode = LEDC_SLEEP_MODE_NO_ALIVE_NO_PD,
-        .flags = {.output_invert = 0}
-    };
-    ledc_channel_config(&pin_2_config);
-
-    ESP_LOGI(TAG, "Configured pins (%d and %d) for motor", pin1, pin2);
+    ESP_LOGI(TAG, "Configured pca channels (%d and %d) for motor", pca1, pca2);
 }
 
-void WheelMotor::forward(uint8_t speed) {
-    ESP_ERROR_CHECK(ledc_set_duty(LEDC_HIGH_SPEED_MODE, channel1, speed));
-    ESP_ERROR_CHECK(ledc_update_duty(LEDC_HIGH_SPEED_MODE, channel1));
-
-    ESP_ERROR_CHECK(ledc_set_duty(LEDC_HIGH_SPEED_MODE, channel2, 0));
-    ESP_ERROR_CHECK(ledc_update_duty(LEDC_HIGH_SPEED_MODE, channel2));
-
+void WheelMotor::move(int16_t speed, i2c_dev_t* pca9685) {
+    if (speed > 0) {
+        pca9685_set_pwm_value(pca9685, pca1, speed);
+        pca9685_set_pwm_value(pca9685, pca2, 0);
+    } else {
+        pca9685_set_pwm_value(pca9685, pca1, 0);
+        pca9685_set_pwm_value(pca9685, pca2, speed);
+    }
 }
 
-void WheelMotor::backward(uint8_t speed) {
-    ESP_ERROR_CHECK(ledc_set_duty(LEDC_LOW_SPEED_MODE, channel1, speed));
-    ESP_ERROR_CHECK(ledc_update_duty(LEDC_LOW_SPEED_MODE, channel1));
-
-    ESP_ERROR_CHECK(ledc_set_duty(LEDC_HIGH_SPEED_MODE, channel2, 0));
-    ESP_ERROR_CHECK(ledc_update_duty(LEDC_HIGH_SPEED_MODE, channel2));
-}
-
-/*void WheelMotor::forward_rot(uint8_t speed, int32_t med_radius) {
-    uint8_t new_speed = (uint8_t)(((uint32_t)speed * inner_radius) / (uint32_t)med_radius);
-    gpio_set_level(pin2, 0);
-    ESP_ERROR_CHECK(ledc_set_duty(LEDC_LOW_SPEED_MODE, channel, new_speed));
-    ESP_ERROR_CHECK(ledc_update_duty(LEDC_LOW_SPEED_MODE, channel));
-}
-
-void WheelMotor::backward_rot(uint8_t speed, int32_t med_radius) {
-    uint8_t new_speed = (uint8_t)(((uint32_t)speed * inner_radius) / (uint32_t)med_radius);
-    gpio_set_level(pin2, 1);
-    ESP_ERROR_CHECK(ledc_set_duty(LEDC_LOW_SPEED_MODE, channel, 255-new_speed));
-    ESP_ERROR_CHECK(ledc_update_duty(LEDC_LOW_SPEED_MODE, channel));
-}*/
 
 void WheelMotor::update_radius(int32_t med_radius) {
     int32_t offset = med_radius - d;
@@ -104,47 +53,27 @@ uint32_t WheelMotor::get_radius() {
     return inner_radius;
 }
 
-void WheelMotor::stop() {
-    ESP_ERROR_CHECK(ledc_set_duty(LEDC_HIGH_SPEED_MODE, channel1, 0));
-    ESP_ERROR_CHECK(ledc_update_duty(LEDC_HIGH_SPEED_MODE, channel1));
-
-    ESP_ERROR_CHECK(ledc_set_duty(LEDC_HIGH_SPEED_MODE, channel2, 0));
-    ESP_ERROR_CHECK(ledc_update_duty(LEDC_HIGH_SPEED_MODE, channel2));
+void WheelMotor::stop(i2c_dev_t* pca9685) {
+    pca9685_set_pwm_value(pca9685, pca1, 0);
+    pca9685_set_pwm_value(pca9685, pca2, 0);
 }
 
 
 
 
-SteerableWheel::SteerableWheel(gpio_num_t pin_1, gpio_num_t pin_2,
-        const char *TAG_init,
-        ledc_channel_t channel_1, ledc_channel_t channel_2,
-        int16_t l_init, int16_t d_init,
-        gpio_num_t servo_pin_init, ledc_channel_t servo_channel_init)
-    : WheelMotor{pin_1, pin_2, TAG_init, channel_1, channel_2, l_init, d_init},
-        servo_pin{servo_pin_init},
-        servo_channel{servo_channel_init}
+SteerableWheel::SteerableWheel(uint8_t pca1, uint8_t pca2,
+        const char *TAG,
+        int16_t l, int16_t d,
+        uint8_t servo_pca)
+    : WheelMotor{pca1, pca2, TAG, l, d},
+        servo_pca{servo_pca}
 {
-    uint32_t max_duty = (1 << Servo::RESOLUTION) - 1;
-    uint32_t duty_90 = Servo::MIN_PULSE_US + (Servo::MAX_PULSE_US - Servo::MIN_PULSE_US) / 2;
-    duty_90 = duty_90 * max_duty / Servo::PERIOD_US;
 
-    ledc_channel_config_t servo_config = {
-        .gpio_num = servo_pin,
-        .speed_mode = LEDC_LOW_SPEED_MODE,
-        .channel = servo_channel,
-        .intr_type = LEDC_INTR_DISABLE,
-        .timer_sel = servo_timer,  // timer for servo (50Hz)
-        .duty = duty_90,
-        .hpoint = 0,
-        .sleep_mode = LEDC_SLEEP_MODE_NO_ALIVE_NO_PD,
-        .flags = {.output_invert = 0}
-    };
-    ledc_channel_config(&servo_config);
 }
 
-void SteerableWheel::rotate_on_relative_angle() {
+void SteerableWheel::rotate_on_relative_angle(i2c_dev_t* pca9685) {
     float servo_angle = Cfg::WHEEL_CENTER_ANGLE + current_angle;
-     // max posible - 9000 + 4500 = 13500
+     // max posible - 90 + 45 = 135
 
     if (servo_angle < 0.0f) servo_angle = 0.0f;
     if (servo_angle > 180.0f) servo_angle = 180.0f;
@@ -153,11 +82,12 @@ void SteerableWheel::rotate_on_relative_angle() {
         (uint32_t)((servo_angle / 180.0f) * (Servo::MAX_PULSE_US - Servo::MIN_PULSE_US));
     // 13500 * 1000 = 0_013_500_000 <= 4_294_967_296
 
-    constexpr uint32_t max_duty = (1 << Servo::RESOLUTION) - 1;
-    uint32_t duty = (max_duty * pulse_width_us) / Servo::PERIOD_US;
+    constexpr uint16_t max_duty = (1 << Servo::RESOLUTION);
+    uint16_t duty = (max_duty * pulse_width_us) / Servo::PERIOD_US;
 
-    ESP_ERROR_CHECK(ledc_set_duty(LEDC_LOW_SPEED_MODE, servo_channel, duty));
-    ESP_ERROR_CHECK(ledc_update_duty(LEDC_LOW_SPEED_MODE, servo_channel));
+    //TODO: return data to write it in common array and send through i2c
+    pca9685_set_pwm_value(pca9685, servo_pca, duty);
+    ESP_LOGI(TAG, "duty: %d", duty);
 }
 
 void SteerableWheel::update_radius_and_angle(int32_t med_radius, float rvr_angle) {
@@ -200,40 +130,37 @@ float SteerableWheel::get_angle() {
 
 
 
-DriveSystem::DriveSystem(ledc_timer_t dc_timer, ledc_timer_t servo_timer)
-    : right_back{
-        GPIO_NUM_22, GPIO_NUM_23,
+DriveSystem::DriveSystem(i2c_dev_t* pca9685)
+    : pca9685{pca9685},
+    right_back{
+        4, 5,
         "RightBackWheel",
-        LEDC_CHANNEL_0, LEDC_CHANNEL_1,
         Cfg::BACK_Y, Cfg::RIGHT_X,
-        GPIO_NUM_32, LEDC_CHANNEL_0},
+        0},
     right_middle{
-        GPIO_NUM_3, GPIO_NUM_1, 
+        6, 7, 
        "RightMiddleMotor",
        LEDC_CHANNEL_2, LEDC_CHANNEL_3},
     right_front{
-        GPIO_NUM_19, GPIO_NUM_21,
+        8, 9,
         "RightFrontWheel", 
-        LEDC_CHANNEL_0, LEDC_CHANNEL_1,
         Cfg::FRONT_Y, Cfg::RIGHT_X,
-        GPIO_NUM_16, LEDC_CHANNEL_3},
+        1},
 
     left_back {
-        GPIO_NUM_5, GPIO_NUM_18,
+        10, 11,
         "LeftBackWheel",
-        LEDC_CHANNEL_4, LEDC_CHANNEL_5,
         Cfg::BACK_Y, Cfg::LEFT_X,
-        GPIO_NUM_8, LEDC_CHANNEL_5},
+        2},
     left_middle {
-        GPIO_NUM_0, GPIO_NUM_4,
+        12, 13,
         "LeftMiddleMotor",
         LEDC_CHANNEL_6, LEDC_CHANNEL_7},
     left_front {
-        GPIO_NUM_15, GPIO_NUM_2,
+        14, 15,
         "LeftFrontWheel",
-        LEDC_CHANNEL_4, LEDC_CHANNEL_5,
         Cfg::FRONT_Y, Cfg::LEFT_X,
-        GPIO_NUM_7, LEDC_CHANNEL_7
+        3
     }
 {
     all_steerable_wheels[0] = &right_back;
@@ -248,18 +175,9 @@ DriveSystem::DriveSystem(ledc_timer_t dc_timer, ledc_timer_t servo_timer)
     all_wheels[3] = &left_front;
     all_wheels[4] = &left_middle;
     all_wheels[5] = &left_back;
-
-
-    WheelMotor::shared_timer = dc_timer;
-    SteerableWheel::servo_timer = servo_timer;
 }
 
 void DriveSystem::rotate(float rvr_angle) {
-    if (fabsf(rvr_angle - prev_angle) < Cfg::ANGLE_DEVIATION) {
-        ESP_LOGI(TAG, "rotate(): angle unchanged (%.2f°)", rvr_angle);
-        return;
-    }
-
     if (fabsf(rvr_angle) < 1.0f) {
         ESP_LOGI("ZERO ANGLE", "rotate(): driving straight (angle %.2f° < 0.5°)", rvr_angle);
 
@@ -268,7 +186,7 @@ void DriveSystem::rotate(float rvr_angle) {
         }
 
         for (SteerableWheel* wheel : all_steerable_wheels) {
-            wheel->rotate_on_relative_angle();
+            wheel->rotate_on_relative_angle(pca9685);
         }
 
         prev_angle = 0.0f;
@@ -282,7 +200,7 @@ void DriveSystem::rotate(float rvr_angle) {
 
     for (SteerableWheel* wheel : all_steerable_wheels) {
         wheel->update_radius_and_angle(med_radius, rvr_angle);
-        wheel->rotate_on_relative_angle();
+        wheel->rotate_on_relative_angle(pca9685);
     }
 
     prev_angle = rvr_angle;
@@ -294,13 +212,20 @@ void DriveSystem::print_angles() {
             right_back.get_angle(), right_front.get_angle(), left_back.get_angle(), left_front.get_angle());
 }
 
-void DriveSystem::forward(uint8_t speed) {
-    if (fabsf(prev_angle) <= 1.0f) {
-        right_front.forward(speed);
-        right_middle.forward(speed);
+void DriveSystem::move(int16_t speed) {
+    if (abs(speed) < 2) {
+        for (uint8_t i = 0; i < 6; i++) all_wheels[i]->stop(pca9685);
+        return;
+    }
 
-        left_front.forward(speed);
-        left_middle.forward(speed);
+    if (fabsf(prev_angle) <= 1.0f) {
+        right_front.move(speed, pca9685);
+        right_middle.move(speed, pca9685);
+        right_back.move(speed, pca9685);
+
+        left_front.move(speed, pca9685);
+        left_middle.move(speed, pca9685);
+        right_back.move(speed, pca9685);
     } else {
         uint32_t radii[6];
         for (int i = 0; i < 6; i++) {
@@ -317,7 +242,7 @@ void DriveSystem::forward(uint8_t speed) {
         for (int i = 0; i < 6; i++) {
             uint8_t wheel_speed = static_cast<uint8_t>(rot_speed * static_cast<float>(radii[i]));
 
-            all_steerable_wheels[i]->forward(wheel_speed);
+            all_wheels[i]->move(wheel_speed, pca9685);
         }
     }
 }

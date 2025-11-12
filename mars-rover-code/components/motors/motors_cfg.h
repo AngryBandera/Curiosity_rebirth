@@ -1,4 +1,5 @@
 #include "hal/ledc_types.h"
+#include <cstdint>
 
 namespace Servo {
     // Серво параметри    
@@ -6,7 +7,7 @@ namespace Servo {
     constexpr uint16_t MAX_PULSE_US = 2000;
     constexpr uint16_t PERIOD_US = 20000;
     constexpr uint8_t  FREQ = 50;
-    constexpr ledc_timer_bit_t RESOLUTION = LEDC_TIMER_14_BIT;
+    constexpr uint8_t RESOLUTION = 12;
 }
 
 namespace Cfg {
