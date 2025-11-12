@@ -1,0 +1,8 @@
+//
+// Created by bogda on 12/11/2025.
+//
+
+#ifndef CURIOSITY_REBIRTH_COMM_ESPNOW_H
+#define CURIOSITY_REBIRTH_COMM_ESPNOW_H
+
+#endif //CURIOSITY_REBIRTH_COMM_ESPNOW_H
