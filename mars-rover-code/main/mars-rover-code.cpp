@@ -1,13 +1,8 @@
 #include "esp_err.h"
 #include "esp_log.h"
 #include "freertos/projdefs.h"
-#include "hal/ledc_types.h"
 #include "motors.h"
-#include "driver/ledc.h"
-#include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "portmacro.h"
-#include "soc/clk_tree_defs.h"
 #include "pca9685.h"
 #include "soc/gpio_num.h"
 #include <cstdint>

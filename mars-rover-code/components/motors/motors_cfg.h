@@ -1,5 +1,4 @@
 #include "hal/ledc_types.h"
-#include <cstdint>
 
 namespace Servo {
     // Серво параметри    
