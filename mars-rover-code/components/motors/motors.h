@@ -14,7 +14,7 @@ protected:
     const int16_t l;
     const int16_t d;
 
-    uint32_t inner_radius;
+    uint32_t inner_radius{10000};
 
 public:
 

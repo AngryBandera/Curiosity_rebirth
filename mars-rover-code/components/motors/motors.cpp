@@ -35,8 +35,9 @@ void WheelMotor::move(int16_t speed, i2c_dev_t* pca9685) {
         pca9685_set_pwm_value(pca9685, pca2, 0);
     } else {
         pca9685_set_pwm_value(pca9685, pca1, 0);
-        pca9685_set_pwm_value(pca9685, pca2, speed);
+        pca9685_set_pwm_value(pca9685, pca2, -speed);
     }
+    ESP_LOGI(TAG, "Speed: %d", speed);
 }
 
 
@@ -89,7 +90,7 @@ void SteerableWheel::rotate_on_relative_angle(i2c_dev_t* pca9685) {
 void SteerableWheel::update_radius_and_angle(int32_t med_radius, float rvr_angle) {
     if (fabs(rvr_angle) < Cfg::ANGLE_DEVIATION) {
         current_angle = 0.0f;
-        inner_radius = (1 << 31);
+        inner_radius = 10000;
         return;
     }
 
@@ -103,8 +104,8 @@ void SteerableWheel::update_radius_and_angle(int32_t med_radius, float rvr_angle
     inner_radius = isqrt((uint32_t)(l_squared + offset_squared));
 
     float ratio = (float)l / (float)inner_radius;
-    //if (ratio > 1.0f) ratio = 1.0f;
-    //if (ratio < -1.0f) ratio = -1.0f;
+    if (ratio > 1.0f) ratio = 1.0f;
+    if (ratio < -1.0f) ratio = -1.0f;
 
     float angle_rad = asinf(ratio);
     current_angle = angle_rad * 180.0f / Cfg::PI;
@@ -129,31 +130,33 @@ float SteerableWheel::get_angle() {
 DriveSystem::DriveSystem(i2c_dev_t* pca9685)
     : pca9685{pca9685},
     right_back{
-        4, 5,
+        5, 4,
         "RightBackWheel",
         Cfg::BACK_Y, Cfg::RIGHT_X,
         0},
     right_middle{
-        6, 7, 
+        7, 6, 
        "RightMiddleMotor",
-       0, Cfg::RIGHT_X},
+       0, Cfg::RIGHT_X
+                    },
     right_front{
-        8, 9,
+        9, 8,
         "RightFrontWheel", 
         Cfg::FRONT_Y, Cfg::RIGHT_X,
         1},
 
     left_back {
-        10, 11,
+        11, 10,
         "LeftBackWheel",
         Cfg::BACK_Y, Cfg::LEFT_X,
         2},
     left_middle {
-        12, 13,
+        13, 12,
         "LeftMiddleMotor",
-        0, Cfg::LEFT_X},
+        0, Cfg::LEFT_X
+                    },
     left_front {
-        14, 15,
+        15, 14,
         "LeftFrontWheel",
         Cfg::FRONT_Y, Cfg::LEFT_X,
         3
@@ -180,6 +183,8 @@ void DriveSystem::rotate(float rvr_angle) {
         for (SteerableWheel* wheel : all_steerable_wheels) {
             wheel->update_radius_and_angle(10000, 0.0f);
         }
+        right_middle.update_radius(10000);
+        left_middle.update_radius(10000);
 
         for (SteerableWheel* wheel : all_steerable_wheels) {
             wheel->rotate_on_relative_angle(pca9685);
@@ -198,6 +203,8 @@ void DriveSystem::rotate(float rvr_angle) {
         wheel->update_radius_and_angle(med_radius, rvr_angle);
         wheel->rotate_on_relative_angle(pca9685);
     }
+    right_middle.update_radius(med_radius);
+    left_middle.update_radius(med_radius);
 
     prev_angle = rvr_angle;
 
@@ -209,9 +216,7 @@ void DriveSystem::print_angles() {
 }
 
 void DriveSystem::move(int16_t speed) {
-    if (abs(speed) < 2) {
-        for (uint8_t i = 0; i < 6; i++) all_wheels[i]->stop(pca9685);
-    } else if (fabsf(prev_angle) <= 1.0f) {
+    if (fabsf(prev_angle) <= 1.0f) {
         for (uint8_t i = 0; i < 6; i++) all_wheels[i]->move(speed, pca9685);
     } else {
         uint32_t radii[6];
@@ -226,8 +231,10 @@ void DriveSystem::move(int16_t speed) {
         }
 
         float rot_speed = static_cast<float>(speed) /  static_cast<float>(maxR);
+        ESP_LOGI(TAG, "maxR=%u, speed=%d", maxR, speed);
         for (int i = 0; i < 6; i++) {
-            uint8_t wheel_speed = static_cast<uint8_t>(rot_speed * static_cast<float>(radii[i]));
+            int16_t wheel_speed = static_cast<int16_t>(rot_speed * static_cast<float>(radii[i]));
+            ESP_LOGI("DriveSystem", "wheel %d: radius=%u, wheel_speed=%d, rot_speed=%.2f", i, radii[i], wheel_speed, rot_speed);
 
             all_wheels[i]->move(wheel_speed, pca9685);
         }
