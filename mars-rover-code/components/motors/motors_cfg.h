@@ -8,6 +8,13 @@ namespace Servo {
     constexpr uint16_t PERIOD_US = 20000;
     constexpr uint8_t  FREQ = 50;
     constexpr uint8_t RESOLUTION = 12;
+    constexpr uint16_t MAX_DUTY = (1 << Servo::RESOLUTION);
+
+    constexpr float DEGREE_TO_US = static_cast<float>(Servo::MAX_PULSE_US
+            - Servo::MIN_PULSE_US) / 180.0f;
+
+    constexpr uint16_t CENTER_DUTY = (Servo::MAX_DUTY *
+            ((Servo::MIN_PULSE_US + Servo::MAX_PULSE_US) / 2)) / Servo::PERIOD_US;
 }
 
 namespace Cfg {
@@ -29,3 +36,12 @@ namespace Cfg {
 
     constexpr float ANGLE_DEVIATION = 0.5f;
 }
+
+
+
+// I2C and PCA9685 definitions
+#define I2C_MASTER_SCL_IO    GPIO_NUM_22    // GPIO for SCL
+#define I2C_MASTER_SDA_IO    GPIO_NUM_21    // GPIO for SDA
+#define I2C_MASTER_FREQ_HZ   100000
+#define PCA9685_ADDR         PCA9685_ADDR_BASE  // 0x40
+

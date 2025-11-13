@@ -1,10 +1,13 @@
 #include "motors.h"
+#include "esp_err.h"
 #include "esp_log.h"
 #include "hal/ledc_types.h"
 #include "i2cdev.h"
 #include "pca9685.h"
+#include <cmath>
 #include <math.h>
 #include <cstdint>
+#include <memory>
 #include <sys/types.h>
 
 
@@ -24,24 +27,21 @@ WheelMotor::WheelMotor(uint8_t pca1, uint8_t pca2,
         int16_t l, int16_t d)
     : pca1{pca1}, pca2{pca2},
       TAG{TAG},
-      l{l}, d{d}
-{
-    ESP_LOGI(TAG, "Configured pca channels (%d and %d) for motor", pca1, pca2);
-}
+      l{l}, d{d} {}
 
-void WheelMotor::move(int16_t speed, i2c_dev_t* pca9685) {
+void WheelMotor::update_buffer(int16_t speed, PCA9685Buffer* buffer) {
     if (speed > 0) {
-        pca9685_set_pwm_value(pca9685, pca1, speed);
-        pca9685_set_pwm_value(pca9685, pca2, 0);
+        buffer->set_channel_value(pca1, speed);
+        buffer->set_channel_value(pca2, 0);
     } else {
-        pca9685_set_pwm_value(pca9685, pca1, 0);
-        pca9685_set_pwm_value(pca9685, pca2, -speed);
+        buffer->set_channel_value(pca1, 0);
+        buffer->set_channel_value(pca2, -speed);
     }
-    ESP_LOGI(TAG, "Speed: %d", speed);
+    ESP_LOGI(TAG, "Speed duty: %d", speed);
 }
 
 
-void WheelMotor::update_radius(int32_t med_radius) {
+void WheelMotor::update_geometry(int32_t med_radius) {
     int32_t offset = med_radius - d;
     inner_radius = (uint32_t)abs(offset);
 }
@@ -50,12 +50,6 @@ uint32_t WheelMotor::get_radius() {
     return inner_radius;
 }
 
-void WheelMotor::stop(i2c_dev_t* pca9685) {
-    pca9685_set_pwm_value(pca9685, pca1, 0);
-    pca9685_set_pwm_value(pca9685, pca2, 0);
-}
-
-
 
 
 SteerableWheel::SteerableWheel(uint8_t pca1, uint8_t pca2,
@@ -63,61 +57,65 @@ SteerableWheel::SteerableWheel(uint8_t pca1, uint8_t pca2,
         int16_t l, int16_t d,
         uint8_t servo_pca)
     : WheelMotor{pca1, pca2, TAG, l, d},
-        servo_pca{servo_pca}
-{
+        servo_pca{servo_pca} {}
 
+void SteerableWheel::update_buffer(int16_t speed, PCA9685Buffer* buffer) {
+    if (speed > 0) {
+        buffer->set_channel_value(pca1, speed);
+        buffer->set_channel_value(pca2, 0);
+    } else {
+        buffer->set_channel_value(pca1, 0);
+        buffer->set_channel_value(pca2, -speed);
+    }
+    buffer->set_channel_value(servo_pca, servo_duty);
+    ESP_LOGI(TAG, "Speed duty: %d, Servo duty: %d", speed, servo_duty);
 }
 
-void SteerableWheel::rotate_on_relative_angle(i2c_dev_t* pca9685) {
+void SteerableWheel::update_geometry(int32_t med_radius) {
+    if (abs(med_radius) > 16000) {
+        current_angle = 0.0f;
+        inner_radius = (med_radius > 0 ? 16000 : -16000);
+    } else {
+
+        int8_t sign = (med_radius >= 0) ? 1 : -1;
+        //inner_radius = isqrt((uint32_t)(l*l + (med_radius - d) * (med_radius - d)));
+
+        int32_t l_squared = (int32_t)l * l;
+        int32_t offset = med_radius - d;
+        int32_t offset_squared = offset * offset;
+
+        inner_radius = isqrt((uint32_t)(l_squared + offset_squared));
+
+        float ratio = (float)l / (float)inner_radius;
+        if (ratio > 1.0f) ratio = 1.0f;
+        if (ratio < -1.0f) ratio = -1.0f;
+
+        float angle_rad = asinf(ratio);
+        current_angle = angle_rad * 180.0f / Cfg::PI;
+
+        current_angle *= sign;
+
+        if (current_angle < -Cfg::WHEEL_MAX_DEVIATION) current_angle = -Cfg::WHEEL_MAX_DEVIATION;
+        if (current_angle >  Cfg::WHEEL_MAX_DEVIATION) current_angle =  Cfg::WHEEL_MAX_DEVIATION;
+    }
+
     float servo_angle = Cfg::WHEEL_CENTER_ANGLE + current_angle;
      // max posible - 90 + 45 = 135
 
     if (servo_angle < 0.0f) servo_angle = 0.0f;
     if (servo_angle > 180.0f) servo_angle = 180.0f;
 
-    uint32_t pulse_width_us = Servo::MIN_PULSE_US + 
-        (uint32_t)((servo_angle / 180.0f) * (Servo::MAX_PULSE_US - Servo::MIN_PULSE_US));
-    // 13500 * 1000 = 0_013_500_000 <= 4_294_967_296
+    uint16_t pulse_width_us = Servo::MIN_PULSE_US + 
+        static_cast<uint16_t>(servo_angle * Servo::DEGREE_TO_US);
+    // 180.0 * 1000 = 0_180_000 <= 4_294_967_296
 
-    constexpr uint16_t max_duty = (1 << Servo::RESOLUTION);
-    uint16_t duty = (max_duty * pulse_width_us) / Servo::PERIOD_US;
+    uint16_t duty = (Servo::MAX_DUTY * pulse_width_us) / Servo::PERIOD_US;
 
     //TODO: return data to write it in common array and send through i2c
-    pca9685_set_pwm_value(pca9685, servo_pca, duty);
+    //pca9685_set_pwm_value(pca9685, servo_pca, duty);
+    servo_duty = duty;
+    //buffer->set_channel_value(servo_pca, duty);
     ESP_LOGI(TAG, "duty: %d", duty);
-}
-
-void SteerableWheel::update_radius_and_angle(int32_t med_radius, float rvr_angle) {
-    if (fabs(rvr_angle) < Cfg::ANGLE_DEVIATION) {
-        current_angle = 0.0f;
-        inner_radius = 10000;
-        return;
-    }
-
-    int8_t sign = (med_radius >= 0) ? 1 : -1;
-    //inner_radius = isqrt((uint32_t)(l*l + (med_radius - d) * (med_radius - d)));
-
-    int32_t l_squared = (int32_t)l * l;
-    int32_t offset = med_radius - d;  // int операція
-    int32_t offset_squared = offset * offset;
-    
-    inner_radius = isqrt((uint32_t)(l_squared + offset_squared));
-
-    float ratio = (float)l / (float)inner_radius;
-    if (ratio > 1.0f) ratio = 1.0f;
-    if (ratio < -1.0f) ratio = -1.0f;
-
-    float angle_rad = asinf(ratio);
-    current_angle = angle_rad * 180.0f / Cfg::PI;
-
-    current_angle *= sign;
-
-    if (current_angle < -Cfg::WHEEL_MAX_DEVIATION) {
-        current_angle = -Cfg::WHEEL_MAX_DEVIATION;
-    }
-    if (current_angle > Cfg::WHEEL_MAX_DEVIATION) {
-        current_angle = Cfg::WHEEL_MAX_DEVIATION;
-    }
 }
 
 float SteerableWheel::get_angle() {
@@ -128,7 +126,7 @@ float SteerableWheel::get_angle() {
 
 
 DriveSystem::DriveSystem(i2c_dev_t* pca9685)
-    : pca9685{pca9685},
+    : buffer{new PCA9685Buffer{pca9685}},
     right_back{
         5, 4,
         "RightBackWheel",
@@ -176,67 +174,111 @@ DriveSystem::DriveSystem(i2c_dev_t* pca9685)
     all_wheels[5] = &left_back;
 }
 
-void DriveSystem::rotate(float rvr_angle) {
-    if (fabsf(rvr_angle) < 1.0f) {
-        ESP_LOGI("ZERO ANGLE", "rotate(): driving straight (angle %.2f° < 0.5°)", rvr_angle);
-
-        for (SteerableWheel* wheel : all_steerable_wheels) {
-            wheel->update_radius_and_angle(10000, 0.0f);
-        }
-        right_middle.update_radius(10000);
-        left_middle.update_radius(10000);
-
-        for (SteerableWheel* wheel : all_steerable_wheels) {
-            wheel->rotate_on_relative_angle(pca9685);
-        }
-
-        prev_angle = 0.0f;
-        return;
-    }
-
-    constexpr float PI = 3.14159265f;
-    float alpha_rad = rvr_angle * PI / 180.0f;
-    int32_t med_radius = (int32_t)(Cfg::FRONT_Y / tanf(alpha_rad));
-    // theoreticly there shouldn't be overflow
-
-    for (SteerableWheel* wheel : all_steerable_wheels) {
-        wheel->update_radius_and_angle(med_radius, rvr_angle);
-        wheel->rotate_on_relative_angle(pca9685);
-    }
-    right_middle.update_radius(med_radius);
-    left_middle.update_radius(med_radius);
-
-    prev_angle = rvr_angle;
-
-}
-
 void DriveSystem::print_angles() {
     ESP_LOGI(TAG, "rightBack: %.2f | rightFront: %.2f | leftBack: %.2f | lefftFront: %.2f",
             right_back.get_angle(), right_front.get_angle(), left_back.get_angle(), left_front.get_angle());
 }
 
-void DriveSystem::move(int16_t speed) {
-    if (fabsf(prev_angle) <= 1.0f) {
-        for (uint8_t i = 0; i < 6; i++) all_wheels[i]->move(speed, pca9685);
+void DriveSystem::move(int16_t speed, float rvr_angle) {
+    int32_t med_radius;
+    if (fabsf(rvr_angle) <= 1.0f) {
+        med_radius = 16001;
     } else {
+        float alpha_rad = rvr_angle * Cfg::PI / 180.0f;
+        med_radius = static_cast<int32_t>(Cfg::FRONT_Y / tanf(alpha_rad));
+    }
+    for (uint8_t i = 0; i < 6; i++) all_wheels[i]->update_geometry(med_radius);
+
+    if (fabsf(rvr_angle) <= 1.0f) {
+
+        for (uint8_t i = 0; i < 6; i++) all_wheels[i]->update_buffer(speed, buffer);
+
+    } else {
+
         uint32_t radii[6];
-        for (int i = 0; i < 6; i++) {
-            radii[i] = all_wheels[i]->get_radius();
-        }
+        for (int i = 0; i < 6; i++) radii[i] = all_wheels[i]->get_radius();
 
         uint32_t maxR = radii[0];
-        for (int i = 1; i < 6; i++) {
+        for (int i = 1; i < 6; i++)
             if (radii[i] > maxR)
                 maxR = radii[i];
-        }
 
         float rot_speed = static_cast<float>(speed) /  static_cast<float>(maxR);
-        ESP_LOGI(TAG, "maxR=%u, speed=%d", maxR, speed);
+        //ESP_LOGI(TAG, "maxR=%u, speed=%d", maxR, speed);
         for (int i = 0; i < 6; i++) {
             int16_t wheel_speed = static_cast<int16_t>(rot_speed * static_cast<float>(radii[i]));
-            ESP_LOGI("DriveSystem", "wheel %d: radius=%u, wheel_speed=%d, rot_speed=%.2f", i, radii[i], wheel_speed, rot_speed);
+            //ESP_LOGI("DriveSystem", "wheel %d: radius=%u, wheel_speed=%d, rot_speed=%.2f", i, radii[i], wheel_speed, rot_speed);
 
-            all_wheels[i]->move(wheel_speed, pca9685);
+            all_wheels[i]->update_buffer(wheel_speed, buffer);
         }
     }
+
+    buffer->flush();
+}
+
+void DriveSystem::stop() {
+    buffer->clear();
+    buffer->flush();
+}
+
+
+
+
+
+PCA9685Buffer::PCA9685Buffer(i2c_dev_t* pca9685):
+    device{pca9685},
+    dirty{false}
+{
+    ESP_ERROR_CHECK(i2cdev_init());
+
+    memset(device, 0, sizeof(i2c_dev_t));
+    ESP_ERROR_CHECK(pca9685_init_desc(device, PCA9685_ADDR, 
+                                    I2C_NUM_0, 
+                                    I2C_MASTER_SDA_IO, 
+                                    I2C_MASTER_SCL_IO));
+
+    ESP_ERROR_CHECK(pca9685_init(device));
+    ESP_ERROR_CHECK(pca9685_set_pwm_frequency(device, 50));
+
+    clear();
+    flush();
+}
+
+void PCA9685Buffer::set_channel_value(uint8_t channel, uint16_t value) {
+    if (channel >= 16) {
+        ESP_LOGE(TAG, "Invalid channel %d", channel);
+        return;
+    }
+    buffer[channel] = value;
+    dirty = true;
+}
+
+uint16_t PCA9685Buffer::get_channel_value(uint8_t channel) {
+    if (channel >= 16) {
+        ESP_LOGE(TAG, "Invalid channel %d", channel);
+        return 0;
+    }
+    return buffer[channel];
+}
+
+void PCA9685Buffer::flush() {
+    ESP_ERROR_CHECK(pca9685_set_pwm_values(device,
+            0, 16,
+            buffer));
+    dirty = false;
+}
+
+void PCA9685Buffer::set_channel_immediate(uint8_t channel, uint16_t value) {
+    ESP_ERROR_CHECK(pca9685_set_pwm_value(device, channel, value));
+}
+
+bool PCA9685Buffer::is_dirty() const {
+    return dirty;
+}
+
+void PCA9685Buffer::clear() {
+    for (uint8_t i = 0; i < 4; i++)  buffer[i] = Servo::CENTER_DUTY;
+    for (uint8_t i = 4; i < 16; i++) buffer[i] = 0;
+
+    dirty = true;
 }

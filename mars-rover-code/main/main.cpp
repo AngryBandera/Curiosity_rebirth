@@ -1,4 +1,5 @@
 // C++ headers
+#include <cstddef>
 #include <cstdint>
 #include <sys/types.h>
 
@@ -30,13 +31,6 @@ extern "C" {
 #include "motors.h"
 #include "driver/ledc.h"
 #include "pca9685.h"
-
-// I2C and PCA9685 definitions
-#define I2C_MASTER_SCL_IO    GPIO_NUM_22    // GPIO for SCL
-#define I2C_MASTER_SDA_IO    GPIO_NUM_21    // GPIO for SDA
-#define I2C_MASTER_FREQ_HZ   100000
-#define PCA9685_ADDR         PCA9685_ADDR_BASE  // 0x40
-
 // Bluetooth definitions
 #define SPP_TAG "SPP_ROVER_DEMO"
 #define SPP_SERVER_NAME "SPP_SERVER"
@@ -50,6 +44,7 @@ static const esp_spp_role_t role_slave = ESP_SPP_ROLE_SLAVE;
 // --- Global Rover Objects ---
 // These are global so background tasks (BT) can control them.
 static i2c_dev_t *g_pca9685_dev = nullptr;
+static PCA9685Buffer* g_buffer = nullptr;
 static DriveSystem *g_rover = nullptr;
 
 // --- Constants for Rover Control ---
@@ -62,55 +57,14 @@ static DriveSystem *g_rover = nullptr;
 // --- C++/C Bridge Functions ---
 // These are plain functions that call C++ methods on our global rover object.
 
-void moveForward() {
-    if (g_rover) {
-        g_rover->move(ROVER_FORWARD_SPEED);
-        // ESP_LOGI(SPP_TAG, "Rover: Move Forward");
-    }
-}
-void moveBackward() {
-    if (g_rover) {
-        g_rover->move(ROVER_BACKWARD_SPEED);
-        // ESP_LOGI(SPP_TAG, "Rover: Move Backward");
-    }
-}
-void turnLeftMotors() {
-    if (g_rover) {
-        g_rover->rotate(-ROVER_TURN_ANGLE);
-        // ESP_LOGI(SPP_TAG, "Rover: Turn Left");
-    }
-}
-void turnRightMotors() {
-    if (g_rover) {
-        g_rover->rotate(ROVER_TURN_ANGLE);
-        // ESP_LOGI(SPP_TAG, "Rover: Turn Right");
-    }
-}
 void stopMotors() {
     if (g_rover) {
-        g_rover->move(ROVER_STOP_SPEED);
-        g_rover->rotate(0.0f); // Also stop rotating
+        g_rover->move(ROVER_STOP_SPEED, 0.0f);
         // ESP_LOGI(SPP_TAG, "Rover: Stop");
     }
 }
 
-// --- ACTION REQUIRED: Implement your servo logic here ---
-// Your DriveSystem class doesn't show methods for servo control.
-// Add methods to DriveSystem or control the pca9685 driver directly.
-void frontServoLeft() {
-    ESP_LOGW(SPP_TAG, "TODO: Implement frontServoLeft()");
-    // Example: if (g_rover) g_rover->setFrontServoAngle(90);
-    // Or: if (g_pca9685_dev) pca9685_set_pwm_value(g_pca9685_dev, 0, 300);
-}
-void frontServoRight() {
-    ESP_LOGW(SPP_TAG, "TODO: Implement frontServoRight()");
-}
-void backServoLeft() {
-    ESP_LOGW(SPP_TAG, "TODO: Implement backServoLeft()");
-}
-void backServoRight() {
-    ESP_LOGW(SPP_TAG, "TODO: Implement backServoRight()");
-}
+
 
 // The command currently being executed repeatedly by background task.
 static void (*volatile currentCommand)(void) = stopMotors;
@@ -118,22 +72,6 @@ static void (*volatile currentCommand)(void) = stopMotors;
 // This wrapper is needed because all C-style callbacks must be in extern "C"
 extern "C" {
 
-    static void command_runner_task(void *param)
-    {
-        // (void)param;
-        // const TickType_t delay = pdMS_TO_TICKS(100);
-        // for (;;) {
-        //     // Wait until rover is initialized
-        //     if (!g_rover) {
-        //         vTaskDelay(delay);
-        //         continue;
-        //     }
-
-        //     void (*cmd)(void) = currentCommand; // read volatile once
-        //     if (cmd) cmd();
-        //     vTaskDelay(delay);
-        // }
-    }
 
     static char *bda2str(uint8_t * bda, char *str, size_t size)
     {
@@ -182,28 +120,23 @@ extern "C" {
                     {
                         case 0x46: // 'F'
                             // lastCommand = moveForward;
-                            g_rover->move(1200);
+                            g_rover->move(1200, 0.0f);
                             break;
                         case 0x53: // 'L'
-                            g_rover->rotate(45.0f);
-                            
-                            g_rover->move(1200);
+                            g_rover->move(1200, 45.0f);
                             break;
                         case 0x42: // 'B'
-                            g_rover->move(-1200);
+                            g_rover->move(-1200, 0.0f);
                             break;
                         case 0x43: // 'R'
-                            g_rover->rotate(-45.0f);
-                            g_rover->move(1200);
+                            g_rover->move(1200, -45.0f);
                             break;
                         case 0x30: // '0'
-                            g_rover->move(0);
-                            g_rover->rotate(0.0f);
+                            g_rover->move(0, 0.0f);
                             break;
                         
                         default:
-                            g_rover->move(0);
-                            g_rover->rotate(0.0f);
+                            g_rover->move(0, 0.0f);
                             ESP_LOGW(SPP_TAG, "Unknown command: 0x%02x", spp_data[i]);
                             break;
                     }
@@ -250,7 +183,7 @@ extern "C" {
             ESP_LOGI(SPP_TAG, "ESP_SPP_CLOSE_EVT status:%d handle:%"PRIu32" close_by_remote:%d", param->close.status,
                     param->close.handle, param->close.async);
             // Safety stop on disconnect
-            g_rover->move(0);
+            g_rover->move(0, 0.0f);
             break;
         case ESP_SPP_START_EVT:
             if (param->start.status == ESP_SPP_SUCCESS) {
@@ -347,28 +280,19 @@ extern "C" {
         return;
     }
 
-    void app_main(void)
+    void app_main()
     {
         // --- 1. Rover Init ---
         // We use 'new' to create them on the heap, so they persist after app_main exits
         // and can be accessed by the global pointers.
         g_pca9685_dev = new i2c_dev_t;
-    
-        ESP_ERROR_CHECK(i2cdev_init());
+        g_buffer = new PCA9685Buffer{g_pca9685_dev};
         
-        memset(g_pca9685_dev, 0, sizeof(i2c_dev_t));
-        ESP_ERROR_CHECK(pca9685_init_desc(g_pca9685_dev, PCA9685_ADDR, 
-                                        I2C_NUM_0, 
-                                        I2C_MASTER_SDA_IO, 
-                                        I2C_MASTER_SCL_IO));
-
-        ESP_ERROR_CHECK(pca9685_init(g_pca9685_dev));
-        ESP_ERROR_CHECK(pca9685_set_pwm_frequency(g_pca9685_dev, 50));
 
         // // Create the rover object and assign it to the global pointer
         g_rover = new DriveSystem(g_pca9685_dev);
         ESP_LOGI(SPP_TAG, "Rover DriveSystem Initialized.");
-        g_rover->rotate(0.0f);
+        g_rover->move(2000, 0.0f);
 
         // --- 2. Bluetooth Init ---
         char bda_str[18] = {0};
