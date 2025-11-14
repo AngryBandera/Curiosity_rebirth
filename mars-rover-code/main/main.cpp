@@ -2,6 +2,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <sys/types.h>
+#include <string.h> 
 
 // C headers
 extern "C" {
@@ -25,6 +26,7 @@ extern "C" {
     #include "sys/time.h"
     #include "esp_vfs.h"
     #include "sys/unistd.h"
+    #include <ctype.h>
 }
 
 // Rover C++ headers
@@ -49,11 +51,11 @@ static DriveSystem *g_rover = nullptr;
 
 // --- Constants for Rover Control ---
 // You can adjust these values
-#define ROVER_FORWARD_SPEED 1500
-#define ROVER_BACKWARD_SPEED -1500 
-#define ROVER_TURN_ANGLE 30.0f
+#define ROVER_MAX_TURN_ANGLE 60.0f
 #define ROVER_STOP_SPEED 0
 
+static int base_speed = 1500;
+static float curr_angle = 0.0f;
 // --- C++/C Bridge Functions ---
 // These are plain functions that call C++ methods on our global rover object.
 
@@ -63,11 +65,6 @@ void stopMotors() {
         // ESP_LOGI(SPP_TAG, "Rover: Stop");
     }
 }
-
-
-
-// The command currently being executed repeatedly by background task.
-static void (*volatile currentCommand)(void) = stopMotors;
 
 // This wrapper is needed because all C-style callbacks must be in extern "C"
 extern "C" {
@@ -85,77 +82,153 @@ extern "C" {
         return str;
     }
 
+    int hex_char_to_int(char c) {
+        if (c >= '0' && c <= '9') {
+            return c - '0';
+        }
+        if (c >= 'a' && c <= 'f') {
+            return c - 'a' + 10;
+        }
+        if (c >= 'A' && c <= 'F') {
+            return c - 'A' + 10;
+        }
+        return -1;
+    }
+
 
     static void spp_read_handle(void * param)
     {
-        static void (*lastCommand)(void) = stopMotors;
-        int size = 0;
         int fd = (int)param;
+        ssize_t size = 0; 
         uint8_t *spp_data = NULL;
 
-        // FIX: C++ requires an explicit cast from malloc's void*
+        #define PROCESS_BUF_SIZE (SPP_DATA_LEN * 2)
+        uint8_t *process_buffer = NULL;
+        size_t process_buffer_len = 0;
+
+        // --- Allocate buffers ---
         spp_data = (uint8_t *)malloc(SPP_DATA_LEN);
         if (!spp_data) {
             ESP_LOGE(SPP_TAG, "malloc spp_data failed, fd:%d", fd);
             goto done;
         }
+        
+        process_buffer = (uint8_t *)malloc(PROCESS_BUF_SIZE);
+        if (!process_buffer) {
+            ESP_LOGE(SPP_TAG, "malloc process_buffer failed, fd:%d", fd);
+            goto done;
+        }
 
         do {
-            /* The frequency of calling this function also limits the speed at which the peer device can send data. */
             size = read(fd, spp_data, SPP_DATA_LEN);
+
             if (size < 0) {
+                ESP_LOGE(SPP_TAG, "read() failed");
                 break;
             } else if (size == 0) {
-                /* There is no data, retry after 500 ms */
                 vTaskDelay(500 / portTICK_PERIOD_MS);
             } else {
-                ESP_LOGI(SPP_TAG, "fd = %d data_len = %d", fd, size);
-                ESP_LOG_BUFFER_HEX(SPP_TAG, spp_data, size);
+                if (process_buffer_len + size > PROCESS_BUF_SIZE) {
+                    ESP_LOGE(SPP_TAG, "Process buffer overflow! Discarding all data.");
+                    process_buffer_len = 0;
+                }
 
-                // Process all commands in the buffer, but only the last one
-                // will be repeatedly executed.
-                for (size_t i = 0; i < size; i++) {
-                    
-                    switch (spp_data[i])
-                    {
-                        case 0x46: // 'F'
-                            // lastCommand = moveForward;
-                            g_rover->move(1200, 0.0f);
-                            break;
-                        case 0x53: // 'L'
-                            g_rover->move(1200, 45.0f);
-                            break;
-                        case 0x42: // 'B'
-                            g_rover->move(-1200, 0.0f);
-                            break;
-                        case 0x43: // 'R'
-                            g_rover->move(1200, -45.0f);
-                            break;
-                        case 0x30: // '0'
-                            g_rover->move(0, 0.0f);
-                            break;
-                        
-                        default:
-                            g_rover->move(0, 0.0f);
-                            ESP_LOGW(SPP_TAG, "Unknown command: 0x%02x", spp_data[i]);
-                            break;
+                memcpy(&process_buffer[process_buffer_len], spp_data, size);
+                process_buffer_len += size;
+
+                ESP_LOGI(SPP_TAG, "Read %d bytes, total buffer %d", size, process_buffer_len);
+
+                size_t parse_index = 0;
+
+                while (parse_index < process_buffer_len) {
+                    uint8_t current_cmd = process_buffer[parse_index];
+
+                    if (current_cmd == 0x46 || current_cmd == 0x42) {
+                       if (parse_index + 5 < process_buffer_len) {
+                            int move_speed = 0;
+                            int turn_degrees = 0;
+                            int d1 = hex_char_to_int(process_buffer[parse_index + 1]);
+                            int d2 = hex_char_to_int(process_buffer[parse_index + 2]);
+
+                            if (d1 != -1 && d2 != -1) {
+                                move_speed = ((d1 * 10) + d2);
+                                parse_index += 3;
+                            } else {
+                                ESP_LOGW(SPP_TAG, "Invalid hex chars after 'F' or 'B' command, discarding 'F' or 'B'.");
+                                parse_index += 1;
+                                continue;
+                            }
+
+                            if (current_cmd == 0x42) {
+                                move_speed = -move_speed;
+                                ESP_LOGI(SPP_TAG, "CMD: BACKWARD, Speed: %d", move_speed);
+                            } else {
+                                ESP_LOGI(SPP_TAG, "CMD: FORWARD, Speed: %d", move_speed);
+                            }
+                            current_cmd = process_buffer[parse_index];
+                            if (current_cmd != 0x4C && current_cmd != 0x52) {
+                                ESP_LOGI(SPP_TAG, "Partial move command, waiting for more data.");
+                                break;
+                            }
+
+                            d1 = hex_char_to_int(process_buffer[parse_index + 1]);
+                            d2 = hex_char_to_int(process_buffer[parse_index + 2]);
+
+                            if (d1 != -1 && d2 != -1) {
+                                turn_degrees = ((d1 * 10) + d2);
+                                parse_index += 3;
+                            } else {
+                                ESP_LOGW(SPP_TAG, "Invalid hex chars after 'L' or 'R', discarding 'L' or 'R'.");
+                                parse_index += 1;
+                                continue;
+                            }
+
+                            if (current_cmd == 0x4C) {
+                                turn_degrees = -turn_degrees;
+                                ESP_LOGI(SPP_TAG, "CMD: LEFT, Degrees: %d", turn_degrees);
+                            } else {
+                                ESP_LOGI(SPP_TAG, "CMD: RIGHT, Degrees: %d", turn_degrees);
+                            }
+                            g_rover->move(move_speed*20, static_cast<float>(turn_degrees));
+                       } else {
+                           break;
+                       }
+                    } else if (current_cmd == 0x00) {
+                        ESP_LOGI(SPP_TAG, "CMD: STOP");
+                        g_rover->move(0, 0.0f);
+                        parse_index += 1;
+                    }
+                    else {
+                        ESP_LOGW(SPP_TAG, "Unknown command byte: 0x%02X", current_cmd);
+                        parse_index += 1;
                     }
                 }
 
-                // Atomically update the volatile command pointer
-                currentCommand = lastCommand; 
-                
-                /* To avoid task watchdog */
-                vTaskDelay(10 / portTICK_PERIOD_MS);
+                if (parse_index == 0) {
+                } else if (parse_index < process_buffer_len) {
+                    size_t remaining_data = process_buffer_len - parse_index;
+                    memmove(process_buffer, &process_buffer[parse_index], remaining_data);
+                    process_buffer_len = remaining_data;
+                    ESP_LOGD(SPP_TAG, "Shifted %d leftover bytes to front", remaining_data);
+                } else {
+                    process_buffer_len = 0;
+                }
             }
-        } while (1);
+
+            vTaskDelay(10 / portTICK_PERIOD_MS);
+        } while (true);
+
+
     done:
+        ESP_LOGE(SPP_TAG, "SPP read task is stopping...");
         if (spp_data) {
             free(spp_data);
         }
-        spp_wr_task_shut_down();
+        if (process_buffer) {
+            free(process_buffer);
+        }
+        vTaskDelete(NULL);
     }
-
     static void esp_spp_cb(uint16_t e, void *p)
     {
         // FIX: C++ requires explicit casts for enum and void*
