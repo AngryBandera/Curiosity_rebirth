@@ -288,6 +288,7 @@ uint16_t PCA9685Buffer::get_channel_value(uint8_t channel) {
 }
 
 void PCA9685Buffer::flush() {
+    if (dirty) return;
     ESP_ERROR_CHECK(pca9685_set_pwm_values(device,
             0, 16,
             buffer));
