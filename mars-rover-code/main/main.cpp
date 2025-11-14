@@ -1,6 +1,8 @@
 // C++ headers
+#include <cstddef>
 #include <cstdint>
 #include <sys/types.h>
+#include <string.h> 
 
 // C headers
 extern "C" {
@@ -24,12 +26,13 @@ extern "C" {
     #include "sys/time.h"
     #include "esp_vfs.h"
     #include "sys/unistd.h"
+    #include <ctype.h>
 }
 
 // Rover C++ headers
 #include "motors.h"
 #include "driver/ledc.h"
-
+#include "pca9685.h"
 // Bluetooth definitions
 #define SPP_TAG "SPP_ROVER_DEMO"
 #define SPP_SERVER_NAME "SPP_SERVER"
@@ -45,12 +48,34 @@ static const esp_spp_role_t role_slave = ESP_SPP_ROLE_SLAVE;
 static i2c_dev_t *g_pca9685_dev = nullptr;
 static DriveSystem *g_rover = nullptr;
 
+static SemaphoreHandle_t rover_mutex = nullptr;
+
+static void rover_tick_task(void *param)
+{
+    TickType_t xLastWakeTime = xTaskGetTickCount();
+    const TickType_t xFrequency = pdMS_TO_TICKS(100); // 10ms
+    
+    while (1) {
+        if (xSemaphoreTake(rover_mutex, portMAX_DELAY)) {
+            if (g_rover) {
+                g_rover->tick();
+            }
+            xSemaphoreGive(rover_mutex);
+        }
+        
+        // Точний інтервал 10ms
+        vTaskDelayUntil(&xLastWakeTime, xFrequency);
+    }
+}
+
+
 // --- Constants for Rover Control ---
 // You can adjust these values
-#define ROVER_FORWARD_SPEED 1500
-#define ROVER_BACKWARD_SPEED -1500 
-#define ROVER_TURN_ANGLE 30.0f
+#define ROVER_MAX_TURN_ANGLE 60.0f
 #define ROVER_STOP_SPEED 0
+
+static int max_speed = 1000;
+
 
 // This wrapper is needed because all C-style callbacks must be in extern "C"
 extern "C" {
@@ -68,83 +93,173 @@ extern "C" {
         return str;
     }
 
+    int hex_char_to_int(char c) {
+        if (c >= '0' && c <= '9') {
+            return c - '0';
+        }
+        if (c >= 'a' && c <= 'f') {
+            return c - 'a' + 10;
+        }
+        if (c >= 'A' && c <= 'F') {
+            return c - 'A' + 10;
+        }
+        return -1;
+    }
 
-    static void spp_read_handle(void * param)
+static void spp_read_handle(void * param)
     {
-        static int16_t speed{0};
-        static float angle{0.0f};
-
-        int size = 0;
         int fd = (int)param;
+        ssize_t size = 0; 
         uint8_t *spp_data = NULL;
 
-        // FIX: C++ requires an explicit cast from malloc's void*
+        #define PROCESS_BUF_SIZE (SPP_DATA_LEN * 2)
+        uint8_t *process_buffer = NULL;
+        size_t process_buffer_len = 0;
+
+        // --- Allocate buffers ---
         spp_data = (uint8_t *)malloc(SPP_DATA_LEN);
         if (!spp_data) {
             ESP_LOGE(SPP_TAG, "malloc spp_data failed, fd:%d", fd);
             goto done;
         }
+        
+        process_buffer = (uint8_t *)malloc(PROCESS_BUF_SIZE);
+        if (!process_buffer) {
+            ESP_LOGE(SPP_TAG, "malloc process_buffer failed, fd:%d", fd);
+            goto done;
+        }
 
         do {
-            /* The frequency of calling this function also limits the speed at which the peer device can send data. */
             size = read(fd, spp_data, SPP_DATA_LEN);
+
             if (size < 0) {
+                ESP_LOGE(SPP_TAG, "read() failed");
                 break;
             } else if (size == 0) {
-                /* There is no data, retry after 500 ms */
                 vTaskDelay(500 / portTICK_PERIOD_MS);
             } else {
-                ESP_LOGI(SPP_TAG, "fd = %d data_len = %d", fd, size);
-                ESP_LOG_BUFFER_HEX(SPP_TAG, spp_data, size);
+                if (process_buffer_len + size > PROCESS_BUF_SIZE) {
+                    ESP_LOGE(SPP_TAG, "Process buffer overflow! Discarding all data.");
+                    process_buffer_len = 0;
+                }
 
-                // Process all commands in the buffer, but only the last one
-                // will be repeatedly executed.
-                for (size_t i = 0; i < size; i++) {
-                    
-                    switch (spp_data[i])
-                    {
-                        case 0x46: // 'F'
-                            if (speed < ROVER_FORWARD_SPEED) speed += 50;
-                            g_rover->set_speed(speed);
-                            break;
-                        case 0x53: // 'L'
-                            if (angle < 45.0f) angle += 3.0f;
-                            g_rover->set_angle(angle);
-                            break;
-                        case 0x42: // 'B'
-                            if (speed > ROVER_BACKWARD_SPEED) speed -= 50;
-                            g_rover->set_speed(speed);
-                            break;
-                        case 0x43: // 'R'
-                            if (angle > -45.0f) angle -= 3.0f;
-                            g_rover->set_angle(angle);
-                            break;
-                        case 0x30: // '0'
-                            speed = 0;
-                            g_rover->set_speed(speed);
-                            break;
-                        
-                        default:
-                            g_rover->set(0, 0.0f);
-                            ESP_LOGW(SPP_TAG, "Unknown command: 0x%02x", spp_data[i]);
-                            break;
+                memcpy(&process_buffer[process_buffer_len], spp_data, size);
+                process_buffer_len += size;
+
+                ESP_LOGI(SPP_TAG, "Read %d bytes, total buffer %d", size, process_buffer_len);
+
+                size_t parse_index = 0;
+                
+                int last_move_speed = 0;
+                int last_turn_degrees = 0;
+                bool move_command_found = false;
+                bool stop_command_found = false;
+
+                while (parse_index < process_buffer_len) {
+                    uint8_t current_cmd = process_buffer[parse_index];
+
+                    if (current_cmd == 0x46 || current_cmd == 0x42) {
+                       if (parse_index + 5 < process_buffer_len) {
+                            int move_speed = 0;
+                            int turn_degrees = 0;
+                            int d1 = hex_char_to_int(process_buffer[parse_index + 1]);
+                            int d2 = hex_char_to_int(process_buffer[parse_index + 2]);
+
+                            if (d1 != -1 && d2 != -1) {
+                                move_speed = ((d1 * 10) + d2);
+                                parse_index += 3;
+                            } else {
+                                ESP_LOGW(SPP_TAG, "Invalid hex chars after 'F' or 'B' command, discarding 'F' or 'B'.");
+                                parse_index += 1;
+                                continue;
+                            }
+
+                            if (current_cmd == 0x42) {
+                                move_speed = -move_speed;
+                            }
+                            
+                            uint8_t turn_cmd = process_buffer[parse_index];
+                            if (turn_cmd != 0x4C && turn_cmd != 0x52) {
+                                ESP_LOGI(SPP_TAG, "Partial move command, waiting for more data.");
+                                parse_index -= 3;
+                                break;
+                            }
+
+                            d1 = hex_char_to_int(process_buffer[parse_index + 1]);
+                            d2 = hex_char_to_int(process_buffer[parse_index + 2]);
+
+                            if (d1 != -1 && d2 != -1) {
+                                turn_degrees = ((d1 * 10) + d2);
+                                parse_index += 3;
+                            } else {
+                                ESP_LOGW(SPP_TAG, "Invalid hex chars after 'L' or 'R', discarding 'L' or 'R'.");
+                                parse_index += 1;
+                                continue;
+                            }
+
+                            if (turn_cmd == 0x4C) {
+                                turn_degrees = -turn_degrees;
+                            }
+
+                            last_move_speed = move_speed;
+                            last_turn_degrees = turn_degrees;
+                            move_command_found = true;
+                            stop_command_found = false;
+                       
+                       } else {
+                           break;
+                       }
+                    } else if (current_cmd == 0x00) {
+                        stop_command_found = true;
+                        move_command_found = false;
+                        parse_index += 1;
+                    } else if (current_cmd == 0x5A) {
+                        max_speed = (max_speed + 1000) % 4001;
+                    }
+                    else {
+                        ESP_LOGW(SPP_TAG, "Unknown command byte: 0x%02X", current_cmd);
+                        parse_index += 1;
                     }
                 }
 
-                /* To avoid task watchdog */
-                vTaskDelay(10 / portTICK_PERIOD_MS);
+                if (stop_command_found) {
+                    ESP_LOGI(SPP_TAG, "Executing LAST command: STOP");
+                    g_rover->set(0, 0.0f);
+                } else if (move_command_found) {
+                    ESP_LOGI(SPP_TAG, "Executing LAST command: Speed: %d, Turn: %d", 
+                             last_move_speed, last_turn_degrees);
+                    g_rover->set(last_move_speed * 10, static_cast<float>(last_turn_degrees));
+                }
+
+
+                if (parse_index == 0) {
+                } else if (parse_index < process_buffer_len) {
+                    size_t remaining_data = process_buffer_len - parse_index;
+                    memmove(process_buffer, &process_buffer[parse_index], remaining_data);
+                    process_buffer_len = remaining_data;
+                    ESP_LOGD(SPP_TAG, "Shifted %d leftover bytes to front", remaining_data);
+                } else {
+                    process_buffer_len = 0;
+                }
             }
-        } while (1);
+
+            vTaskDelay(10 / portTICK_PERIOD_MS);
+        } while (true);
+
+
     done:
+        ESP_LOGE(SPP_TAG, "SPP read task is stopping...");
         if (spp_data) {
             free(spp_data);
         }
-        spp_wr_task_shut_down();
+        if (process_buffer) {
+            free(process_buffer);
+        }
+        vTaskDelete(NULL);
     }
 
     static void esp_spp_cb(uint16_t e, void *p)
     {
-        // FIX: C++ requires explicit casts for enum and void*
         esp_spp_cb_event_t event = (esp_spp_cb_event_t)e;
         esp_spp_cb_param_t *param = (esp_spp_cb_param_t *)p;
         char bda_str[18] = {0};
@@ -153,7 +268,6 @@ extern "C" {
         case ESP_SPP_INIT_EVT:
             if (param->init.status == ESP_SPP_SUCCESS) {
                 ESP_LOGI(SPP_TAG, "ESP_SPP_INIT_EVT");
-                /* Enable SPP VFS mode */
                 esp_spp_vfs_register();
             } else {
                 ESP_LOGE(SPP_TAG, "ESP_SPP_INIT_EVT status:%d", param->init.status);
@@ -268,13 +382,23 @@ extern "C" {
 
     void app_main()
     {
-        // --- 1. Rover Init ---
-        // We use 'new' to create them on the heap, so they persist after app_main exits
-        // and can be accessed by the global pointers.
-        g_pca9685_dev = new i2c_dev_t;
+        rover_mutex = xSemaphoreCreateMutex();
+
+        g_pca9685_dev = new i2c_dev_t{};
+
         g_rover = new DriveSystem(g_pca9685_dev);
         ESP_LOGI(SPP_TAG, "Rover DriveSystem Initialized.");
-        g_rover->set(0, 0.0f);
+
+
+        xTaskCreatePinnedToCore(
+            rover_tick_task,    // Функція
+            "rover_tick",       // Назва
+            4096,              // Stack size
+            NULL,              // Параметри
+            10,                // Пріоритет (високий!)
+            NULL,              // Handle
+            1                  // ⭐ Core 1 (Bluetooth на Core 0)
+        );
 
         // --- 2. Bluetooth Init ---
         char bda_str[18] = {0};
@@ -324,8 +448,6 @@ extern "C" {
 
         spp_task_task_start_up();
         
-        // start command runner task which repeatedly calls the current command
-        // xTaskCreate(command_runner_task, "cmd_runner", 2048, NULL, tskIDLE_PRIORITY + 1, NULL);
 
         esp_spp_cfg_t bt_spp_cfg = BT_SPP_DEFAULT_CONFIG();
         if (esp_spp_enhanced_init(&bt_spp_cfg) != ESP_OK) {
