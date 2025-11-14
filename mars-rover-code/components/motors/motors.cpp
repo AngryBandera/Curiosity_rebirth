@@ -158,7 +158,8 @@ DriveSystem::DriveSystem(i2c_dev_t* pca9685)
         "LeftFrontWheel",
         Cfg::FRONT_Y, Cfg::LEFT_X,
         3
-    }
+    },
+    mem_speed{0}, mem_angle{0.0f}, dest_speed{0}, dest_angle{0.0f} // <<< ІНІЦІАЛІЗАЦІЯ
 {
     all_steerable_wheels[0] = &right_back;
     all_steerable_wheels[1] = &right_front;
@@ -288,7 +289,8 @@ uint16_t PCA9685Buffer::get_channel_value(uint8_t channel) {
 }
 
 void PCA9685Buffer::flush() {
-    if (dirty) return;
+    // виправлено: якщо нема змін — нічого не робимо; інакше — шлемо
+    if (!dirty) return;
     ESP_ERROR_CHECK(pca9685_set_pwm_values(device,
             0, 16,
             buffer));

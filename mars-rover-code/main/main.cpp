@@ -224,11 +224,17 @@ static void spp_read_handle(void * param)
 
                 if (stop_command_found) {
                     ESP_LOGI(SPP_TAG, "Executing LAST command: STOP");
-                    g_rover->set(0, 0.0f);
+                    if (xSemaphoreTake(rover_mutex, pdMS_TO_TICKS(100))) {
+                        if (g_rover) g_rover->set(0, 0.0f);
+                        xSemaphoreGive(rover_mutex);
+                    }
                 } else if (move_command_found) {
                     ESP_LOGI(SPP_TAG, "Executing LAST command: Speed: %d, Turn: %d", 
                              last_move_speed, last_turn_degrees);
-                    g_rover->set(last_move_speed * 10, static_cast<float>(last_turn_degrees));
+                    if (xSemaphoreTake(rover_mutex, pdMS_TO_TICKS(100))) {
+                        if (g_rover) g_rover->set(last_move_speed * 10, static_cast<float>(last_turn_degrees));
+                        xSemaphoreGive(rover_mutex);
+                    }
                 }
 
 
@@ -283,7 +289,10 @@ static void spp_read_handle(void * param)
             ESP_LOGI(SPP_TAG, "ESP_SPP_CLOSE_EVT status:%d handle:%"PRIu32" close_by_remote:%d", param->close.status,
                     param->close.handle, param->close.async);
             // Safety stop on disconnect
-            g_rover->set(0, 0.0f);
+            if (xSemaphoreTake(rover_mutex, pdMS_TO_TICKS(100))) {
+                if (g_rover) g_rover->set(0, 0.0f);
+                xSemaphoreGive(rover_mutex);
+            }
             break;
         case ESP_SPP_START_EVT:
             if (param->start.status == ESP_SPP_SUCCESS) {
