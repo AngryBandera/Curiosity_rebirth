@@ -54,8 +54,7 @@ static DriveSystem *g_rover = nullptr;
 #define ROVER_MAX_TURN_ANGLE 60.0f
 #define ROVER_STOP_SPEED 0
 
-static int base_speed = 1500;
-static float curr_angle = 0.0f;
+static int max_speed = 1000;
 // --- C++/C Bridge Functions ---
 // These are plain functions that call C++ methods on our global rover object.
 
@@ -95,8 +94,7 @@ extern "C" {
         return -1;
     }
 
-
-    static void spp_read_handle(void * param)
+static void spp_read_handle(void * param)
     {
         int fd = (int)param;
         ssize_t size = 0; 
@@ -139,6 +137,11 @@ extern "C" {
                 ESP_LOGI(SPP_TAG, "Read %d bytes, total buffer %d", size, process_buffer_len);
 
                 size_t parse_index = 0;
+                
+                int last_move_speed = 0;
+                int last_turn_degrees = 0;
+                bool move_command_found = false;
+                bool stop_command_found = false;
 
                 while (parse_index < process_buffer_len) {
                     uint8_t current_cmd = process_buffer[parse_index];
@@ -161,13 +164,12 @@ extern "C" {
 
                             if (current_cmd == 0x42) {
                                 move_speed = -move_speed;
-                                ESP_LOGI(SPP_TAG, "CMD: BACKWARD, Speed: %d", move_speed);
-                            } else {
-                                ESP_LOGI(SPP_TAG, "CMD: FORWARD, Speed: %d", move_speed);
                             }
-                            current_cmd = process_buffer[parse_index];
-                            if (current_cmd != 0x4C && current_cmd != 0x52) {
+                            
+                            uint8_t turn_cmd = process_buffer[parse_index];
+                            if (turn_cmd != 0x4C && turn_cmd != 0x52) {
                                 ESP_LOGI(SPP_TAG, "Partial move command, waiting for more data.");
+                                parse_index -= 3;
                                 break;
                             }
 
@@ -183,26 +185,40 @@ extern "C" {
                                 continue;
                             }
 
-                            if (current_cmd == 0x4C) {
+                            if (turn_cmd == 0x4C) {
                                 turn_degrees = -turn_degrees;
-                                ESP_LOGI(SPP_TAG, "CMD: LEFT, Degrees: %d", turn_degrees);
-                            } else {
-                                ESP_LOGI(SPP_TAG, "CMD: RIGHT, Degrees: %d", turn_degrees);
                             }
-                            g_rover->move(move_speed*20, static_cast<float>(turn_degrees));
+
+                            last_move_speed = move_speed;
+                            last_turn_degrees = turn_degrees;
+                            move_command_found = true;
+                            stop_command_found = false;
+                       
                        } else {
                            break;
                        }
                     } else if (current_cmd == 0x00) {
-                        ESP_LOGI(SPP_TAG, "CMD: STOP");
-                        g_rover->move(0, 0.0f);
+                        stop_command_found = true;
+                        move_command_found = false;
                         parse_index += 1;
+                    } else if (current_cmd == 0x5A) {
+                        max_speed = (max_speed + 1000) % 4001
                     }
                     else {
                         ESP_LOGW(SPP_TAG, "Unknown command byte: 0x%02X", current_cmd);
                         parse_index += 1;
                     }
                 }
+
+                if (stop_command_found) {
+                    ESP_LOGI(SPP_TAG, "Executing LAST command: STOP");
+                    g_rover->move(0, 0.0f);
+                } else if (move_command_found) {
+                    ESP_LOGI(SPP_TAG, "Executing LAST command: Speed: %d, Turn: %d", 
+                             last_move_speed, last_turn_degrees);
+                    g_rover->move(last_move_speed * 10, static_cast<float>(last_turn_degrees));
+                }
+
 
                 if (parse_index == 0) {
                 } else if (parse_index < process_buffer_len) {
@@ -229,9 +245,9 @@ extern "C" {
         }
         vTaskDelete(NULL);
     }
+
     static void esp_spp_cb(uint16_t e, void *p)
     {
-        // FIX: C++ requires explicit casts for enum and void*
         esp_spp_cb_event_t event = (esp_spp_cb_event_t)e;
         esp_spp_cb_param_t *param = (esp_spp_cb_param_t *)p;
         char bda_str[18] = {0};
@@ -240,7 +256,6 @@ extern "C" {
         case ESP_SPP_INIT_EVT:
             if (param->init.status == ESP_SPP_SUCCESS) {
                 ESP_LOGI(SPP_TAG, "ESP_SPP_INIT_EVT");
-                /* Enable SPP VFS mode */
                 esp_spp_vfs_register();
             } else {
                 ESP_LOGE(SPP_TAG, "ESP_SPP_INIT_EVT status:%d", param->init.status);
@@ -355,17 +370,10 @@ extern "C" {
 
     void app_main()
     {
-        // --- 1. Rover Init ---
-        // We use 'new' to create them on the heap, so they persist after app_main exits
-        // and can be accessed by the global pointers.
         g_pca9685_dev = new i2c_dev_t;
-        g_buffer = new PCA9685Buffer{g_pca9685_dev};
-        
 
-        // // Create the rover object and assign it to the global pointer
         g_rover = new DriveSystem(g_pca9685_dev);
         ESP_LOGI(SPP_TAG, "Rover DriveSystem Initialized.");
-        g_rover->move(2000, 0.0f);
 
         // --- 2. Bluetooth Init ---
         char bda_str[18] = {0};
@@ -415,8 +423,6 @@ extern "C" {
 
         spp_task_task_start_up();
         
-        // start command runner task which repeatedly calls the current command
-        // xTaskCreate(command_runner_task, "cmd_runner", 2048, NULL, tskIDLE_PRIORITY + 1, NULL);
 
         esp_spp_cfg_t bt_spp_cfg = BT_SPP_DEFAULT_CONFIG();
         if (esp_spp_enhanced_init(&bt_spp_cfg) != ESP_OK) {
