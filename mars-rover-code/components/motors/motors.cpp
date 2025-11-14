@@ -22,6 +22,21 @@ uint32_t isqrt(uint32_t n) {
     return x;
 }
 
+// helper
+static inline uint16_t clamp_pwm(int32_t v) {
+    if (v <= 0) return 0;
+    if (v > 4095) return 4095;
+    return static_cast<uint16_t>(v);
+}
+
+// Wheel motor: speed is signed in your internal units (e.g. -max_speed..+max_speed).
+// We map absolute speed -> PWM (0..4095). If you have a different internal max (e.g. 1000),
+// adjust `SCALE` accordingly or pass a max parameter.
+#ifndef MOTOR_INTERNAL_MAX
+#define MOTOR_INTERNAL_MAX 3000  // <- змінено на 3000 відповідно до запиту
+#endif
+static const float MOTOR_SCALE = 4095.0f / static_cast<float>(MOTOR_INTERNAL_MAX);
+
 WheelMotor::WheelMotor(uint8_t pca1, uint8_t pca2,
         const char *TAG,
         int16_t l, int16_t d)
@@ -30,14 +45,20 @@ WheelMotor::WheelMotor(uint8_t pca1, uint8_t pca2,
       l{l}, d{d} {}
 
 void WheelMotor::update_buffer(int16_t speed, PCA9685Buffer* buffer) {
+    int32_t abs_speed = (speed < 0) ? -static_cast<int32_t>(speed) : static_cast<int32_t>(speed);
+    uint16_t pwm = clamp_pwm(static_cast<int32_t>(abs_speed * MOTOR_SCALE));
+
     if (speed > 0) {
-        buffer->set_channel_value(pca1, speed);
+        buffer->set_channel_value(pca1, pwm);
         buffer->set_channel_value(pca2, 0);
+    } else if (speed < 0) {
+        buffer->set_channel_value(pca1, 0);
+        buffer->set_channel_value(pca2, pwm);
     } else {
         buffer->set_channel_value(pca1, 0);
-        buffer->set_channel_value(pca2, -speed);
+        buffer->set_channel_value(pca2, 0);
     }
-    ESP_LOGI(TAG, "Speed duty: %d", speed);
+    ESP_LOGD(TAG, "speed=%d -> pwm=%u (ch%u/%u)", speed, pwm, pca1, pca2);
 }
 
 
@@ -60,15 +81,23 @@ SteerableWheel::SteerableWheel(uint8_t pca1, uint8_t pca2,
         servo_pca{servo_pca} {}
 
 void SteerableWheel::update_buffer(int16_t speed, PCA9685Buffer* buffer) {
+    int32_t abs_speed = (speed < 0) ? -static_cast<int32_t>(speed) : static_cast<int32_t>(speed);
+    uint16_t pwm = clamp_pwm(static_cast<int32_t>(abs_speed * MOTOR_SCALE));
+
     if (speed > 0) {
-        buffer->set_channel_value(pca1, speed);
+        buffer->set_channel_value(pca1, pwm);
         buffer->set_channel_value(pca2, 0);
+    } else if (speed < 0) {
+        buffer->set_channel_value(pca1, 0);
+        buffer->set_channel_value(pca2, pwm);
     } else {
         buffer->set_channel_value(pca1, 0);
-        buffer->set_channel_value(pca2, -speed);
+        buffer->set_channel_value(pca2, 0);
     }
+
+    // servo_duty вже обчислено в update_geometry; тут записуємо без зміни
     buffer->set_channel_value(servo_pca, servo_duty);
-    ESP_LOGI(TAG, "Speed duty: %d, Servo duty: %d", speed, servo_duty);
+    ESP_LOGD(TAG, "speed=%d -> pwm=%u, servo=%u (servo ch %u)", speed, pwm, servo_duty, servo_pca);
 }
 
 void SteerableWheel::update_geometry(int32_t med_radius) {
@@ -233,8 +262,15 @@ void DriveSystem::set_angle(float rvr_angle) {
 
 
 void DriveSystem::tick() {
-    if      (dest_speed > mem_speed) { mem_speed += Cfg::DC_ACCEL; }
-    else if (dest_speed < mem_speed) { mem_speed -= Cfg::DC_ACCEL; }
+    if (dest_speed >= 0) {
+        if     (dest_speed <= 100) { mem_speed = 0; }
+        else if      (dest_speed > mem_speed) { mem_speed += Cfg::DC_ACCEL; }
+        else if (dest_speed < mem_speed) { mem_speed -= Cfg::DC_ACCEL * 4; }
+    } else {
+        if     (dest_speed >= -100) { mem_speed = 0; }
+        else if      (dest_speed > mem_speed) { mem_speed += Cfg::DC_ACCEL * 4; }
+        else if (dest_speed < mem_speed) { mem_speed -= Cfg::DC_ACCEL; }
+    }
 
     if (fabs(dest_angle - mem_angle) <= 1.0f) { mem_angle = dest_angle; }
     else if (dest_angle > mem_angle) { mem_angle += Cfg::SERVO_ACCECL; }
@@ -275,6 +311,10 @@ void PCA9685Buffer::set_channel_value(uint8_t channel, uint16_t value) {
     if (channel >= 16) {
         ESP_LOGE(TAG, "Invalid channel %d", channel);
         return;
+    }
+    if (value > 4095) {
+        ESP_LOGW(TAG, "clamping PWM %u->4095 for channel %u", value, channel);
+        value = 4095;
     }
     buffer[channel] = value;
     dirty = true;

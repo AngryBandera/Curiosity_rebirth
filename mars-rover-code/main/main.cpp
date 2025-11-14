@@ -53,7 +53,7 @@ static SemaphoreHandle_t rover_mutex = nullptr;
 static void rover_tick_task(void *param)
 {
     TickType_t xLastWakeTime = xTaskGetTickCount();
-    const TickType_t xFrequency = pdMS_TO_TICKS(100); // 10ms
+    const TickType_t xFrequency = pdMS_TO_TICKS(20); // 10ms
     
     while (1) {
         if (xSemaphoreTake(rover_mutex, portMAX_DELAY)) {
