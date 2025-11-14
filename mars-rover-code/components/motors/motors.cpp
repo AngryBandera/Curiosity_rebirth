@@ -179,7 +179,7 @@ void DriveSystem::print_angles() {
             right_back.get_angle(), right_front.get_angle(), left_back.get_angle(), left_front.get_angle());
 }
 
-void DriveSystem::move(int16_t speed, float rvr_angle) {
+void DriveSystem::actual_move(int16_t speed, float rvr_angle) {
     int32_t med_radius;
     if (fabsf(rvr_angle) <= 1.0f) {
         med_radius = 16001;
@@ -214,6 +214,32 @@ void DriveSystem::move(int16_t speed, float rvr_angle) {
     }
 
     buffer->flush();
+}
+
+
+void DriveSystem::set(int16_t speed, float rvr_angle) {
+    dest_speed = speed;
+    dest_angle = rvr_angle;
+}
+
+void DriveSystem::set_speed(int16_t speed) {
+    dest_speed = speed;
+}
+
+void DriveSystem::set_angle(float rvr_angle) {
+    dest_angle = rvr_angle;
+}
+
+
+void DriveSystem::tick() {
+    if      (dest_speed > mem_speed) { mem_speed += Cfg::DC_ACCEL; }
+    else if (dest_speed < mem_speed) { mem_speed -= Cfg::DC_ACCEL; }
+
+    if (fabs(dest_angle - mem_angle) <= 1.0f) { mem_angle = dest_angle; }
+    else if (dest_angle > mem_angle) { mem_angle += Cfg::SERVO_ACCECL; }
+    else if (dest_angle < mem_angle) { mem_angle -= Cfg::SERVO_ACCECL; }
+
+    actual_move(mem_speed, mem_angle);
 }
 
 void DriveSystem::stop() {

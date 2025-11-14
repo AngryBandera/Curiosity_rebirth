@@ -35,6 +35,9 @@ namespace Cfg {
     constexpr float PI = 3.14159265358979323846f;
 
     constexpr float ANGLE_DEVIATION = 0.5f;
+
+    constexpr int16_t DC_ACCEL = 20;
+    constexpr float SERVO_ACCECL = 1.0f;
 }
 
 

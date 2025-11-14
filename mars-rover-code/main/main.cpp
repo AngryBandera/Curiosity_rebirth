@@ -1,5 +1,4 @@
 // C++ headers
-#include <cstddef>
 #include <cstdint>
 #include <sys/types.h>
 
@@ -30,7 +29,7 @@ extern "C" {
 // Rover C++ headers
 #include "motors.h"
 #include "driver/ledc.h"
-#include "pca9685.h"
+
 // Bluetooth definitions
 #define SPP_TAG "SPP_ROVER_DEMO"
 #define SPP_SERVER_NAME "SPP_SERVER"
@@ -44,7 +43,6 @@ static const esp_spp_role_t role_slave = ESP_SPP_ROLE_SLAVE;
 // --- Global Rover Objects ---
 // These are global so background tasks (BT) can control them.
 static i2c_dev_t *g_pca9685_dev = nullptr;
-static PCA9685Buffer* g_buffer = nullptr;
 static DriveSystem *g_rover = nullptr;
 
 // --- Constants for Rover Control ---
@@ -53,21 +51,6 @@ static DriveSystem *g_rover = nullptr;
 #define ROVER_BACKWARD_SPEED -1500 
 #define ROVER_TURN_ANGLE 30.0f
 #define ROVER_STOP_SPEED 0
-
-// --- C++/C Bridge Functions ---
-// These are plain functions that call C++ methods on our global rover object.
-
-void stopMotors() {
-    if (g_rover) {
-        g_rover->move(ROVER_STOP_SPEED, 0.0f);
-        // ESP_LOGI(SPP_TAG, "Rover: Stop");
-    }
-}
-
-
-
-// The command currently being executed repeatedly by background task.
-static void (*volatile currentCommand)(void) = stopMotors;
 
 // This wrapper is needed because all C-style callbacks must be in extern "C"
 extern "C" {
@@ -88,7 +71,9 @@ extern "C" {
 
     static void spp_read_handle(void * param)
     {
-        static void (*lastCommand)(void) = stopMotors;
+        static int16_t speed{0};
+        static float angle{0.0f};
+
         int size = 0;
         int fd = (int)param;
         uint8_t *spp_data = NULL;
@@ -119,32 +104,33 @@ extern "C" {
                     switch (spp_data[i])
                     {
                         case 0x46: // 'F'
-                            // lastCommand = moveForward;
-                            g_rover->move(1200, 0.0f);
+                            if (speed < ROVER_FORWARD_SPEED) speed += 50;
+                            g_rover->set_speed(speed);
                             break;
                         case 0x53: // 'L'
-                            g_rover->move(1200, 45.0f);
+                            if (angle < 45.0f) angle += 3.0f;
+                            g_rover->set_angle(angle);
                             break;
                         case 0x42: // 'B'
-                            g_rover->move(-1200, 0.0f);
+                            if (speed > ROVER_BACKWARD_SPEED) speed -= 50;
+                            g_rover->set_speed(speed);
                             break;
                         case 0x43: // 'R'
-                            g_rover->move(1200, -45.0f);
+                            if (angle > -45.0f) angle -= 3.0f;
+                            g_rover->set_angle(angle);
                             break;
                         case 0x30: // '0'
-                            g_rover->move(0, 0.0f);
+                            speed = 0;
+                            g_rover->set_speed(speed);
                             break;
                         
                         default:
-                            g_rover->move(0, 0.0f);
+                            g_rover->set(0, 0.0f);
                             ESP_LOGW(SPP_TAG, "Unknown command: 0x%02x", spp_data[i]);
                             break;
                     }
                 }
 
-                // Atomically update the volatile command pointer
-                currentCommand = lastCommand; 
-                
                 /* To avoid task watchdog */
                 vTaskDelay(10 / portTICK_PERIOD_MS);
             }
@@ -183,7 +169,7 @@ extern "C" {
             ESP_LOGI(SPP_TAG, "ESP_SPP_CLOSE_EVT status:%d handle:%"PRIu32" close_by_remote:%d", param->close.status,
                     param->close.handle, param->close.async);
             // Safety stop on disconnect
-            g_rover->move(0, 0.0f);
+            g_rover->set(0, 0.0f);
             break;
         case ESP_SPP_START_EVT:
             if (param->start.status == ESP_SPP_SUCCESS) {
@@ -286,13 +272,9 @@ extern "C" {
         // We use 'new' to create them on the heap, so they persist after app_main exits
         // and can be accessed by the global pointers.
         g_pca9685_dev = new i2c_dev_t;
-        g_buffer = new PCA9685Buffer{g_pca9685_dev};
-        
-
-        // // Create the rover object and assign it to the global pointer
         g_rover = new DriveSystem(g_pca9685_dev);
         ESP_LOGI(SPP_TAG, "Rover DriveSystem Initialized.");
-        g_rover->move(2000, 0.0f);
+        g_rover->set(0, 0.0f);
 
         // --- 2. Bluetooth Init ---
         char bda_str[18] = {0};

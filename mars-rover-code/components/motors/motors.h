@@ -132,8 +132,15 @@ private:
 
     WheelMotor* all_wheels[6];
 
+    int16_t mem_speed;
+    float mem_angle;
+
+    int16_t dest_speed;
+    float dest_angle;
+
     //inline void dc_move(int16_t speed);
     //inline void rotate(float rvr_angle);
+    void actual_move(int16_t speed, float angle);
 
 public:
     /*
@@ -145,7 +152,12 @@ public:
      * speed - determines pwm duty cycle
      * angle in bounds [-4096, 4095]
     */
-    void move(int16_t speed, float angle);
+    void set(int16_t speed, float angle);
+
+    void set_speed(int16_t speed);
+    void set_angle(float angle);
+
+    void tick();
     void stop();
 
     void print_angles();
