@@ -6,7 +6,10 @@ set(PRIV_REQUIRES_LIST "")
 
 if(Build_FULL_Project)
     message(STATUS "Building FULL_CAM project")
-    set(SRC_FILES esp_cam_main.cpp command_get.cpp)
+    set(SRC_FILES 
+        esp_cam_main.cpp 
+        command_get.cpp
+        )
 else()
     message(STATUS "Building TEST_CAMERA project")
     set(SRC_FILES "test_camera.cpp")
