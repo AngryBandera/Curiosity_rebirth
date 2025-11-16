@@ -7,11 +7,15 @@
 
 #include <stdint.h>
 #include "camera_server.h"
+#include "driver/gpio.h"
+#include "esp_http_client.h"
+#include "esp_log.h"
 
 typedef struct {
-    uint8_t pin1;
-    uint8_t pin2;
+    gpio_num_t pin1;
+    gpio_num_t pin2;
 } pins_t;
+
 
 void sendPhotoToServer(photo_data_t photo);
 
