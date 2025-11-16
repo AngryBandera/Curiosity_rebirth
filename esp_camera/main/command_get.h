@@ -21,6 +21,6 @@ void sendPhotoToServer(photo_data_t photo);
 
 uint8_t get_pins_status(const pins_t *pins);
 
-int do_task_based_on_pins(int task_number);
+int do_task_based_on_pins(uint8_t task_number);
 
 #endif
