@@ -1,14 +1,20 @@
-# Поки збираємо лише тестову версію
-# Базові параметри
+# Опція: що збираємо
+option(Build_FULL_Project "Build full ESP-CAM project" ON)
+
 set(INCLUDE_DIRS ".")
 set(PRIV_REQUIRES_LIST "")
 
-message(STATUS "📸 Building TEST_CAMERA project")
-set(SRC_FILES "test_camera.cpp")
+if(Build_FULL_Project)
+    message(STATUS "Building FULL_CAM project")
+    set(SRC_FILES "esp_cam_main.cpp")
+else()
+    message(STATUS "Building TEST_CAMERA project")
+    set(SRC_FILES "test_camera.cpp")
+endif()
+
 list(APPEND PRIV_REQUIRES_LIST
         camera
         esp_system
-
         esp_wifi
         nvs_flash
         esp_event
