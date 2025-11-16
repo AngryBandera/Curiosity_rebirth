@@ -2,6 +2,7 @@
 # =========================
 # The 'build' directory contains all compiled object files, binaries, etc.
 /build/
+.cache/
 
 # Project Configuration
 # =========================
