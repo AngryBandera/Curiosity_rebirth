@@ -23,6 +23,7 @@ list(APPEND PRIV_REQUIRES_LIST
         esp_event
         esp_netif
         esp_http_client
+        log
 )
 
 idf_component_register(

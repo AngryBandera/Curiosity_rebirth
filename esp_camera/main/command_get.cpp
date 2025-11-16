@@ -3,14 +3,16 @@
 #include "driver/gpio.h"
 #include "camera_server.h"
 #include "esp_http_client.h"
+#include "esp_log.h"
+
 
 
 void sendPhotoToServer(photo_data_t photo)
 {
-    esp_http_client_config_t config = {
-        .url = "http://192.168.4.2/upload",
-        .method = HTTP_METHOD_POST,
-    };
+    esp_http_client_config_t config{};
+    config.url = "http://192.168.4.2/upload";
+    config.method = HTTP_METHOD_POST;
+
 
     esp_http_client_handle_t client = esp_http_client_init(&config);
 
