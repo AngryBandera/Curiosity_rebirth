@@ -29,15 +29,14 @@ void sendPhotoToServer(photo_data_t photo)
 
 
 uint8_t get_pins_status(const pins_t *pins){
-    uint8_t pins_array[2] = {
+    gpio_num_t pins_array[2] = {
         pins->pin1,
         pins->pin2
     };
 
     uint8_t mask = 0;
     for (int i = 0; i < 2; i++){
-        uint8_t curr_gpio = pins_array[i];
-        uint8_t state = gpio_get_level(curr_gpio);
+        int state = gpio_get_level(pins_array[i]);
         mask |= (state << i);
     };
     return mask;
