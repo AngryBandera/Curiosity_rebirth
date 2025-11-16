@@ -22,6 +22,7 @@ list(APPEND PRIV_REQUIRES_LIST
         nvs_flash
         esp_event
         esp_netif
+        esp_http_client
 )
 
 idf_component_register(
