@@ -9,8 +9,8 @@
 #include "command_get.h"
 #include "driver/gpio.h"
 
-#define GPIO1 GPIO_NUM_12
-#define GPIO2 GPIO_NUM_13
+#define GPIO1 GPIO_NUM_13
+#define GPIO2 GPIO_NUM_14
 
 static const char* TAG = "CAMERA_TEST";
 const pins_t pins = {GPIO1, GPIO2};
