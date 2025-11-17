@@ -1,5 +1,7 @@
-idf_component_register(
-    SRCS "./bluetooth.cpp"
-    INCLUDE_DIRS "."
-    PRIV_REQUIRES 
-)
+set(srcs "my_platform.c")
+
+set(requires "bluepad32" "btstack")
+
+idf_component_register(SRCS "${srcs}"
+                    INCLUDE_DIRS "."
+                    REQUIRES "${requires}")
