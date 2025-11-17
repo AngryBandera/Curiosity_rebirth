@@ -66,7 +66,7 @@ static void rover_tick_task(void *param)
 static int max_speed = 1000;
 
 extern "C" {
-    struct uni_platform* get_my_platform(void);
+    struct uni_platform* get_my_platform(DriveSystem *ds);
 
     void app_main()
     {
@@ -94,7 +94,8 @@ extern "C" {
 
         btstack_init();
 
-        uni_platform_set_custom(get_my_platform());
+        uni_platform_set_custom(get_my_platform(g_rover));
+        // uni_platform_set_custom(get_my_platform());
 
         uni_init(0 /* argc */, NULL /* argv */);
 
