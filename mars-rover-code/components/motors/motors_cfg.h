@@ -5,8 +5,8 @@ namespace Servo {
     // Серво параметри    
     constexpr uint16_t MIN_PULSE_US = 500;
     constexpr uint16_t MAX_PULSE_US = 2500;
-    constexpr uint16_t PERIOD_US = 20000;
-    constexpr uint8_t  FREQ = 50;
+    constexpr uint16_t PERIOD_US = 20000; //20000
+    constexpr uint8_t  FREQ = 50; //50
     constexpr uint8_t RESOLUTION = 12;
     constexpr uint16_t MAX_DUTY = (1 << Servo::RESOLUTION);
 
@@ -37,7 +37,7 @@ namespace Cfg {
     constexpr float ANGLE_DEVIATION = 0.5f;
 
     constexpr int16_t DC_ACCEL = 20;
-    constexpr float SERVO_ACCECL = 0.6f;
+    constexpr float SERVO_ACCECL = 1.0f;
 }
 
 
