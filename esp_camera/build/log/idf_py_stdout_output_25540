@@ -1,2 +1,0 @@
-Command: cmake -G Ninja -DPYTHON_DEPS_CHECKED=1 -DPYTHON=C:\Users\bogda\.espressif\python_env\idf5.5_py3.13_env\Scripts\python.exe -DESP_PLATFORM=1 -DCCACHE_ENABLE=1 C:\Users\bogda\POK\Curiosity_rebirth\esp_camera
--- Found Git: C:/Program Files/Git/cmd/git.exe (found version "2.45.1.windows.1")
