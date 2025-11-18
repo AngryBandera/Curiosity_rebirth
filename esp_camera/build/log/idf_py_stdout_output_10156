@@ -1,0 +1,916 @@
+Command: C:\Users\bogda\.espressif\python_env\idf5.5_py3.13_env\Scripts\python.exe C:/esp/esp-idf\tools/idf_monitor.py -p COM7 -b 115200 --toolchain-prefix xtensa-esp32-elf- --target esp32 --revision 0 C:\Users\bogda\POK\Curiosity_rebirth\esp_camera\build\esp_camera.elf C:\Users\bogda\POK\Curiosity_rebirth\esp_camera\build\bootloader\bootloader.elf --force-color -m 'C:\Users\bogda\.espressif\python_env\idf5.5_py3.13_env\Scripts\python.exe' 'C:/esp/esp-idf\tools\idf.py' '-p' 'COM7'
+ets Jul �ets Jul 29 2019 12:21:46
+
+rst:0x1 (POWERON_RESET),boot:0x1b (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:6380
+ho 0 tail 12 room 4
+load:0x40078000,len:15916
+load:0x40080400,len:3860
+entry 0x40080638
+[0;32mI (29) boot: ESP-IDF v5.5 2nd stage bootloader[0m
+[0;32mI (29) boot: compile time Nov 19 2025 00:08:26[0m
+[0;32mI (29) boot: Multicore bootloader[0m
+[0;32mI (30) boot: chip revision: v3.1[0m
+[0;32mI (33) boot.esp32: SPI Speed      : 40MHz[0m
+[0;32mI (37) boot.esp32: SPI Mode       : DIO[0m
+[0;32mI (40) boot.esp32: SPI Flash Size : 2MB[0m
+[0;32mI (44) boot: Enabling RNG early entropy source...[0m
+[0;32mI (49) boot: Partition Table:[0m
+[0;32mI (51) boot: ## Label            Usage          Type ST Offset   Length[0m
+[0;32mI (57) boot:  0 nvs              WiFi data        01 02 00009000 00004000[0m
+[0;32mI (64) boot:  1 phy_init         RF data          01 01 0000d000 00001000[0m
+[0;32mI (71) boot:  2 otadata          OTA data         01 00 0000e000 00002000[0m
+[0;32mI (77) boot:  3 factory          factory app      00 00 00010000 001f0000[0m
+[0;32mI (84) boot: End of partition table[0m
+[0;32mI (87) boot: Defaulting to factory image[0m
+[0;32mI (91) esp_image: segment 0: paddr=00010020 vaddr=3f400020 size=28d60h (167264) map[0m
+[0;32mI (155) esp_image: segment 1: paddr=00038d88 vaddr=3ff80000 size=00020h (    32) load[0m
+[0;32mI (155) esp_image: segment 2: paddr=00038db0 vaddr=3ffb0000 size=067e0h ( 26592) load[0m
+[0;32mI (169) esp_image: segment 3: paddr=0003f598 vaddr=40080000 size=00a80h (  2688) load[0m
+[0;32mI (170) esp_image: segment 4: paddr=00040020 vaddr=400d0020 size=bac6ch (765036) map[0m
+[0;32mI (435) esp_image: segment 5: paddr=000fac94 vaddr=40080a80 size=1c0c4h (114884) load[0m
+[0;32mI (495) boot: Loaded app from partition at offset 0x10000[0m
+[0;32mI (495) boot: Disabling RNG early entropy source...[0m
+[0;32mI (505) quad_psram: This chip is ESP32-D0WD[0m
+[0;32mI (507) esp_psram: Found 8MB PSRAM device[0m
+[0;32mI (507) esp_psram: Speed: 40MHz[0m
+[0;32mI (507) esp_psram: PSRAM initialized, cache is in low/high (2-core) mode.[0m
+[0;33mW (513) esp_psram: Virtual address not enough for PSRAM, map as much as we can. 4MB is mapped[0m
+[0;32mI (521) cpu_start: Multicore app[0m
+[0;32mI (1429) esp_psram: SPI SRAM memory test OK[0m
+[0;32mI (1437) cpu_start: Pro cpu start user code[0m
+[0;32mI (1437) cpu_start: cpu freq: 160000000 Hz[0m
+[0;32mI (1437) app_init: Application information:[0m
+[0;32mI (1437) app_init: Project name:     esp_camera[0m
+[0;32mI (1441) app_init: App version:      e0ac5ba-dirty[0m
+[0;32mI (1446) app_init: Compile time:     Nov 19 2025 00:06:17[0m
+[0;32mI (1451) app_init: ELF file SHA256:  6bb76c90d...[0m
+[0;32mI (1456) app_init: ESP-IDF:          v5.5[0m
+[0;32mI (1459) efuse_init: Min chip rev:     v0.0[0m
+[0;32mI (1463) efuse_init: Max chip rev:     v3.99 [0m
+[0;32mI (1467) efuse_init: Chip rev:         v3.1[0m
+[0;32mI (1472) heap_init: Initializing. RAM available for dynamic allocation:[0m
+[0;32mI (1478) heap_init: At 3FFAE6E0 len 00001920 (6 KiB): DRAM[0m
+[0;32mI (1483) heap_init: At 3FFBB7F8 len 00024808 (146 KiB): DRAM[0m
+[0;32mI (1488) heap_init: At 3FFE0440 len 00003AE0 (14 KiB): D/IRAM[0m
+[0;32mI (1494) heap_init: At 3FFE4350 len 0001BCB0 (111 KiB): D/IRAM[0m
+[0;32mI (1499) heap_init: At 4009CB44 len 000034BC (13 KiB): IRAM[0m
+[0;32mI (1505) esp_psram: Adding pool of 4096K of PSRAM memory to heap allocator[0m
+[0;32mI (1512) spi_flash: detected chip: generic[0m
+[0;32mI (1515) spi_flash: flash io: dio[0m
+[0;33mW (1518) spi_flash: Detected size(4096k) larger than the size in the binary image header(2048k). Using the size in the binary image header.[0m
+[0;32mI (1531) main_task: Started on CPU0[0m
+[0;32mI (1541) esp_psram: Reserving pool of 32K of internal memory for DMA/internal allocations[0m
+[0;32mI (1541) main_task: Calling app_main()[0m
+[0;32mI (1851) wifi:wifi driver task: 3ffc364c, prio:23, stack:6656, core=0[0m
+[0;32mI (1851) wifi:wifi firmware version: f3dbad7[0m
+[0;32mI (1851) wifi:wifi certification version: v7.0[0m
+[0;32mI (1851) wifi:config NVS flash: enabled[0m
+[0;32mI (1851) wifi:config nano formatting: disabled[0m
+[0;32mI (1861) wifi:Init data frame dynamic rx buffer num: 32[0m
+[0;32mI (1861) wifi:Init static rx mgmt buffer num: 5[0m
+[0;32mI (1871) wifi:Init management short buffer num: 32[0m
+[0;32mI (1871) wifi:Init dynamic tx buffer num: 32[0m
+[0;32mI (1871) wifi:Init static rx buffer size: 1600[0m
+[0;32mI (1881) wifi:Init static rx buffer num: 10[0m
+[0;32mI (1881) wifi:Init dynamic rx buffer num: 32[0m
+[0;32mI (1891) wifi_init: rx ba win: 6[0m
+[0;32mI (1891) wifi_init: accept mbox: 6[0m
+[0;32mI (1891) wifi_init: tcpip mbox: 32[0m
+[0;32mI (1901) wifi_init: udp mbox: 6[0m
+[0;32mI (1901) wifi_init: tcp mbox: 6[0m
+[0;32mI (1901) wifi_init: tcp tx win: 5760[0m
+[0;32mI (1901) wifi_init: tcp rx win: 5760[0m
+[0;32mI (1911) wifi_init: tcp mss: 1440[0m
+[0;32mI (1911) wifi_init: WiFi IRAM OP enabled[0m
+[0;32mI (1911) wifi_init: WiFi RX IRAM OP enabled[0m
+[0;32mI (2181) phy_init: phy_version 4860,6b7a6e5,Feb  6 2025,14:47:07[0m
+[0;33mW (2191) phy_init: failed to load RF calibration data (0x1102), falling back to full calibration[0m
+[0;32mI (2261) phy_init: Saving new calibration data due to checksum failure or outdated calibration data, mode(2)[0m
+[0;32mI (2281) wifi:mode : softAP (c8:2e:18:90:a6:e1)[0m
+[0;32mI (2281) wifi:Total power save buffer number: 16[0m
+[0;32mI (2281) wifi:Init max length of beacon: 752/752[0m
+[0;32mI (2281) wifi:Init max length of beacon: 752/752[0m
+[0;32mI (2291) CAMERA_TEST: AP started. Connect to: http://192.168.4.1/[0m
+[0;32mI (2291) esp_netif_lwip: DHCP server started on interface WIFI_AP_DEF with IP: 192.168.4.1[0m
+[0;32mI (2301) cam_hal: cam init ok[0m
+[0;32mI (2301) sccb-ng: pin_sda 26 pin_scl 27[0m
+[0;32mI (2311) sccb-ng: sccb_i2c_port=1[0m
+[0;32mI (2321) camera: Camera PID=0x26 VER=0x42 MIDL=0x7f MIDH=0xa2[0m
+[0;32mI (2321) camera: Detected OV2640 camera[0m
+[0;32mI (2321) camera: Detected camera at address=0x30[0m
+[0;32mI (2401) cam_hal: PSRAM DMA mode disabled[0m
+[0;32mI (2401) cam_hal: buffer_size: 32768, half_buffer_size: 4096, node_buffer_size: 2048, node_cnt: 16, total_cnt: 23[0m
+[0;32mI (2401) cam_hal: Allocating 96000 Byte frame buffer in PSRAM[0m
+[0;32mI (2411) cam_hal: Allocating 96000 Byte frame buffer in PSRAM[0m
+[0;32mI (2411) cam_hal: cam config ok[0m
+[0;32mI (2411) ov2640: Set PLL: clk_2x: 0, clk_div: 0, pclk_auto: 0, pclk_div: 8[0m
+[0;32mI (2521) CAMERA_SERVER: Camera initialized successfully[0m
+[0;32mI (2521) CAMERA_TEST: Camera OK[0m
+[0;32mI (2521) CAMERA_SERVER: Starting web server on port: 80[0m
+[0;32mI (2521) CAMERA_SERVER: Web server started successfully[0m
+[0;32mI (2521) CAMERA_TEST: WEB OK[0m
+[0;32mI (2531) CAMERA_TEST: READY. Waiting for GPIO commands...[0m
+[0;32mI (2531) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (2541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (2541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (3041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (3041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (3541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (3541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (4041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (4041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (4541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (4541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (5041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (5041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (5541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (5541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (6041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (6041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (6541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (6541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (7041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (7041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (7541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (7541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (8041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (8041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (8541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (8541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (9041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (9041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (9541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (9541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (10041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (10041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (10541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (10541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (11041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (11041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (11541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (11541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (12041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (12041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (12541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (12541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (13041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (13041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (13541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (13541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (14041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (14041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (14541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (14541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (15041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (15041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (15541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (15541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (16041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (16041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (16541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (16541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (17041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (17041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (17541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (17541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (18041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (18041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (18541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (18541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (19041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (19041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (19541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (19541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (20041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (20041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (20541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (20541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (21041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (21041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (21541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (21541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (22041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (22041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (22541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (22541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (23041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (23041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (23541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (23541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (24041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (24041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (24541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (24541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (25041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (25041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (25541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (25541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (26041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (26041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (26541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (26541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (27041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (27041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (27541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (27541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (28041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (28041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (28541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (28541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (29041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (29041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (29541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (29541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (30041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (30041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (30541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (30541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (31041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (31041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (31541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (31541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (32041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (32041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (32541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (32541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (33041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (33041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (33541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (33541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (34041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (34041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (34541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (34541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (35041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (35041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (35541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (35541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (36041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (36041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (36541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (36541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (37041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (37041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (37541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (37541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (38041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (38041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (38541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (38541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (39041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (39041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (39541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (39541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (40041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (40041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (40541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (40541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (41041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (41041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (41541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (41541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (42041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (42041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (42541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (42541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (43041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (43041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (43541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (43541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (44041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (44041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (44541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (44541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (45041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (45041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (45541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (45541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (46041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (46041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (46541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (46541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (47041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (47041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (47541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (47541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (48041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (48041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (48541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (48541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (49041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (49041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (49541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (49541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (50041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (50041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (50541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (50541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (51041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (51041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (51541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (51541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (52041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (52041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (52541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (52541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (53041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (53041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (53541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (53541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (54041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (54041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (54541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (54541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (55041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (55041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (55541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (55541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (56041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (56041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (56541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (56541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (57041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (57041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (57541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (57541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (58041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (58041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (58541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (58541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (59041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (59041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (59541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (59541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (60041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (60041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (60541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (60541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (61041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (61041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (61541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (61541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (62041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (62041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (62541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (62541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (63041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (63041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (63541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (63541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (64041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (64041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (64541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (64541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (65041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (65041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (65541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (65541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (66041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (66041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (66541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (66541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (67041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (67041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (67541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (67541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (68041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (68041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (68541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (68541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (69041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (69041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (69541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (69541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (70041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (70041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (70541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (70541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (71041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (71041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (71541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (71541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (72041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (72041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (72541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (72541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (73041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (73041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (73541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (73541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (73781) wifi:new:<1,1>, old:<1,1>, ap:<1,1>, sta:<255,255>, prof:1, snd_ch_cfg:0x0[0m
+[0;32mI (73781) wifi:station: 30:c9:ab:8b:a0:7d join, AID=1, bgn, 40U[0m
+[0;32mI (74041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (74041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (74541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (74541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (75041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (75041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (75541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (75541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (76041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (76041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (76521) wifi:<ba-add>idx:2 (ifx:1, 30:c9:ab:8b:a0:7d), tid:0, ssn:29, winSize:64[0m
+[0;32mI (76541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (76541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (77041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (77041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (77401) esp_netif_lwip: DHCP server assigned IP to a client, IP is: 192.168.4.2[0m
+[0;32mI (77541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (77541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (78041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (78041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (78541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (78541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (79041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (79041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (79541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (79541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (80041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (80041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (80541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (80541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (81041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (81041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (81541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (81541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (82041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (82041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (82541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (82541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (83041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (83041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (83541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (83541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (84041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (84041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (84541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (84541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (85041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (85041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (85541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (85541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (86041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (86041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (86541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (86541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (87041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (87041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (87541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (87541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (88041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (88041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (88541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (88541) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (89041) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (89041) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (89541) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (89551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (90051) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (90051) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (90551) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (90551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (91051) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (91051) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (91551) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (91551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (92051) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (92051) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (92551) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (92551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (93051) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (93051) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (93551) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (93551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (94051) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (94051) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (94551) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (94551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (95051) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (95051) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (95551) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (95551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (96051) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (96051) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;33mW (96061) httpd_uri: httpd_uri: URI '/favicon.ico' not found[0m
+[0;33mW (96061) httpd_txrx: httpd_resp_send_err: 404 Not Found - Nothing matches the given URI[0m
+[0;32mI (96551) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (96551) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (97051) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (97051) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (97551) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (97551) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (98051) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (98051) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (98551) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (98551) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (99051) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (99051) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (99551) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (99551) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (100051) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (100051) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (100551) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (100551) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (101051) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (101051) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (101551) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (101551) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (102051) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (102051) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (102551) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (102551) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (103051) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (103051) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (103551) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (103551) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (104051) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (104051) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (104551) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (104551) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (105051) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (105051) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (105551) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (105551) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (106051) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (106051) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (106551) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (106551) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (107051) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (107051) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (107551) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (107551) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (108051) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (108051) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (108551) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (108551) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (109051) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (109051) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (109551) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (109551) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (110051) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (110051) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (110551) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (110551) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (111051) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (111051) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (111551) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (111551) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (112051) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (112051) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (112551) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (112551) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (113051) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (113051) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (113551) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (113551) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (114051) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (114051) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (114551) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (114551) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (115051) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (115051) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (115551) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (115551) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (116051) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (116051) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (116551) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (116551) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (117051) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (117051) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (117551) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (117551) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (118051) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (118051) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (118551) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (118551) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (119051) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (119051) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (119551) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (119551) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (120051) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (120051) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (120551) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (120551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (121051) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (121051) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (121551) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (121551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (122051) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (122051) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (122551) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (122551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (123051) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (123051) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (123551) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (123551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (124051) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (124051) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (124551) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (124551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (125051) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (125051) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (125551) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (125551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (126051) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (126051) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (126551) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (126551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (127051) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (127051) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (127551) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (127551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (128051) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (128051) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (128551) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (128551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (129051) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (129051) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (129551) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (129551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (130051) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (130051) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (130551) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (130551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (131051) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (131051) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (131551) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (131551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (132051) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (132051) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (132551) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (132551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (133051) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (133051) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (133551) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (133551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (134051) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (134051) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (134551) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (134551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (135051) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (135051) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (135551) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (135551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (136051) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (136051) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (136551) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (136551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (137051) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (137051) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (137551) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (137551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (138051) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (138051) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (138551) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (138551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (139051) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (139051) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (139551) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (139551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (140051) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (140051) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (140551) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (140551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (141051) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (141051) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (141551) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (141551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (142051) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (142051) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (142551) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (142551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (143051) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (143051) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (143551) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (143551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (144051) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (144051) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (144551) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (144551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (145051) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (145051) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (145551) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (145551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (146051) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (146051) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (146551) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (146551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (147051) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (147051) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (147551) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (147551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (148051) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (148051) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (148551) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (148551) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (149051) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (149051) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (149551) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (149551) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (150061) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (150061) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (150561) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (150561) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (151061) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (151061) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (151561) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (151561) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (152061) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (152061) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (152561) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (152561) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (153061) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (153061) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (153561) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (153561) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (154061) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (154061) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (154561) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (154561) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (155061) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (155061) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (155561) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (155561) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (156061) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (156061) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (156561) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (156561) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (157061) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (157061) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (157561) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (157561) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (158061) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (158061) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (158561) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (158561) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (159061) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (159061) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (159561) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (159561) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (160061) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (160061) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (160561) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (160561) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (161061) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (161061) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (161561) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (161561) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (162061) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (162061) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (162561) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (162561) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (163061) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (163061) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (163561) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (163561) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (164061) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (164061) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (164561) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (164561) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (165061) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (165061) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (165561) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (165561) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (166061) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (166061) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (166561) CAMERA_SERVER: Video streaming stopped[0m
+[0;32mI (166561) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (167061) CAMERA_SERVER: Photo captured: 17430 bytes[0m
+[1;31mE (172081) esp-tls: [sock=57] select() timeout[0m
+[1;31mE (172081) transport_base: Failed to open a new connection: 32774[0m
+[1;31mE (172081) HTTP_CLIENT: Connection failed, sock < 0[0m
+[1;31mE (172081) PHOTO: Failed to send photo: ESP_ERR_HTTP_CONNECT[0m
+[0;32mI (172091) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (172591) CAMERA_SERVER: Photo captured: 17204 bytes[0m
+[1;31mE (177611) esp-tls: [sock=57] select() timeout[0m
+[1;31mE (177611) transport_base: Failed to open a new connection: 32774[0m
+[1;31mE (177611) HTTP_CLIENT: Connection failed, sock < 0[0m
+[1;31mE (177611) PHOTO: Failed to send photo: ESP_ERR_HTTP_CONNECT[0m
+[0;32mI (177621) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (178121) CAMERA_SERVER: Photo captured: 14756 bytes[0m
+[1;31mE (183131) esp-tls: [sock=57] select() timeout[0m
+[1;31mE (183131) transport_base: Failed to open a new connection: 32774[0m
+[1;31mE (183131) HTTP_CLIENT: Connection failed, sock < 0[0m
+[1;31mE (183131) PHOTO: Failed to send photo: ESP_ERR_HTTP_CONNECT[0m
+[0;32mI (183141) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (183641) CAMERA_SERVER: Photo captured: 15327 bytes[0m
+[1;31mE (188651) esp-tls: [sock=57] select() timeout[0m
+[1;31mE (188651) transport_base: Failed to open a new connection: 32774[0m
+[1;31mE (188651) HTTP_CLIENT: Connection failed, sock < 0[0m
+[1;31mE (188651) PHOTO: Failed to send photo: ESP_ERR_HTTP_CONNECT[0m
+[0;32mI (188661) CAMERA_TEST: CAMERA STATUS: Camera ready[0m
+[0;32mI (189161) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (189161) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (189661) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (189661) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (190161) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (190161) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (190661) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (190661) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (191161) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (191161) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (191661) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (191661) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (192161) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (192161) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (192661) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (192661) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (193161) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (193161) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (193661) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (193661) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (194161) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (194161) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (194661) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (194661) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (195161) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (195161) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (195661) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (195661) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (196161) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (196161) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (196661) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (196661) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (197161) CAMERA_SERVER: Photo captured: 15169 bytes[0m
+[1;31mE (202171) esp-tls: [sock=57] select() timeout[0m
+[1;31mE (202171) transport_base: Failed to open a new connection: 32774[0m
+[1;31mE (202171) HTTP_CLIENT: Connection failed, sock < 0[0m
+[1;31mE (202171) PHOTO: Failed to send photo: ESP_ERR_HTTP_CONNECT[0m
+[0;32mI (202181) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (202681) CAMERA_SERVER: Photo captured: 15185 bytes[0m
+[1;31mE (207691) esp-tls: [sock=57] select() timeout[0m
+[1;31mE (207691) transport_base: Failed to open a new connection: 32774[0m
+[1;31mE (207691) HTTP_CLIENT: Connection failed, sock < 0[0m
+[1;31mE (207691) PHOTO: Failed to send photo: ESP_ERR_HTTP_CONNECT[0m
+[0;32mI (207701) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (208201) CAMERA_SERVER: Photo captured: 16136 bytes[0m
+[1;31mE (213211) esp-tls: [sock=57] select() timeout[0m
+[1;31mE (213211) transport_base: Failed to open a new connection: 32774[0m
+[1;31mE (213211) HTTP_CLIENT: Connection failed, sock < 0[0m
+[1;31mE (213211) PHOTO: Failed to send photo: ESP_ERR_HTTP_CONNECT[0m
+[0;32mI (213221) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (213721) CAMERA_SERVER: Photo captured: 16102 bytes[0m
+[1;31mE (218731) esp-tls: [sock=57] select() timeout[0m
+[1;31mE (218731) transport_base: Failed to open a new connection: 32774[0m
+[1;31mE (218731) HTTP_CLIENT: Connection failed, sock < 0[0m
+[1;31mE (218731) PHOTO: Failed to send photo: ESP_ERR_HTTP_CONNECT[0m
+[0;32mI (218741) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (219241) CAMERA_SERVER: Photo captured: 16094 bytes[0m
+[1;31mE (224251) esp-tls: [sock=57] select() timeout[0m
+[1;31mE (224251) transport_base: Failed to open a new connection: 32774[0m
+[1;31mE (224251) HTTP_CLIENT: Connection failed, sock < 0[0m
+[1;31mE (224251) PHOTO: Failed to send photo: ESP_ERR_HTTP_CONNECT[0m
+[0;32mI (224261) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (224761) CAMERA_SERVER: Photo captured: 16285 bytes[0m
+[1;31mE (229771) esp-tls: [sock=57] select() timeout[0m
+[1;31mE (229771) transport_base: Failed to open a new connection: 32774[0m
+[1;31mE (229771) HTTP_CLIENT: Connection failed, sock < 0[0m
+[1;31mE (229771) PHOTO: Failed to send photo: ESP_ERR_HTTP_CONNECT[0m
+[0;32mI (229781) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (230281) CAMERA_SERVER: Photo captured: 16179 bytes[0m
+[1;31mE (235291) esp-tls: [sock=57] select() timeout[0m
+[1;31mE (235291) transport_base: Failed to open a new connection: 32774[0m
+[1;31mE (235291) HTTP_CLIENT: Connection failed, sock < 0[0m
+[1;31mE (235291) PHOTO: Failed to send photo: ESP_ERR_HTTP_CONNECT[0m
+[0;32mI (235301) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (235801) CAMERA_SERVER: Photo captured: 16323 bytes[0m
+[1;31mE (240811) esp-tls: [sock=57] select() timeout[0m
+[1;31mE (240811) transport_base: Failed to open a new connection: 32774[0m
+[1;31mE (240811) HTTP_CLIENT: Connection failed, sock < 0[0m
+[1;31mE (240811) PHOTO: Failed to send photo: ESP_ERR_HTTP_CONNECT[0m
+[0;32mI (240821) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (241371) CAMERA_SERVER: Photo captured: 15956 bytes[0m
+[1;31mE (246391) esp-tls: [sock=57] select() timeout[0m
+[1;31mE (246391) transport_base: Failed to open a new connection: 32774[0m
+[1;31mE (246391) HTTP_CLIENT: Connection failed, sock < 0[0m
+[1;31mE (246391) PHOTO: Failed to send photo: ESP_ERR_HTTP_CONNECT[0m
+[0;32mI (246401) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (246971) CAMERA_SERVER: Photo captured: 15349 bytes[0m
+[1;31mE (251991) esp-tls: [sock=57] select() timeout[0m
+[1;31mE (251991) transport_base: Failed to open a new connection: 32774[0m
+[1;31mE (251991) HTTP_CLIENT: Connection failed, sock < 0[0m
+[1;31mE (251991) PHOTO: Failed to send photo: ESP_ERR_HTTP_CONNECT[0m
+[0;32mI (252001) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (252651) CAMERA_SERVER: Photo captured: 15128 bytes[0m
+[1;31mE (257671) esp-tls: [sock=57] select() timeout[0m
+[1;31mE (257671) transport_base: Failed to open a new connection: 32774[0m
+[1;31mE (257671) HTTP_CLIENT: Connection failed, sock < 0[0m
+[1;31mE (257671) PHOTO: Failed to send photo: ESP_ERR_HTTP_CONNECT[0m
+[0;32mI (257681) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (258571) CAMERA_SERVER: Photo captured: 15455 bytes[0m
+[1;31mE (263591) esp-tls: [sock=57] select() timeout[0m
+[1;31mE (263591) transport_base: Failed to open a new connection: 32774[0m
+[1;31mE (263591) HTTP_CLIENT: Connection failed, sock < 0[0m
+[1;31mE (263591) PHOTO: Failed to send photo: ESP_ERR_HTTP_CONNECT[0m
+[0;32mI (263601) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (264721) CAMERA_SERVER: Photo captured: 15292 bytes[0m
+[1;31mE (269751) esp-tls: [sock=57] select() timeout[0m
+[1;31mE (269751) transport_base: Failed to open a new connection: 32774[0m
+[1;31mE (269751) HTTP_CLIENT: Connection failed, sock < 0[0m
+[1;31mE (269751) PHOTO: Failed to send photo: ESP_ERR_HTTP_CONNECT[0m
+[0;32mI (269761) CAMERA_TEST: CAMERA STATUS: Streaming active[0m
+[0;32mI (271281) CAMERA_SERVER: Photo captured: 15151 bytes[0m
