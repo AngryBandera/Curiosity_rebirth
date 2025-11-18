@@ -1,0 +1,34 @@
+Command: cmake -G Ninja -DPYTHON_DEPS_CHECKED=1 -DPYTHON=C:\Users\bogda\.espressif\python_env\idf5.5_py3.13_env\Scripts\python.exe -DESP_PLATFORM=1 -DCCACHE_ENABLE=1 C:\Users\bogda\POK\Curiosity_rebirth\esp_camera
+-- Found Git: C:/Program Files/Git/cmd/git.exe (found version "2.45.1.windows.1")
+-- Minimal build - OFF
+-- ccache will be used for faster recompilation
+-- The C compiler identification is GNU 14.2.0
+-- The CXX compiler identification is GNU 14.2.0
+-- The ASM compiler identification is GNU
+-- Found assembler: C:/Users/bogda/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/xtensa-esp32-elf-gcc.exe
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: C:/Users/bogda/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/xtensa-esp32-elf-gcc.exe - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: C:/Users/bogda/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20241119/xtensa-esp-elf/bin/xtensa-esp32-elf-g++.exe - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Building ESP-IDF components for target esp32
+NOTICE: Processing 3 dependencies:
+NOTICE: [1/3] espressif/esp32-camera (2.1.4)
+NOTICE: [2/3] espressif/esp_jpeg (1.3.1)
+NOTICE: [3/3] idf (5.5.0)
+-- Building FULL_CAM project
+-- Project sdkconfig file C:/Users/bogda/POK/Curiosity_rebirth/esp_camera/sdkconfig
+-- Compiler supported targets: xtensa-esp-elf
+-- Found Python3: C:/Users/bogda/.espressif/python_env/idf5.5_py3.13_env/Scripts/python.exe (found version "3.13.9") found components: Interpreter
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+-- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Success
+-- Found Threads: TRUE
+-- Performing Test C_COMPILER_SUPPORTS_WFORMAT_SIGNEDNESS
+-- Performing Test C_COMPILER_SUPPORTS_WFORMAT_SIGNEDNESS - Success
+-- USING O3
+-- App "esp_camera" version: 2b2ce3c
