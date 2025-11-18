@@ -81,6 +81,7 @@ extern "C" void app_main(void)
 
 
     // ---------- MAIN LOOP ----------
+    startVideoStream();
     while (true) {
         uint8_t command = get_pins_status(&pins);
 
