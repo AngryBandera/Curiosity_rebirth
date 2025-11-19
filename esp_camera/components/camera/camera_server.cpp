@@ -306,16 +306,18 @@ esp_err_t handleCaptureRequest(httpd_req_t *req) {
     // Встановлюємо флаг для стріму
     requestCaptureFromStream();
     
-    // Чекаємо поки стрім зробить фото (максимум 5 секунд)
-    int timeout_ms = 5000;
+    // Чекаємо поки стрім зробить фото (максимум 3 секунди)
+    // Використовуємо коротші інтервали для кращої реакції
+    int timeout_ms = 3000;
     int waited_ms = 0;
     while (!isCaptureReady() && waited_ms < timeout_ms) {
-        vTaskDelay(pdMS_TO_TICKS(50));
-        waited_ms += 50;
+        vTaskDelay(pdMS_TO_TICKS(10)); // Коротша затримка
+        waited_ms += 10;
     }
     
     if (!isCaptureReady()) {
-        ESP_LOGE(TAG, "Capture timeout");
+        ESP_LOGE(TAG, "Capture timeout after %dms", waited_ms);
+        capture_request_flag = false; // Скидаємо флаг
         httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Capture timeout");
         return ESP_FAIL;
     }
@@ -323,21 +325,29 @@ esp_err_t handleCaptureRequest(httpd_req_t *req) {
     // Отримуємо готове фото
     photo_data_t photo = getCapturedPhoto();
     
-    if (!photo.buffer) {
+    if (!photo.buffer || photo.length == 0) {
         ESP_LOGE(TAG, "No captured photo available");
         httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "No photo available");
         return ESP_FAIL;
     }
     
+    ESP_LOGI(TAG, "Sending captured photo: %d bytes", photo.length);
+    
     // Відправляємо фото
     httpd_resp_set_type(req, "image/jpeg");
     httpd_resp_set_hdr(req, "Content-Disposition", "inline; filename=capture.jpg");
+    httpd_resp_set_hdr(req, "Cache-Control", "no-cache, no-store, must-revalidate");
     esp_err_t res = httpd_resp_send(req, (const char*)photo.buffer, photo.length);
     
     // Звільняємо буфер
     free(photo.buffer);
     
-    ESP_LOGI(TAG, "Photo sent successfully");
+    if (res == ESP_OK) {
+        ESP_LOGI(TAG, "Photo sent successfully");
+    } else {
+        ESP_LOGE(TAG, "Failed to send photo, error: %d", res);
+    }
+    
     return res;
 }
 
@@ -347,8 +357,11 @@ esp_err_t handleStreamRequest(httpd_req_t* req) {
     
     httpd_resp_set_type(req, "multipart/x-mixed-replace; boundary=frame");
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    httpd_resp_set_hdr(req, "Cache-Control", "no-cache, no-store, must-revalidate");
 
     ESP_LOGI(TAG, "Stream started");
+    
+    uint32_t frame_count = 0;
     
     while (streaming_active) {
         // Отримуємо frame
@@ -359,14 +372,15 @@ esp_err_t handleStreamRequest(httpd_req_t* req) {
             continue;
         }
 
-        // Перевіряємо чи потрібен capture
+        // Перевіряємо чи потрібен capture ПЕРЕД відправкою кадру
         if (capture_request_flag) {
-            ESP_LOGI(TAG, "Processing capture request in stream");
+            ESP_LOGI(TAG, "Processing capture request in stream (frame %lu)", frame_count);
             
             if (xSemaphoreTake(capture_mutex, pdMS_TO_TICKS(100))) {
                 // Звільняємо старе фото якщо є
                 if (captured_photo.buffer != NULL) {
                     free(captured_photo.buffer);
+                    captured_photo.buffer = NULL;
                 }
                 
                 // Зберігаємо поточний кадр
@@ -375,13 +389,16 @@ esp_err_t handleStreamRequest(httpd_req_t* req) {
                     memcpy(captured_photo.buffer, fb->buf, fb->len);
                     captured_photo.length = fb->len;
                     capture_ready = true;
-                    ESP_LOGI(TAG, "Photo captured in stream: %d bytes", captured_photo.length);
+                    capture_request_flag = false;
+                    ESP_LOGI(TAG, "✓ Photo captured in stream: %d bytes", captured_photo.length);
                 } else {
-                    ESP_LOGE(TAG, "Failed to allocate memory for capture");
+                    ESP_LOGE(TAG, "✗ Failed to allocate memory for capture");
+                    capture_request_flag = false;
                 }
                 
-                capture_request_flag = false;
                 xSemaphoreGive(capture_mutex);
+            } else {
+                ESP_LOGW(TAG, "Could not take mutex for capture");
             }
         }
 
@@ -392,27 +409,35 @@ esp_err_t handleStreamRequest(httpd_req_t* req) {
                            fb->len);
 
         if (httpd_resp_send_chunk(req, header, len) != ESP_OK) {
+            ESP_LOGW(TAG, "Failed to send frame header");
             esp_camera_fb_return(fb);
+            res = ESP_FAIL;
             break;
         }
         
         if (httpd_resp_send_chunk(req, (const char*)fb->buf, fb->len) != ESP_OK) {
+            ESP_LOGW(TAG, "Failed to send frame data");
             esp_camera_fb_return(fb);
+            res = ESP_FAIL;
             break;
         }
         
         if (httpd_resp_send_chunk(req, "\r\n", 2) != ESP_OK) {
+            ESP_LOGW(TAG, "Failed to send frame footer");
             esp_camera_fb_return(fb);
+            res = ESP_FAIL;
             break;
         }
 
         esp_camera_fb_return(fb);
+        frame_count++;
         
         // ВАЖЛИВО: Невелика затримка для можливості обробки інших запитів
-        vTaskDelay(pdMS_TO_TICKS(30)); // ~33fps
+        // Це дозволяє HTTP серверу обробляти інші підключення
+        vTaskDelay(pdMS_TO_TICKS(40)); // ~25fps, більше часу для інших задач
     }
 
-    ESP_LOGI(TAG, "Stream ended");
+    ESP_LOGI(TAG, "Stream ended after %lu frames", frame_count);
     return res;
 }
 
@@ -437,10 +462,11 @@ bool initWebServer(uint16_t port) {
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.server_port = port;
     config.ctrl_port = 32768;
-    config.max_open_sockets = 7;
+    config.max_open_sockets = 7;  // Достатньо для стріму + capture
     config.max_uri_handlers = 8;
     config.task_priority = 5;
-    config.stack_size = 8192; // Збільшено для стабільності
+    config.stack_size = 8192;
+    config.lru_purge_enable = true; // Автоматичне закриття старих з'єднань
 
     ESP_LOGI(TAG, "Starting web server on port: %d", port);
 
@@ -482,6 +508,7 @@ bool initWebServer(uint16_t port) {
     httpd_register_uri_handler(server, &status_uri);
 
     ESP_LOGI(TAG, "Web server started successfully");
+    ESP_LOGI(TAG, "Endpoints: / (UI), /stream (MJPEG), /capture (JPEG), /status (JSON)");
     return true;
 }
 

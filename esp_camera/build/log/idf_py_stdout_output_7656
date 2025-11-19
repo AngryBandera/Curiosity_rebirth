@@ -1,0 +1,383 @@
+Command: C:\Users\bogda\.espressif\python_env\idf5.5_py3.13_env\Scripts\python.exe C:/esp/esp-idf\tools/idf_monitor.py -p COM7 -b 115200 --toolchain-prefix xtensa-esp32-elf- --target esp32 --revision 0 C:\Users\bogda\POK\Curiosity_rebirth\esp_camera\build\esp_camera.elf C:\Users\bogda\POK\Curiosity_rebirth\esp_camera\build\bootloader\bootloader.elf --force-color -m 'C:\Users\bogda\.espressif\python_env\idf5.5_py3.13_env\Scripts\python.exe' 'C:/esp/esp-idf\tools\idf.py' '-p' 'COM7'
+ets Jul 2ets Jul 29 2019 12:21:46
+
+rst:0x1 (POWERON_RESET),boot:0x1b (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:6380
+ho 0 tail 12 room 4
+load:0x40078000,len:15916
+load:0x40080400,len:3860
+entry 0x40080638
+[0;32mI (29) boot: ESP-IDF v5.5 2nd stage bootloader[0m
+[0;32mI (29) boot: compile time Nov 19 2025 14:46:13[0m
+[0;32mI (29) boot: Multicore bootloader[0m
+[0;32mI (30) boot: chip revision: v3.1[0m
+[0;32mI (33) boot.esp32: SPI Speed      : 40MHz[0m
+[0;32mI (37) boot.esp32: SPI Mode       : DIO[0m
+[0;32mI (40) boot.esp32: SPI Flash Size : 2MB[0m
+[0;32mI (44) boot: Enabling RNG early entropy source...[0m
+[0;32mI (49) boot: Partition Table:[0m
+[0;32mI (51) boot: ## Label            Usage          Type ST Offset   Length[0m
+[0;32mI (57) boot:  0 nvs              WiFi data        01 02 00009000 00004000[0m
+[0;32mI (64) boot:  1 phy_init         RF data          01 01 0000d000 00001000[0m
+[0;32mI (71) boot:  2 otadata          OTA data         01 00 0000e000 00002000[0m
+[0;32mI (77) boot:  3 factory          factory app      00 00 00010000 001f0000[0m
+[0;32mI (84) boot: End of partition table[0m
+[0;32mI (87) boot: Defaulting to factory image[0m
+[0;32mI (91) esp_image: segment 0: paddr=00010020 vaddr=3f400020 size=25838h (153656) map[0m
+[0;32mI (150) esp_image: segment 1: paddr=00035860 vaddr=3ff80000 size=00020h (    32) load[0m
+[0;32mI (151) esp_image: segment 2: paddr=00035888 vaddr=3ffb0000 size=067c0h ( 26560) load[0m
+[0;32mI (164) esp_image: segment 3: paddr=0003c050 vaddr=40080000 size=03fc8h ( 16328) load[0m
+[0;32mI (171) esp_image: segment 4: paddr=00040020 vaddr=400d0020 size=a5f0ch (679692) map[0m
+[0;32mI (403) esp_image: segment 5: paddr=000e5f34 vaddr=40083fc8 size=18a98h (101016) load[0m
+[0;32mI (457) boot: Loaded app from partition at offset 0x10000[0m
+[0;32mI (457) boot: Disabling RNG early entropy source...[0m
+[0;32mI (468) quad_psram: This chip is ESP32-D0WD[0m
+[0;32mI (469) esp_psram: Found 8MB PSRAM device[0m
+[0;32mI (469) esp_psram: Speed: 40MHz[0m
+[0;32mI (469) esp_psram: PSRAM initialized, cache is in low/high (2-core) mode.[0m
+[0;33mW (475) esp_psram: Virtual address not enough for PSRAM, map as much as we can. 4MB is mapped[0m
+[0;32mI (483) cpu_start: Multicore app[0m
+[0;32mI (1391) esp_psram: SPI SRAM memory test OK[0m
+[0;32mI (1399) cpu_start: Pro cpu start user code[0m
+[0;32mI (1400) cpu_start: cpu freq: 160000000 Hz[0m
+[0;32mI (1400) app_init: Application information:[0m
+[0;32mI (1400) app_init: Project name:     esp_camera[0m
+[0;32mI (1404) app_init: App version:      08231b5-dirty[0m
+[0;32mI (1409) app_init: Compile time:     Nov 19 2025 14:45:25[0m
+[0;32mI (1414) app_init: ELF file SHA256:  7cdd32274...[0m
+[0;32mI (1418) app_init: ESP-IDF:          v5.5[0m
+[0;32mI (1422) efuse_init: Min chip rev:     v0.0[0m
+[0;32mI (1426) efuse_init: Max chip rev:     v3.99 [0m
+[0;32mI (1430) efuse_init: Chip rev:         v3.1[0m
+[0;32mI (1434) heap_init: Initializing. RAM available for dynamic allocation:[0m
+[0;32mI (1440) heap_init: At 3FFAE6E0 len 00001920 (6 KiB): DRAM[0m
+[0;32mI (1445) heap_init: At 3FFBB210 len 00024DF0 (147 KiB): DRAM[0m
+[0;32mI (1451) heap_init: At 3FFE0440 len 00003AE0 (14 KiB): D/IRAM[0m
+[0;32mI (1456) heap_init: At 3FFE4350 len 0001BCB0 (111 KiB): D/IRAM[0m
+[0;32mI (1462) heap_init: At 4009CA60 len 000035A0 (13 KiB): IRAM[0m
+[0;32mI (1468) esp_psram: Adding pool of 4096K of PSRAM memory to heap allocator[0m
+[0;32mI (1475) spi_flash: detected chip: generic[0m
+[0;32mI (1478) spi_flash: flash io: dio[0m
+[0;33mW (1481) spi_flash: Detected size(4096k) larger than the size in the binary image header(2048k). Using the size in the binary image header.[0m
+[0;32mI (1494) main_task: Started on CPU0[0m
+[0;32mI (1504) esp_psram: Reserving pool of 32K of internal memory for DMA/internal allocations[0m
+[0;32mI (1504) main_task: Calling app_main()[0m
+[0;32mI (1544) wifi:wifi driver task: 3ffc3230, prio:23, stack:6656, core=0[0m
+[0;32mI (1554) wifi:wifi firmware version: f3dbad7[0m
+[0;32mI (1554) wifi:wifi certification version: v7.0[0m
+[0;32mI (1554) wifi:config NVS flash: enabled[0m
+[0;32mI (1554) wifi:config nano formatting: disabled[0m
+[0;32mI (1554) wifi:Init data frame dynamic rx buffer num: 32[0m
+[0;32mI (1564) wifi:Init static rx mgmt buffer num: 5[0m
+[0;32mI (1564) wifi:Init management short buffer num: 32[0m
+[0;32mI (1574) wifi:Init dynamic tx buffer num: 32[0m
+[0;32mI (1574) wifi:Init static rx buffer size: 1600[0m
+[0;32mI (1574) wifi:Init static rx buffer num: 10[0m
+[0;32mI (1584) wifi:Init dynamic rx buffer num: 32[0m
+[0;32mI (1584) wifi_init: rx ba win: 6[0m
+[0;32mI (1584) wifi_init: accept mbox: 6[0m
+[0;32mI (1594) wifi_init: tcpip mbox: 32[0m
+[0;32mI (1594) wifi_init: udp mbox: 6[0m
+[0;32mI (1594) wifi_init: tcp mbox: 6[0m
+[0;32mI (1604) wifi_init: tcp tx win: 5760[0m
+[0;32mI (1604) wifi_init: tcp rx win: 5760[0m
+[0;32mI (1604) wifi_init: tcp mss: 1440[0m
+[0;32mI (1614) wifi_init: WiFi IRAM OP enabled[0m
+[0;32mI (1614) wifi_init: WiFi RX IRAM OP enabled[0m
+[0;32mI (1624) phy_init: phy_version 4860,6b7a6e5,Feb  6 2025,14:47:07[0m
+[0;32mI (1694) wifi:mode : softAP (c8:2e:18:90:a6:e1)[0m
+[0;32mI (1704) wifi:Total power save buffer number: 16[0m
+[0;32mI (1704) wifi:Init max length of beacon: 752/752[0m
+[0;32mI (1704) wifi:Init max length of beacon: 752/752[0m
+[0;32mI (1704) CAMERA_TEST: WiFi AP started. SSID: ESP32_CAM_AP, Password: 12345678[0m
+[0;32mI (1714) esp_netif_lwip: DHCP server started on interface WIFI_AP_DEF with IP: 192.168.4.1[0m
+[0;32mI (1724) cam_hal: cam init ok[0m
+[0;32mI (1724) sccb-ng: pin_sda 26 pin_scl 27[0m
+[0;32mI (1724) sccb-ng: sccb_i2c_port=1[0m
+[0;32mI (1744) camera: Camera PID=0x26 VER=0x42 MIDL=0x7f MIDH=0xa2[0m
+[0;32mI (1744) camera: Detected OV2640 camera[0m
+[0;32mI (1744) camera: Detected camera at address=0x30[0m
+[0;32mI (1824) cam_hal: PSRAM DMA mode disabled[0m
+[0;32mI (1824) cam_hal: buffer_size: 32768, half_buffer_size: 4096, node_buffer_size: 2048, node_cnt: 16, total_cnt: 23[0m
+[0;32mI (1824) cam_hal: Allocating 96000 Byte frame buffer in PSRAM[0m
+[0;32mI (1824) cam_hal: Allocating 96000 Byte frame buffer in PSRAM[0m
+[0;32mI (1834) cam_hal: cam config ok[0m
+[0;32mI (1834) ov2640: Set PLL: clk_2x: 0, clk_div: 0, pclk_auto: 0, pclk_div: 8[0m
+[0;32mI (1944) CAMERA_SERVER: Camera initialized successfully[0m
+[0;32mI (1944) CAMERA_TEST: ✅ Camera initialized successfully[0m
+[0;32mI (1944) CAMERA_SERVER: Starting web server on port: 80[0m
+[0;32mI (1944) CAMERA_SERVER: Web server started successfully[0m
+[0;32mI (1954) CAMERA_TEST: Web server started. Connect to: http://192.168.4.1/[0m
+[0;32mI (1954) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (3964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (5964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (7964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (9964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (11964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (12884) wifi:new:<1,1>, old:<1,1>, ap:<1,1>, sta:<255,255>, prof:1, snd_ch_cfg:0x0[0m
+[0;32mI (12894) wifi:station: 30:c9:ab:8b:a0:7d join, AID=1, bgn, 40U[0m
+[0;32mI (13964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (15374) esp_netif_lwip: DHCP server assigned IP to a client, IP is: 192.168.4.2[0m
+[0;32mI (15964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (16764) wifi:<ba-add>idx:2 (ifx:1, 30:c9:ab:8b:a0:7d), tid:0, ssn:55, winSize:64[0m
+[0;32mI (17964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (19964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (21964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (23964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (24894) CAMERA_SERVER: Stream started[0m
+[0;32mI (25964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (27964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (29964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (31964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (33964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (35964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (37964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (39964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (41964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (43964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (45964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (47964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (49964) CAMERA_TEST: Status: Streaming active[0m
+[0;33mW (51784) httpd_txrx: httpd_sock_err: error in send : 104[0m
+[0;32mI (51784) CAMERA_SERVER: Stream ended[0m
+[0;33mW (51784) httpd_txrx: httpd_sock_err: error in recv : 104[0m
+[0;32mI (51794) CAMERA_SERVER: Capture request received[0m
+[0;32mI (51804) CAMERA_SERVER: Capture requested from stream[0m
+[0;32mI (51964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (53964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (55964) CAMERA_TEST: Status: Streaming active[0m
+[1;31mE (56804) CAMERA_SERVER: Capture timeout[0m
+[0;33mW (56804) httpd_txrx: httpd_resp_send_err: 500 Internal Server Error - Capture timeout[0m
+[0;33mW (56804) httpd_uri: httpd_uri: uri handler execution failed[0m
+[0;32mI (56824) CAMERA_SERVER: Capture request received[0m
+[0;32mI (56824) CAMERA_SERVER: Capture requested from stream[0m
+[0;32mI (57964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (59964) CAMERA_TEST: Status: Streaming active[0m
+[1;31mE (61824) CAMERA_SERVER: Capture timeout[0m
+[0;33mW (61824) httpd_txrx: httpd_resp_send_err: 500 Internal Server Error - Capture timeout[0m
+[0;33mW (61824) httpd_uri: httpd_uri: uri handler execution failed[0m
+[0;32mI (61854) CAMERA_SERVER: Capture request received[0m
+[0;32mI (61854) CAMERA_SERVER: Capture requested from stream[0m
+[0;32mI (61964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (63964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (65964) CAMERA_TEST: Status: Streaming active[0m
+[1;31mE (66854) CAMERA_SERVER: Capture timeout[0m
+[0;33mW (66854) httpd_txrx: httpd_resp_send_err: 500 Internal Server Error - Capture timeout[0m
+[0;33mW (66854) httpd_uri: httpd_uri: uri handler execution failed[0m
+[0;32mI (66884) CAMERA_SERVER: Capture request received[0m
+[0;32mI (66884) CAMERA_SERVER: Capture requested from stream[0m
+[0;32mI (67964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (69964) CAMERA_TEST: Status: Streaming active[0m
+[1;31mE (71884) CAMERA_SERVER: Capture timeout[0m
+[0;33mW (71884) httpd_txrx: httpd_resp_send_err: 500 Internal Server Error - Capture timeout[0m
+[0;33mW (71884) httpd_uri: httpd_uri: uri handler execution failed[0m
+[0;32mI (71964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (73964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (75964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (77964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (79964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (81964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (83964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (85964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (87964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (89964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (91964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (92484) CAMERA_SERVER: Stream started[0m
+[0;32mI (92484) CAMERA_SERVER: Processing capture request in stream[0m
+[0;32mI (92494) CAMERA_SERVER: Photo captured in stream: 27302 bytes[0m
+[0;32mI (93964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (95964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (97964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (99964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (101964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (103964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (105964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (107964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (109964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (111964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (113964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (115964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (117964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (119964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (121964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (123964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (125964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (127964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (129964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (131964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (133964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (135964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (137964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (139964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (141964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (143964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (145964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (147964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (149964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (151964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (153964) CAMERA_TEST: Status: Streaming active[0m
+[0;33mW (154804) httpd_txrx: httpd_sock_err: error in send : 104[0m
+[0;32mI (154804) CAMERA_SERVER: Stream ended[0m
+[0;33mW (154804) httpd_txrx: httpd_sock_err: error in recv : 104[0m
+[0;32mI (154804) CAMERA_SERVER: Capture request received[0m
+[0;32mI (154804) CAMERA_SERVER: Capture requested from stream[0m
+[0;32mI (155964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (157964) CAMERA_TEST: Status: Streaming active[0m
+[1;31mE (159814) CAMERA_SERVER: Capture timeout[0m
+[0;33mW (159814) httpd_txrx: httpd_resp_send_err: 500 Internal Server Error - Capture timeout[0m
+[0;33mW (159814) httpd_txrx: httpd_sock_err: error in send : 104[0m
+[1;31mE (159814) httpd_txrx: httpd_resp_send_err: error calling setsockopt : 22[0m
+[0;33mW (159824) httpd_uri: httpd_uri: uri handler execution failed[0m
+[0;33mW (159844) httpd_txrx: httpd_sock_err: error in recv : 104[0m
+[0;33mW (159854) httpd_txrx: httpd_sock_err: error in send : 104[0m
+[0;33mW (159864) httpd_uri: httpd_uri: uri handler execution failed[0m
+[0;33mW (159864) httpd_txrx: httpd_sock_err: error in recv : 104[0m
+[0;33mW (159874) httpd_txrx: httpd_sock_err: error in recv : 104[0m
+[0;32mI (159964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (160044) CAMERA_SERVER: Capture request received[0m
+[0;32mI (160044) CAMERA_SERVER: Capture requested from stream[0m
+[0;32mI (161964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (163964) CAMERA_TEST: Status: Streaming active[0m
+[1;31mE (165044) CAMERA_SERVER: Capture timeout[0m
+[0;33mW (165044) httpd_txrx: httpd_resp_send_err: 500 Internal Server Error - Capture timeout[0m
+[0;33mW (165044) httpd_uri: httpd_uri: uri handler execution failed[0m
+[0;32mI (165964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (167964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (169964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (171964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (173964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (175964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (177964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (179964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (180074) CAMERA_SERVER: Stream started[0m
+[0;32mI (180074) CAMERA_SERVER: Processing capture request in stream[0m
+[0;32mI (180084) CAMERA_SERVER: Photo captured in stream: 40481 bytes[0m
+[0;32mI (181964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (183964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (185964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (187964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (188384) wifi:[ADDBA]RX DELBA, reason:39, delete tid:0, initiator:1(originator)[0m
+[0;32mI (188384) wifi:<ba-del>idx:2, tid:0[0m
+[0;32mI (188384) wifi:[ADDBA]RX DELBA, reason:39, delete tid:0, initiator:0(recipient)[0m
+[0;32mI (188394) wifi:station: 30:c9:ab:8b:a0:7d leave, AID = 1, reason = 8, bss_flags is 756835, bss:0x3ffcf560[0m
+[0;32mI (188404) wifi:new:<1,0>, old:<1,1>, ap:<1,1>, sta:<255,255>, prof:1, snd_ch_cfg:0x0[0m
+[0;32mI (189404) wifi:new:<1,1>, old:<1,0>, ap:<1,1>, sta:<255,255>, prof:1, snd_ch_cfg:0x0[0m
+[0;32mI (189404) wifi:station: 30:c9:ab:8b:a0:7d join, AID=1, bgn, 40U[0m
+[0;32mI (189464) esp_netif_lwip: DHCP server assigned IP to a client, IP is: 192.168.4.2[0m
+[0;32mI (189964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (191964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (193264) wifi:<ba-add>idx:2 (ifx:1, 30:c9:ab:8b:a0:7d), tid:0, ssn:391, winSize:64[0m
+[0;32mI (193964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (195964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (197964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (199964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (201964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (203964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (204814) wifi:[ADDBA]RX DELBA, reason:39, delete tid:0, initiator:1(originator)[0m
+[0;32mI (204814) wifi:<ba-del>idx:2, tid:0[0m
+[0;32mI (204814) wifi:[ADDBA]RX DELBA, reason:39, delete tid:0, initiator:0(recipient)[0m
+[0;32mI (204824) wifi:station: 30:c9:ab:8b:a0:7d leave, AID = 1, reason = 8, bss_flags is 756835, bss:0x3ffcf560[0m
+[0;32mI (204834) wifi:new:<1,0>, old:<1,1>, ap:<1,1>, sta:<255,255>, prof:1, snd_ch_cfg:0x0[0m
+[0;32mI (205964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (207964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (209964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (211964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (213964) CAMERA_TEST: Status: Streaming active[0m
+[0;33mW (215404) httpd_txrx: httpd_sock_err: error in send : 11[0m
+[0;32mI (215404) CAMERA_SERVER: Stream ended[0m
+[0;32mI (215404) CAMERA_SERVER: Capture request received[0m
+[0;32mI (215404) CAMERA_SERVER: Capture requested from stream[0m
+[0;32mI (215964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (217914) wifi:new:<1,1>, old:<1,0>, ap:<1,1>, sta:<255,255>, prof:1, snd_ch_cfg:0x0[0m
+[0;32mI (217914) wifi:station: 30:c9:ab:8b:a0:7d join, AID=1, bgn, 40U[0m
+[0;32mI (217964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (219294) esp_netif_lwip: DHCP server assigned IP to a client, IP is: 192.168.4.2[0m
+[0;32mI (219964) CAMERA_TEST: Status: Streaming active[0m
+E (220404) CAMERA_SERVER: Capture timeout
+[0;33mW (220404) httpd_txrx: httpd_resp_send_err: 500 Internal Server Error - Capture timeout[0m
+[0;33mW (220404) httpd_uri: httpd_uri: uri handler execution failed[0m
+[0;32mI (221434) wifi:<ba-add>idx:2 (ifx:1, 30:c9:ab:8b:a0:7d), tid:0, ssn:55, winSize:64[0m
+[0;32mI (221964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (223964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (225964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (227964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (229074) CAMERA_SERVER: Stream started[0m
+[0;32mI (229074) CAMERA_SERVER: Processing capture request in stream[0m
+[0;32mI (229084) CAMERA_SERVER: Photo captured in stream: 40977 bytes[0m
+[0;32mI (229964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (231964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (233964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (235964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (237964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (239964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (241964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (243964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (245964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (247964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (249964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (251964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (253964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (255964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (257964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (259964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (261964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (263964) CAMERA_TEST: Status: Streaming active[0m
+[0;33mW (264784) httpd_txrx: httpd_sock_err: error in send : 104[0m
+[0;32mI (264784) CAMERA_SERVER: Stream ended[0m
+[0;33mW (264784) httpd_txrx: httpd_sock_err: error in recv : 104[0m
+[0;32mI (264794) CAMERA_SERVER: Capture request received[0m
+[0;32mI (264794) CAMERA_SERVER: Capture requested from stream[0m
+[0;32mI (265964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (267964) CAMERA_TEST: Status: Streaming active[0m
+[1;31mE (269794) CAMERA_SERVER: Capture timeout[0m
+[0;33mW (269794) httpd_txrx: httpd_resp_send_err: 500 Internal Server Error - Capture timeout[0m
+[1;31mE (269794) httpd_txrx: httpd_resp_send_err: error calling setsockopt : 22[0m
+[0;33mW (269804) httpd_uri: httpd_uri: uri handler execution failed[0m
+[0;33mW (269814) httpd_txrx: httpd_sock_err: error in recv : 104[0m
+[0;33mW (269824) httpd_txrx: httpd_sock_err: error in send : 104[0m
+[0;33mW (269824) httpd_uri: httpd_uri: uri handler execution failed[0m
+[0;33mW (269844) httpd_txrx: httpd_sock_err: error in recv : 104[0m
+[0;32mI (269964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (271964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (273964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (275964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (277204) wifi:[ADDBA]RX DELBA, reason:39, delete tid:0, initiator:1(originator)[0m
+[0;32mI (277204) wifi:<ba-del>idx:2, tid:0[0m
+[0;32mI (277204) wifi:[ADDBA]RX DELBA, reason:39, delete tid:0, initiator:0(recipient)[0m
+[0;32mI (277204) wifi:station: 30:c9:ab:8b:a0:7d leave, AID = 1, reason = 8, bss_flags is 756835, bss:0x3ffcf560[0m
+[0;32mI (277214) wifi:new:<1,0>, old:<1,1>, ap:<1,1>, sta:<255,255>, prof:1, snd_ch_cfg:0x0[0m
+[0;32mI (277964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (279964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (281964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (283964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (285964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (287964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (289964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (291964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (293964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (295964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (297964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (299964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (301964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (303964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (305964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (307964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (309964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (311964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (313964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (315964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (317964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (319964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (321964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (323964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (325964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (327964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (329964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (331964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (333964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (335964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (337964) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (339964) CAMERA_TEST: Status: Streaming active[0m
