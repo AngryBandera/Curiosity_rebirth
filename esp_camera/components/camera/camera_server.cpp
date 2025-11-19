@@ -232,16 +232,41 @@ volatile bool capture_request = false; // сигнал, що клієнт хоч
 httpd_req_t* capture_req_handle = NULL; // зберігаємо об'єкт запиту
 
 esp_err_t handleCaptureRequest(httpd_req_t *req) {
-    if (capture_request) {
-        // вже йде обробка попереднього запиту
+    if (!camera_mutex)
+        return ESP_FAIL;
+
+    photo_data_t photo = {NULL, 0};
+
+    if (xSemaphoreTake(camera_mutex, pdMS_TO_TICKS(5000))) {
+        camera_fb_t *fb = esp_camera_fb_get();
+        if (fb) {
+            photo.buffer = (uint8_t*)malloc(fb->len);
+            if (photo.buffer) {
+                memcpy(photo.buffer, fb->buf, fb->len);
+                photo.length = fb->len;
+            }
+            esp_camera_fb_return(fb);
+        }
+        xSemaphoreGive(camera_mutex);
+    } else {
+        httpd_resp_send_500(req);
+        return ESP_ERR_TIMEOUT;
+    }
+
+    if (!photo.buffer) {
+        httpd_resp_send_500(req);
         return ESP_FAIL;
     }
-    capture_req_handle = req;
-    capture_request = true;
 
-    // НЕ відправляємо відповідь зараз, вона буде у циклі стріму
+    // Відправляємо як JPEG
+    httpd_resp_set_type(req, "image/jpeg");
+    httpd_resp_set_hdr(req, "Content-Disposition", "inline; filename=capture.jpg");
+    httpd_resp_send(req, (const char*)photo.buffer, photo.length);
+
+    free(photo.buffer);
     return ESP_OK;
 }
+
 
 // Handler для MJPEG стріму
 
@@ -270,21 +295,12 @@ esp_err_t handleStreamRequest(httpd_req_t* req)
                 continue;
             }
 
-            // Якщо є запит на Capture — відправляємо одне фото
-            if (capture_request && capture_req_handle) {
-                httpd_resp_set_type(capture_req_handle, "image/jpeg");
-                httpd_resp_set_hdr(capture_req_handle, "Content-Disposition", "inline; filename=capture.jpg");
-                httpd_resp_send(capture_req_handle, (const char*)fb->buf, fb->len);
-
-                capture_request = false;
-                capture_req_handle = NULL;
-            }
-
             // Відправляємо frame для MJPEG стріму
             char header[128];
             int len = snprintf(header, sizeof(header),
                                "--frame\r\nContent-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n",
                                fb->len);
+
             if (httpd_resp_send_chunk(req, header, len) != ESP_OK ||
                 httpd_resp_send_chunk(req, (const char*)fb->buf, fb->len) != ESP_OK ||
                 httpd_resp_send_chunk(req, "\r\n", 2) != ESP_OK)

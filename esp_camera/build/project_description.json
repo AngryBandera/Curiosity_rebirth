@@ -1,7 +1,7 @@
 {
     "version":            "1.2",
     "project_name":       "esp_camera",
-    "project_version":    "47bd344-dirty",
+    "project_version":    "e594989-dirty",
     "project_path":       "C:/Users/bogda/POK/Curiosity_rebirth/esp_camera",
     "idf_path":           "C:/esp/esp-idf",
     "build_dir":          "C:/Users/bogda/POK/Curiosity_rebirth/esp_camera/build",
