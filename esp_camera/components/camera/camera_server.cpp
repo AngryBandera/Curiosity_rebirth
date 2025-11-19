@@ -232,27 +232,28 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
 esp_err_t handleStreamRequest(httpd_req_t* req)
 {
     httpd_resp_set_type(req, "multipart/x-mixed-replace; boundary=frame");
-
-    streaming_active = true;
-
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
 
     while (1)
     {
-        if (!streaming_active) break;
+        if (!streaming_active) {
+            vTaskDelay(pdMS_TO_TICKS(50));
+            continue; // чекаємо, поки стрім буде знову активний
+        }
 
         if (xSemaphoreTake(camera_mutex, portMAX_DELAY))
         {
             camera_fb_t* fb = esp_camera_fb_get();
             if (!fb) {
                 xSemaphoreGive(camera_mutex);
-                break;
+                vTaskDelay(pdMS_TO_TICKS(50));
+                continue;
             }
 
-            char header[64];
+            char header[128];
             int len = snprintf(header, sizeof(header),
-                "--frame\r\nContent-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n",
-                fb->len);
+                               "--frame\r\nContent-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n",
+                               fb->len);
 
             if (httpd_resp_send_chunk(req, header, len) != ESP_OK ||
                 httpd_resp_send_chunk(req, (const char*)fb->buf, fb->len) != ESP_OK ||
@@ -268,9 +269,9 @@ esp_err_t handleStreamRequest(httpd_req_t* req)
         }
     }
 
-    streaming_active = false;
     return ESP_OK;
 }
+
 
 // Handler для capture одного фото
 esp_err_t handlePhotoRequest(httpd_req_t *req)
@@ -278,25 +279,50 @@ esp_err_t handlePhotoRequest(httpd_req_t *req)
     if (!camera_mutex)
         return ESP_FAIL;
 
-    if (xSemaphoreTake(camera_mutex, pdMS_TO_TICKS(5000)))
-    {
-        camera_fb_t *fb = esp_camera_fb_get();
-        if (!fb) {
-            xSemaphoreGive(camera_mutex);
-            httpd_resp_send_500(req);
-            return ESP_FAIL;
-        }
+    bool was_streaming = streaming_active;
 
-        httpd_resp_set_type(req, "image/jpeg");
-        httpd_resp_send(req, (const char*)fb->buf, fb->len);
-
-        esp_camera_fb_return(fb);
-        xSemaphoreGive(camera_mutex);
-        return ESP_OK;
+    // Тимчасово зупиняємо стрім
+    if (was_streaming) {
+        streaming_active = false;
+        vTaskDelay(pdMS_TO_TICKS(100)); // чекаємо, поки цикл стріму відреагує
     }
 
-    httpd_resp_send_500(req);
-    return ESP_ERR_TIMEOUT;
+    // Захоплюємо фото під мютексом
+    photo_data_t photo = {NULL, 0};
+    if (xSemaphoreTake(camera_mutex, pdMS_TO_TICKS(5000))) {
+        camera_fb_t *fb = esp_camera_fb_get();
+        if (fb) {
+            photo.buffer = (uint8_t*)malloc(fb->len);
+            if (photo.buffer) {
+                memcpy(photo.buffer, fb->buf, fb->len);
+                photo.length = fb->len;
+            }
+            esp_camera_fb_return(fb);
+        }
+        xSemaphoreGive(camera_mutex);
+    } else {
+        httpd_resp_send_500(req);
+        return ESP_ERR_TIMEOUT;
+    }
+
+    if (!photo.buffer) {
+        httpd_resp_send_500(req);
+        return ESP_FAIL;
+    }
+
+    // Відправляємо фото
+    httpd_resp_set_type(req, "image/jpeg");
+    httpd_resp_set_hdr(req, "Content-Disposition", "inline; filename=capture.jpg");
+    httpd_resp_send(req, (const char*)photo.buffer, photo.length);
+
+    free(photo.buffer);
+
+    // Відновлюємо стрім
+    if (was_streaming) {
+        streaming_active = true;
+    }
+
+    return ESP_OK;
 }
 
 // Handler для статусу
