@@ -107,6 +107,14 @@ void stream_task(void* pvParameters) {
             continue;
         }
         
+        // Перевіряємо що JPEG валідний (має SOI маркер)
+        if (fb->len < 2 || fb->buf[0] != 0xFF || fb->buf[1] != 0xD8) {
+            ESP_LOGW(TAG, "Invalid JPEG frame, skipping");
+            esp_camera_fb_return(fb);
+            vTaskDelay(pdMS_TO_TICKS(50));
+            continue;
+        }
+        
         // Логування першого кадру
         if (frame_count == 0) {
             ESP_LOGI(TAG, "🎬 Sending first frame: %d bytes", fb->len);
@@ -357,13 +365,17 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
         "button:hover{background:#45a049}"
         "button:disabled{background:#666;cursor:not-allowed}"
         "#status{padding:10px;background:#333;border-radius:5px;margin:10px auto;max-width:400px}"
+        ".success{color:#4CAF50}"
+        ".error{color:#f44336}"
+        ".warning{color:#ff9800}"
         "</style></head>"
         "<body><h1>🚀 Mars Rover Camera</h1>"
-        "<img id='stream' src='/stream' alt='Loading...'>"
+        "<img id='stream' src='/stream' alt='Loading stream...' onerror=\"this.alt='Stream error'\">"
         "<br>"
-        "<button id='captureBtn' onclick='capturePhoto()'>📷 Capture</button>"
+        "<button id='captureBtn' onclick='capturePhoto()'>📷 Capture (from stream)</button>"
+        "<button id='quickBtn' onclick='quickCapture()'>⚡ Quick Capture</button>"
         "<button onclick='location.reload()'>🔄 Refresh</button>"
-        "<p id='status'>Ready</p>"
+        "<p id='status'>Ready • Streaming active</p>"
         "<script>"
         "let capturing=false;"
         "async function capturePhoto(){"
@@ -372,26 +384,73 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
         "const btn=document.getElementById('captureBtn');"
         "const st=document.getElementById('status');"
         "btn.disabled=true;"
-        "st.textContent='📸 Capturing...';"
+        "st.innerHTML='<span class=\"warning\">📸 Capturing from stream...</span>';"
         "try{"
         "const r=await fetch('/capture');"
-        "if(!r.ok)throw new Error('Failed');"
+        "if(!r.ok)throw new Error('Server error');"
         "const b=await r.blob();"
+        "if(b.size<1000)throw new Error('Invalid photo');"
         "const u=URL.createObjectURL(b);"
         "const a=document.createElement('a');"
         "a.href=u;"
-        "a.download='photo_'+Date.now()+'.jpg';"
+        "a.download='stream_'+Date.now()+'.jpg';"
+        "document.body.appendChild(a);"
         "a.click();"
-        "URL.revokeObjectURL(u);"
-        "st.textContent='✅ Saved!';"
-        "setTimeout(()=>{st.textContent='Ready'},2000);"
+        "document.body.removeChild(a);"
+        "setTimeout(()=>URL.revokeObjectURL(u),100);"
+        "st.innerHTML='<span class=\"success\">✅ Photo saved! ('+Math.round(b.size/1024)+'KB)</span>';"
+        "setTimeout(()=>{st.innerHTML='Ready • Streaming active'},3000);"
         "}catch(e){"
-        "st.textContent='❌ Error';"
+        "st.innerHTML='<span class=\"error\">❌ Error: '+e.message+'</span>';"
+        "setTimeout(()=>{st.innerHTML='Ready • Streaming active'},3000);"
         "}finally{"
         "capturing=false;"
         "btn.disabled=false;"
         "}"
         "}"
+        "async function quickCapture(){"
+        "if(capturing)return;"
+        "capturing=true;"
+        "const btn=document.getElementById('quickBtn');"
+        "const st=document.getElementById('status');"
+        "btn.disabled=true;"
+        "st.innerHTML='<span class=\"warning\">⚡ Quick capture...</span>';"
+        "try{"
+        "const r=await fetch('/quick');"
+        "if(!r.ok)throw new Error('Server error');"
+        "const b=await r.blob();"
+        "if(b.size<1000)throw new Error('Invalid photo');"
+        "const u=URL.createObjectURL(b);"
+        "const a=document.createElement('a');"
+        "a.href=u;"
+        "a.download='quick_'+Date.now()+'.jpg';"
+        "document.body.appendChild(a);"
+        "a.click();"
+        "document.body.removeChild(a);"
+        "setTimeout(()=>URL.revokeObjectURL(u),100);"
+        "st.innerHTML='<span class=\"success\">⚡ Quick photo! ('+Math.round(b.size/1024)+'KB)</span>';"
+        "setTimeout(()=>{st.innerHTML='Ready • Streaming active'},3000);"
+        "}catch(e){"
+        "st.innerHTML='<span class=\"error\">❌ Error: '+e.message+'</span>';"
+        "setTimeout(()=>{st.innerHTML='Ready • Streaming active'},3000);"
+        "}finally{"
+        "capturing=false;"
+        "btn.disabled=false;"
+        "}"
+        "}"
+        // Перевірка з'єднання кожні 5 секунд
+        "setInterval(async()=>{"
+        "try{"
+        "const r=await fetch('/status');"
+        "const d=await r.json();"
+        "if(!capturing){"
+        "const st=document.getElementById('status');"
+        "if(st.textContent.includes('Ready')){"
+        "st.textContent='Ready • Streaming active';"
+        "}"
+        "}"
+        "}catch(e){}"
+        "},5000);"
         "</script></body></html>";
     
     httpd_resp_set_type(req, "text/html");
@@ -459,42 +518,66 @@ esp_err_t handleStreamRequest(httpd_req_t* req) {
 }
 
 esp_err_t handleCaptureRequest(httpd_req_t *req) {
-    ESP_LOGI(TAG, "📷 Capture request");
+    ESP_LOGI(TAG, "📷 Capture request received");
     
+    // Встановлюємо флаг
     requestCaptureFromStream();
     
+    // Чекаємо готовність (максимум 3 секунди)
     int timeout_ms = 3000;
     int waited_ms = 0;
+    
     while (!isCaptureReady() && waited_ms < timeout_ms) {
         vTaskDelay(pdMS_TO_TICKS(10));
         waited_ms += 10;
     }
     
     if (!isCaptureReady()) {
-        ESP_LOGE(TAG, "❌ Timeout");
+        ESP_LOGE(TAG, "❌ Capture timeout after %dms", waited_ms);
         capture_request_flag = false;
+        
+        // Спробуємо зробити пряме фото як fallback
+        ESP_LOGI(TAG, "Trying direct capture as fallback");
+        camera_fb_t* fb = esp_camera_fb_get();
+        if (fb) {
+            // Перевіряємо валідність JPEG
+            if (fb->len > 2 && fb->buf[0] == 0xFF && fb->buf[1] == 0xD8) {
+                httpd_resp_set_type(req, "image/jpeg");
+                httpd_resp_set_hdr(req, "Content-Disposition", "inline; filename=capture.jpg");
+                esp_err_t res = httpd_resp_send(req, (const char*)fb->buf, fb->len);
+                esp_camera_fb_return(fb);
+                ESP_LOGI(TAG, "✅ Sent direct capture: %d bytes", fb->len);
+                return res;
+            }
+            esp_camera_fb_return(fb);
+        }
+        
         httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Timeout");
         return ESP_FAIL;
     }
     
+    // Отримуємо збережене фото
     photo_data_t photo = getCapturedPhoto();
     
     if (!photo.buffer || photo.length == 0) {
-        ESP_LOGE(TAG, "❌ No data");
+        ESP_LOGE(TAG, "❌ No photo data");
         httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "No data");
         return ESP_FAIL;
     }
     
-    ESP_LOGI(TAG, "📤 Sending %d bytes", photo.length);
+    ESP_LOGI(TAG, "📤 Sending captured photo: %d bytes", photo.length);
     
     httpd_resp_set_type(req, "image/jpeg");
     httpd_resp_set_hdr(req, "Content-Disposition", "inline; filename=capture.jpg");
+    httpd_resp_set_hdr(req, "Cache-Control", "no-cache");
     esp_err_t res = httpd_resp_send(req, (const char*)photo.buffer, photo.length);
     
     free(photo.buffer);
     
     if (res == ESP_OK) {
-        ESP_LOGI(TAG, "✅ Photo sent");
+        ESP_LOGI(TAG, "✅ Photo sent successfully");
+    } else {
+        ESP_LOGE(TAG, "❌ Failed to send photo");
     }
     
     return res;
@@ -512,6 +595,47 @@ esp_err_t handleStatusRequest(httpd_req_t* req) {
     return httpd_resp_send(req, json, strlen(json));
 }
 
+// Новий швидкий endpoint - захоплює кадр напряму без стріму
+esp_err_t handleQuickCaptureRequest(httpd_req_t* req) {
+    ESP_LOGI(TAG, "⚡ Quick capture request");
+    
+    if (!camera_initialized) {
+        httpd_resp_send_err(req, HTTPD_503_SERVICE_UNAVAILABLE, "Camera not ready");
+        return ESP_FAIL;
+    }
+    
+    // Пробуємо до 3 разів отримати валідний кадр
+    for (int attempt = 0; attempt < 3; attempt++) {
+        camera_fb_t* fb = esp_camera_fb_get();
+        if (!fb) {
+            ESP_LOGW(TAG, "Attempt %d: Failed to get frame", attempt + 1);
+            vTaskDelay(pdMS_TO_TICKS(50));
+            continue;
+        }
+        
+        // Перевіряємо валідність JPEG
+        if (fb->len > 2 && fb->buf[0] == 0xFF && fb->buf[1] == 0xD8) {
+            ESP_LOGI(TAG, "✅ Quick capture: %d bytes (attempt %d)", fb->len, attempt + 1);
+            
+            httpd_resp_set_type(req, "image/jpeg");
+            httpd_resp_set_hdr(req, "Content-Disposition", "inline; filename=quick_capture.jpg");
+            httpd_resp_set_hdr(req, "Cache-Control", "no-cache");
+            esp_err_t res = httpd_resp_send(req, (const char*)fb->buf, fb->len);
+            
+            esp_camera_fb_return(fb);
+            return res;
+        } else {
+            ESP_LOGW(TAG, "Attempt %d: Invalid JPEG", attempt + 1);
+            esp_camera_fb_return(fb);
+            vTaskDelay(pdMS_TO_TICKS(50));
+        }
+    }
+    
+    ESP_LOGE(TAG, "❌ Failed to get valid frame after 3 attempts");
+    httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to capture");
+    return ESP_FAIL;
+}
+
 bool initWebServer(uint16_t port) {
     if (server != NULL) {
         return true;
@@ -520,7 +644,7 @@ bool initWebServer(uint16_t port) {
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.server_port = port;
     config.max_open_sockets = 7;
-    config.max_uri_handlers = 8;
+    config.max_uri_handlers = 10;  // Збільшено для нового endpoint
     config.task_priority = 5;
     config.stack_size = 4096;
     config.lru_purge_enable = true;
@@ -533,14 +657,17 @@ bool initWebServer(uint16_t port) {
     httpd_uri_t uri_root = {"/", HTTP_GET, handleRootRequest, NULL};
     httpd_uri_t uri_stream = {"/stream", HTTP_GET, handleStreamRequest, NULL};
     httpd_uri_t uri_capture = {"/capture", HTTP_GET, handleCaptureRequest, NULL};
+    httpd_uri_t uri_quick = {"/quick", HTTP_GET, handleQuickCaptureRequest, NULL};
     httpd_uri_t uri_status = {"/status", HTTP_GET, handleStatusRequest, NULL};
 
     httpd_register_uri_handler(server, &uri_root);
     httpd_register_uri_handler(server, &uri_stream);
     httpd_register_uri_handler(server, &uri_capture);
+    httpd_register_uri_handler(server, &uri_quick);
     httpd_register_uri_handler(server, &uri_status);
 
     ESP_LOGI(TAG, "✅ Server started on port %d", port);
+    ESP_LOGI(TAG, "   Endpoints: /, /stream, /capture, /quick, /status");
     return true;
 }
 

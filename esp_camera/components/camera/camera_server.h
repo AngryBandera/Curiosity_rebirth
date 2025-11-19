@@ -61,6 +61,7 @@ httpd_handle_t getServerHandle();
 esp_err_t handleStreamRequest(httpd_req_t* req);
 esp_err_t handlePhotoRequest(httpd_req_t* req);
 esp_err_t handleCaptureRequest(httpd_req_t* req);
+esp_err_t handleQuickCaptureRequest(httpd_req_t* req);  // Новий швидкий endpoint
 esp_err_t handleStatusRequest(httpd_req_t* req);
 esp_err_t handleRootRequest(httpd_req_t* req);
 
