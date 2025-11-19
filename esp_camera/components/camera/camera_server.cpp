@@ -601,7 +601,7 @@ esp_err_t handleQuickCaptureRequest(httpd_req_t* req) {
     ESP_LOGI(TAG, "⚡ Quick capture request");
     
     if (!camera_initialized) {
-        httpd_resp_send_err(req, 500, "Camera not ready");
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Camera not ready");
         return ESP_FAIL;
     }
     
@@ -633,7 +633,7 @@ esp_err_t handleQuickCaptureRequest(httpd_req_t* req) {
     }
     
     ESP_LOGE(TAG, "❌ Failed to get valid frame after 3 attempts");
-    httpd_resp_send_err(req, 500, "Failed to capture");
+    httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to capture");
     return ESP_FAIL;
 }
 
