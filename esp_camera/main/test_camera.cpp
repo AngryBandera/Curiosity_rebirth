@@ -64,7 +64,7 @@ extern "C" void app_main(void)
 
     ESP_LOGI(TAG, "Web server started. Connect to: http://192.168.4.1/");
 
-    startVideoStream();
+    // startVideoStream();
 
     while (true) {
         vTaskDelay(pdMS_TO_TICKS(2000));

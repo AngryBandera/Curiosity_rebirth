@@ -10,7 +10,7 @@
 void sendPhotoToServer(photo_data_t photo)
 {
     esp_http_client_config_t config{};
-    config.url = "http://192.168.4.2/upload";
+    config.url = "http://192.168.4.1/capture";
     config.method = HTTP_METHOD_POST;
 
 
