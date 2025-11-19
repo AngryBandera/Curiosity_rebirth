@@ -262,6 +262,7 @@ esp_err_t handleStreamRequest(httpd_req_t* req) {
 
 // Handler для capture одного фото
 esp_err_t handlePhotoRequest(httpd_req_t* req) {
+    stopVideoStream();
     photo_data_t photo = capturePhoto();
     
     if (photo.buffer == NULL) {
@@ -275,6 +276,7 @@ esp_err_t handlePhotoRequest(httpd_req_t* req) {
     esp_err_t res = httpd_resp_send(req, (const char*)photo.buffer, photo.length);
     
     releasePhotoBuffer(photo);
+    startVideoStream();
     return res;
 }
 
