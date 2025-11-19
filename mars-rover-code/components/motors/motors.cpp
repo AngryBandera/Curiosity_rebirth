@@ -262,6 +262,13 @@ void DriveSystem::set_angle(float rvr_angle) {
 
 
 void DriveSystem::tick() {
+    // Перевірка зміни знака швидкості: якщо dest_speed змінив напрямок, швидко гальмуємо
+    if ((mem_speed > 0 && dest_speed < -100) || (mem_speed < 0 && dest_speed > 100)) {
+        // Різка зміна напрямку — гальмуємо швидше
+        mem_speed = 0;
+    }
+
+    // Звичайна логіка розгону/гальмування
     if (dest_speed >= 0) {
         if     (dest_speed <= 100) { mem_speed = 0; }
         else if      (dest_speed > mem_speed) { mem_speed += Cfg::DC_ACCEL; }
@@ -301,7 +308,7 @@ PCA9685Buffer::PCA9685Buffer(i2c_dev_t* pca9685):
                                     I2C_MASTER_SCL_IO));
 
     ESP_ERROR_CHECK(pca9685_init(device));
-    ESP_ERROR_CHECK(pca9685_set_pwm_frequency(device, 50));
+    ESP_ERROR_CHECK(pca9685_set_pwm_frequency(device, Servo::FREQ));
 
     clear();
     flush();
