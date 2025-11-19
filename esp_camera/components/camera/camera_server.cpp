@@ -228,17 +228,37 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
     return httpd_resp_send(req, html, strlen(html));
 }
 
+volatile bool capture_request = false; // сигнал, що клієнт хоче фото
+httpd_req_t* capture_req_handle = NULL; // зберігаємо об'єкт запиту
+
+esp_err_t handleCaptureRequest(httpd_req_t *req) {
+    if (capture_request) {
+        // вже йде обробка попереднього запиту
+        return ESP_FAIL;
+    }
+    capture_req_handle = req;
+    capture_request = true;
+
+    // НЕ відправляємо відповідь зараз, вона буде у циклі стріму
+    return ESP_OK;
+}
+
 // Handler для MJPEG стріму
+
+// В JS на сторінці root:
+// fetch('/capture').then(...)
+// -> на сервері просто ставимо capture_request = true
+
 esp_err_t handleStreamRequest(httpd_req_t* req)
 {
     httpd_resp_set_type(req, "multipart/x-mixed-replace; boundary=frame");
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
 
-    while (1)
+    while (true)
     {
         if (!streaming_active) {
             vTaskDelay(pdMS_TO_TICKS(50));
-            continue; // чекаємо, поки стрім буде знову активний
+            continue;
         }
 
         if (xSemaphoreTake(camera_mutex, portMAX_DELAY))
@@ -250,11 +270,21 @@ esp_err_t handleStreamRequest(httpd_req_t* req)
                 continue;
             }
 
+            // Якщо є запит на Capture — відправляємо одне фото
+            if (capture_request && capture_req_handle) {
+                httpd_resp_set_type(capture_req_handle, "image/jpeg");
+                httpd_resp_set_hdr(capture_req_handle, "Content-Disposition", "inline; filename=capture.jpg");
+                httpd_resp_send(capture_req_handle, (const char*)fb->buf, fb->len);
+
+                capture_request = false;
+                capture_req_handle = NULL;
+            }
+
+            // Відправляємо frame для MJPEG стріму
             char header[128];
             int len = snprintf(header, sizeof(header),
                                "--frame\r\nContent-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n",
                                fb->len);
-
             if (httpd_resp_send_chunk(req, header, len) != ESP_OK ||
                 httpd_resp_send_chunk(req, (const char*)fb->buf, fb->len) != ESP_OK ||
                 httpd_resp_send_chunk(req, "\r\n", 2) != ESP_OK)
@@ -271,6 +301,8 @@ esp_err_t handleStreamRequest(httpd_req_t* req)
 
     return ESP_OK;
 }
+
+
 
 
 // Handler для capture одного фото
@@ -379,7 +411,7 @@ bool initWebServer(uint16_t port) {
     httpd_uri_t capture_uri = {
         .uri = "/capture",
         .method = HTTP_GET,
-        .handler = handlePhotoRequest,
+        .handler = handleCaptureRequest,
         .user_ctx = NULL
     };
     httpd_register_uri_handler(server, &capture_uri);
