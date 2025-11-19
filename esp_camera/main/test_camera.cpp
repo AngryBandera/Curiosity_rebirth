@@ -36,8 +36,10 @@ static void init_wifi_ap()
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &ap_config));
     ESP_ERROR_CHECK(esp_wifi_start());
 
-    ESP_LOGI(TAG, "WiFi AP started. SSID: %s, Password: %s",
-             ap_config.ap.ssid, ap_config.ap.password);
+    ESP_LOGI(TAG, "📡 WiFi AP started");
+    ESP_LOGI(TAG, "   SSID: %s", ap_config.ap.ssid);
+    ESP_LOGI(TAG, "   Password: %s", ap_config.ap.password);
+    ESP_LOGI(TAG, "   IP: 192.168.4.1");
 }
 
 extern "C" void app_main(void)
@@ -48,26 +50,40 @@ extern "C" void app_main(void)
         ESP_ERROR_CHECK(nvs_flash_init());
     }
 
+    ESP_LOGI(TAG, "=== Mars Rover Camera System ===");
+
     init_wifi_ap();
 
     if (!initCamera(NULL)) {
-        ESP_LOGE(TAG, "Camera initialization failed!");
+        ESP_LOGE(TAG, "❌ Camera initialization failed!");
         return;
     }
 
     ESP_LOGI(TAG, "✅ Camera initialized successfully");
 
     if (!initWebServer(80)) {
-        ESP_LOGE(TAG, "Failed to start web server");
+        ESP_LOGE(TAG, "❌ Failed to start web server");
         return;
     }
 
-    ESP_LOGI(TAG, "Web server started. Connect to: http://192.168.4.1/");
+    ESP_LOGI(TAG, "✅ Web server started");
+    ESP_LOGI(TAG, "");
+    ESP_LOGI(TAG, "🌐 Connect to: http://192.168.4.1/");
+    ESP_LOGI(TAG, "");
 
+    // ВАЖЛИВО: Вмикаємо streaming ОДРАЗУ
     startVideoStream();
 
+    uint32_t loop_count = 0;
+    
     while (true) {
-        vTaskDelay(pdMS_TO_TICKS(2000));
-        ESP_LOGI(TAG, "Status: %s", getCameraStatus());
+        vTaskDelay(pdMS_TO_TICKS(5000));
+        loop_count++;
+        
+        const char* status = getCameraStatus();
+        ESP_LOGI(TAG, "[%lu] Status: %s | Streaming: %s", 
+                 loop_count, 
+                 status,
+                 isStreaming() ? "ON" : "OFF");
     }
 }

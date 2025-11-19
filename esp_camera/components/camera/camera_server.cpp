@@ -73,8 +73,17 @@ void stream_task(void* pvParameters) {
     ESP_LOGI(TAG, "Stream task started");
     
     uint32_t frame_count = 0;
+    uint32_t loop_count = 0;
     
     while (true) {
+        loop_count++;
+        
+        // Детальне логування кожні 50 ітерацій
+        if (loop_count % 50 == 0) {
+            ESP_LOGI(TAG, "Task alive: streaming=%d, client=%d", 
+                     streaming_active, active_stream_client.active);
+        }
+        
         // Перевіряємо чи є активний клієнт
         httpd_req_t* req = NULL;
         bool has_client = false;
@@ -87,9 +96,20 @@ void stream_task(void* pvParameters) {
             xSemaphoreGive(stream_client_mutex);
         }
         
-        if (!has_client || !streaming_active) {
+        if (!has_client) {
             vTaskDelay(pdMS_TO_TICKS(100));
             continue;
+        }
+        
+        if (!streaming_active) {
+            ESP_LOGW(TAG, "Client connected but streaming disabled!");
+            vTaskDelay(pdMS_TO_TICKS(100));
+            continue;
+        }
+        
+        // Перший кадр - логуємо
+        if (frame_count == 0) {
+            ESP_LOGI(TAG, "🎬 Starting to send frames");
         }
         
         // Отримуємо кадр
@@ -98,6 +118,11 @@ void stream_task(void* pvParameters) {
             ESP_LOGW(TAG, "Failed to get frame");
             vTaskDelay(pdMS_TO_TICKS(100));
             continue;
+        }
+        
+        // Логуємо перший кадр
+        if (frame_count == 0) {
+            ESP_LOGI(TAG, "✅ Got first frame: %d bytes", fb->len);
         }
         
         // Перевіряємо capture запит
@@ -133,22 +158,52 @@ void stream_task(void* pvParameters) {
         
         esp_err_t res = ESP_OK;
         
-        if (httpd_resp_send_chunk(req, header, len) != ESP_OK ||
-            httpd_resp_send_chunk(req, (const char*)fb->buf, fb->len) != ESP_OK ||
-            httpd_resp_send_chunk(req, "\r\n", 2) != ESP_OK) {
-            
-            ESP_LOGW(TAG, "Stream client disconnected");
-            
-            // Відключаємо клієнта
+        res = httpd_resp_send_chunk(req, header, len);
+        if (res != ESP_OK) {
+            ESP_LOGW(TAG, "Failed to send header: %d", res);
+            esp_camera_fb_return(fb);
             if (xSemaphoreTake(stream_client_mutex, pdMS_TO_TICKS(100))) {
                 active_stream_client.active = false;
                 active_stream_client.req = NULL;
                 xSemaphoreGive(stream_client_mutex);
             }
+            frame_count = 0;
+            continue;
+        }
+        
+        res = httpd_resp_send_chunk(req, (const char*)fb->buf, fb->len);
+        if (res != ESP_OK) {
+            ESP_LOGW(TAG, "Failed to send data: %d", res);
+            esp_camera_fb_return(fb);
+            if (xSemaphoreTake(stream_client_mutex, pdMS_TO_TICKS(100))) {
+                active_stream_client.active = false;
+                active_stream_client.req = NULL;
+                xSemaphoreGive(stream_client_mutex);
+            }
+            frame_count = 0;
+            continue;
+        }
+        
+        res = httpd_resp_send_chunk(req, "\r\n", 2);
+        if (res != ESP_OK) {
+            ESP_LOGW(TAG, "Failed to send footer: %d", res);
+            esp_camera_fb_return(fb);
+            if (xSemaphoreTake(stream_client_mutex, pdMS_TO_TICKS(100))) {
+                active_stream_client.active = false;
+                active_stream_client.req = NULL;
+                xSemaphoreGive(stream_client_mutex);
+            }
+            frame_count = 0;
+            continue;
         }
         
         esp_camera_fb_return(fb);
         frame_count++;
+        
+        // Логуємо кожні 100 кадрів
+        if (frame_count % 100 == 0) {
+            ESP_LOGI(TAG, "📺 Sent %lu frames", frame_count);
+        }
         
         // Затримка для ~25 FPS
         vTaskDelay(pdMS_TO_TICKS(40));
@@ -381,16 +436,32 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
 esp_err_t handleStreamRequest(httpd_req_t* req) {
     ESP_LOGI(TAG, "🎬 Stream client connected");
     
+    // ВАЖЛИВО: Спочатку відправляємо headers
     httpd_resp_set_type(req, "multipart/x-mixed-replace; boundary=frame");
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     httpd_resp_set_hdr(req, "Cache-Control", "no-cache");
     
+    // Відправляємо порожній chunk щоб встановити з'єднання
+    esp_err_t res = httpd_resp_send_chunk(req, "", 0);
+    if (res != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to establish stream connection");
+        return ESP_FAIL;
+    }
+    
+    ESP_LOGI(TAG, "Stream headers sent, registering client");
+    
     // Реєструємо клієнта
     if (xSemaphoreTake(stream_client_mutex, pdMS_TO_TICKS(1000))) {
+        // Якщо вже є клієнт - відключаємо його
+        if (active_stream_client.active) {
+            ESP_LOGW(TAG, "Replacing existing stream client");
+        }
         active_stream_client.req = req;
         active_stream_client.active = true;
         xSemaphoreGive(stream_client_mutex);
+        ESP_LOGI(TAG, "✅ Client registered");
     } else {
+        ESP_LOGE(TAG, "Failed to take mutex");
         httpd_resp_send_500(req);
         return ESP_FAIL;
     }
