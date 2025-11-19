@@ -1,5 +1,5 @@
 # Опція: що збираємо
-option(Build_FULL_Project "Build full ESP-CAM project" ON)
+option(Build_FULL_Project "Build full ESP-CAM project" OFF)
 
 set(INCLUDE_DIRS ".")
 set(PRIV_REQUIRES_LIST "")
