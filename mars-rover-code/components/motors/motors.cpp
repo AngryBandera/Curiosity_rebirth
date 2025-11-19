@@ -260,6 +260,9 @@ void DriveSystem::set_angle(float rvr_angle) {
     dest_angle = rvr_angle;
 }
 
+bool DriveSystem::is_moving() {
+    return mem_speed == 0 && mem_angle == 0;
+}
 
 void DriveSystem::tick() {
     // Перевірка зміни знака швидкості: якщо dest_speed змінив напрямок, швидко гальмуємо

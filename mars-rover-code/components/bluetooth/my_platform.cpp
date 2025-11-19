@@ -2,6 +2,12 @@
 #include <iostream>
 #include <uni.h>
 #include <motors.h>
+#include <cmath>
+#include <math.h>
+
+#define DEAD_ZONE 10
+#define AXIS_MAX_INPUT 512.0f
+#define POWER_EXPONENT 3.0f
 
 static DriveSystem* g_rover = nullptr;
 
@@ -50,24 +56,34 @@ static uni_error_t my_platform_on_device_ready(uni_hid_device_t* d) {
     return UNI_ERROR_SUCCESS;
 }
 
-#define DEAD_ZONE 20
-
 static int32_t normalized_speed(int32_t y) {
     #define MAX_SPEED 4096
 
     if (abs(y) < DEAD_ZONE) return 0;
 
-    return -y * (MAX_SPEED/512);
+    float normalized_input = abs((float)y / AXIS_MAX_INPUT);
+    
+    float non_linear_scale = std::pow(normalized_input, POWER_EXPONENT);
+    
+    int sign = (y >= 0) ? -1 : 1;
+
+    return (int32_t)(sign * non_linear_scale * MAX_SPEED);
 }
 
 static float normalized_angle(int32_t x) {
-    #define MAX_ANGLE 60.0f
+    #define MAX_ANGLE 30.0f
+    #define MAX_ANGLE_RAW 512.0f
 
-    if (abs(x) < DEAD_ZONE) return 0;
+    if (std::abs(x) < DEAD_ZONE) return 0.0f;
 
-    return (float)x * 0.117f;
+    float normalized_input = abs((float)x / AXIS_MAX_INPUT);
+    
+    float non_linear_scale = std::pow(normalized_input, POWER_EXPONENT);
+    
+    int sign = (x >= 0) ? 1 : -1;
+
+    return (float)(sign * non_linear_scale * MAX_ANGLE);
 }
-
 static void my_platform_on_controller_data(uni_hid_device_t* d, uni_controller_t* ctl) {
     static uint8_t leds = 0;
     static uint8_t enabled = true;
@@ -82,15 +98,26 @@ static void my_platform_on_controller_data(uni_hid_device_t* d, uni_controller_t
     prev = *ctl;
 
     switch (ctl->klass) {
-        case UNI_CONTROLLER_CLASS_GAMEPAD:
+        case UNI_CONTROLLER_CLASS_GAMEPAD: {
             gp = &ctl->gamepad;
+            int32_t speed = normalized_speed(gp->axis_y);
+            float angle = normalized_angle(gp->axis_rx);
+            
+            if (gp->throttle > 450 && !g_rover->is_moving()) {
+                g_rover->set(2000, 90);
+            } else if (gp->brake > 450 && !g_rover->is_moving()) {
+                g_rover->set(2000, -90);
+            }
+            else {
+                g_rover->set(speed, angle);
 
-            g_rover->set(normalized_speed(gp->axis_y), normalized_angle(gp->axis_rx));
-
-            if ((abs(gp->axis_y) >= 400) && d->report_parser.play_dual_rumble != NULL) {
-                d->report_parser.play_dual_rumble(d, 0, 100, 255, 0);
+                if ((abs(gp->axis_y) >= 450) && d->report_parser.play_dual_rumble != NULL) {
+                    d->report_parser.play_dual_rumble(d, 0, 100, 255, 0);
+                }
             }
             break;
+        }
+        case UNI_CONTROLLER_CLASS_NONE:
         default:
             break;
     }
