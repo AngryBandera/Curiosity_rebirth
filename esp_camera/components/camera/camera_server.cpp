@@ -4,12 +4,18 @@
 #include "esp_camera.h"
 #include <string.h>
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
+
+SemaphoreHandle_t camera_mutex = NULL;
+
 static const char* TAG = "CAMERA_SERVER";
 
 // Глобальні змінні
 static httpd_handle_t server = NULL;
 static bool camera_initialized = false;
 static bool streaming_active = false;
+volatile bool stream_running = false;
 
 // Конфігурація пінів для ESP32-WROVER з OV2640
 // ВАЖЛИВО: Перевір pinout своєї конкретної плати!
@@ -49,6 +55,12 @@ static camera_config_t camera_config = {
 // ============================================
 
 bool initCamera(const camera_config_params_t* config) {
+    camera_mutex = xSemaphoreCreateMutex();
+    if (!camera_mutex) {
+        ESP_LOGE("CAMERA", "Failed to create mutex");
+        return false;
+    }
+
     if (camera_initialized) {
         ESP_LOGW(TAG, "Camera already initialized");
         return true;
@@ -217,67 +229,74 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
 }
 
 // Handler для MJPEG стріму
-esp_err_t handleStreamRequest(httpd_req_t* req) {
-    camera_fb_t* fb = NULL;
-    esp_err_t res = ESP_OK;
-    
-    // Встановлюємо заголовки для MJPEG
+esp_err_t handleStreamRequest(httpd_req_t* req)
+{
     httpd_resp_set_type(req, "multipart/x-mixed-replace; boundary=frame");
 
-    while (streaming_active) {
-        fb = esp_camera_fb_get();
-        if (!fb) {
-            ESP_LOGE(TAG, "Camera capture failed");
-            res = ESP_FAIL;
-            break;
-        }
+    streaming_active = true;
 
-        // Відправляємо JPEG frame
-        char part_buf[64];
-        snprintf(part_buf, sizeof(part_buf), 
-                 "--frame\r\nContent-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n",
-                 fb->len);
-        
-        if (httpd_resp_send_chunk(req, part_buf, strlen(part_buf)) != ESP_OK) {
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+
+    while (1)
+    {
+        if (!streaming_active) break;
+
+        if (xSemaphoreTake(camera_mutex, portMAX_DELAY))
+        {
+            camera_fb_t* fb = esp_camera_fb_get();
+            if (!fb) {
+                xSemaphoreGive(camera_mutex);
+                break;
+            }
+
+            char header[64];
+            int len = snprintf(header, sizeof(header),
+                "--frame\r\nContent-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n",
+                fb->len);
+
+            if (httpd_resp_send_chunk(req, header, len) != ESP_OK ||
+                httpd_resp_send_chunk(req, (const char*)fb->buf, fb->len) != ESP_OK ||
+                httpd_resp_send_chunk(req, "\r\n", 2) != ESP_OK)
+            {
+                esp_camera_fb_return(fb);
+                xSemaphoreGive(camera_mutex);
+                break;
+            }
+
             esp_camera_fb_return(fb);
-            break;
+            xSemaphoreGive(camera_mutex);
         }
-
-        if (httpd_resp_send_chunk(req, (const char*)fb->buf, fb->len) != ESP_OK) {
-            esp_camera_fb_return(fb);
-            break;
-        }
-
-        if (httpd_resp_send_chunk(req, "\r\n", 2) != ESP_OK) {
-            esp_camera_fb_return(fb);
-            break;
-        }
-
-        esp_camera_fb_return(fb);
-        fb = NULL;
     }
 
-    return res;
+    streaming_active = false;
+    return ESP_OK;
 }
 
 // Handler для capture одного фото
-esp_err_t handlePhotoRequest(httpd_req_t* req) {
-    stopVideoStream();
-    photo_data_t photo = capturePhoto();
-    
-    if (photo.buffer == NULL) {
-        httpd_resp_send_500(req);
+esp_err_t handlePhotoRequest(httpd_req_t *req)
+{
+    if (!camera_mutex)
         return ESP_FAIL;
+
+    if (xSemaphoreTake(camera_mutex, pdMS_TO_TICKS(5000)))
+    {
+        camera_fb_t *fb = esp_camera_fb_get();
+        if (!fb) {
+            xSemaphoreGive(camera_mutex);
+            httpd_resp_send_500(req);
+            return ESP_FAIL;
+        }
+
+        httpd_resp_set_type(req, "image/jpeg");
+        httpd_resp_send(req, (const char*)fb->buf, fb->len);
+
+        esp_camera_fb_return(fb);
+        xSemaphoreGive(camera_mutex);
+        return ESP_OK;
     }
 
-    httpd_resp_set_type(req, "image/jpeg");
-    httpd_resp_set_hdr(req, "Content-Disposition", "inline; filename=capture.jpg");
-    
-    esp_err_t res = httpd_resp_send(req, (const char*)photo.buffer, photo.length);
-    
-    releasePhotoBuffer(photo);
-    startVideoStream();
-    return res;
+    httpd_resp_send_500(req);
+    return ESP_ERR_TIMEOUT;
 }
 
 // Handler для статусу
