@@ -4,6 +4,7 @@
 #include "esp_camera.h"
 #include <string.h>
 #include <sys/socket.h>
+#include "esp_http_server.h"
 
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
