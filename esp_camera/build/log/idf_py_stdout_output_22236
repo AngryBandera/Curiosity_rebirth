@@ -1,0 +1,176 @@
+Command: C:\Users\bogda\.espressif\python_env\idf5.5_py3.13_env\Scripts\python.exe C:/esp/esp-idf\tools/idf_monitor.py -p COM7 -b 115200 --toolchain-prefix xtensa-esp32-elf- --target esp32 --revision 0 C:\Users\bogda\POK\Curiosity_rebirth\esp_camera\build\esp_camera.elf C:\Users\bogda\POK\Curiosity_rebirth\esp_camera\build\bootloader\bootloader.elf --force-color -m 'C:\Users\bogda\.espressif\python_env\idf5.5_py3.13_env\Scripts\python.exe' 'C:/esp/esp-idf\tools\idf.py' '-p' 'COM7'
+ets Jul 29�ets Jul 29 2019 12:21:46
+
+rst:0x1 (POWERON_RESET),boot:0x1b (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:6380
+ho 0 tail 12 room 4
+load:0x40078000,len:15916
+load:0x40080400,len:3860
+entry 0x40080638
+[0;32mI (29) boot: ESP-IDF v5.5 2nd stage bootloader[0m
+[0;32mI (29) boot: compile time Nov 19 2025 14:15:51[0m
+[0;32mI (29) boot: Multicore bootloader[0m
+[0;32mI (30) boot: chip revision: v3.1[0m
+[0;32mI (33) boot.esp32: SPI Speed      : 40MHz[0m
+[0;32mI (37) boot.esp32: SPI Mode       : DIO[0m
+[0;32mI (40) boot.esp32: SPI Flash Size : 2MB[0m
+[0;32mI (44) boot: Enabling RNG early entropy source...[0m
+[0;32mI (49) boot: Partition Table:[0m
+[0;32mI (51) boot: ## Label            Usage          Type ST Offset   Length[0m
+[0;32mI (57) boot:  0 nvs              WiFi data        01 02 00009000 00004000[0m
+[0;32mI (64) boot:  1 phy_init         RF data          01 01 0000d000 00001000[0m
+[0;32mI (71) boot:  2 otadata          OTA data         01 00 0000e000 00002000[0m
+[0;32mI (77) boot:  3 factory          factory app      00 00 00010000 001f0000[0m
+[0;32mI (84) boot: End of partition table[0m
+[0;32mI (87) boot: Defaulting to factory image[0m
+[0;32mI (91) esp_image: segment 0: paddr=00010020 vaddr=3f400020 size=250c8h (151752) map[0m
+[0;32mI (150) esp_image: segment 1: paddr=000350f0 vaddr=3ff80000 size=00020h (    32) load[0m
+[0;32mI (150) esp_image: segment 2: paddr=00035118 vaddr=3ffb0000 size=067c0h ( 26560) load[0m
+[0;32mI (164) esp_image: segment 3: paddr=0003b8e0 vaddr=40080000 size=04738h ( 18232) load[0m
+[0;32mI (171) esp_image: segment 4: paddr=00040020 vaddr=400d0020 size=a5d30h (679216) map[0m
+[0;32mI (403) esp_image: segment 5: paddr=000e5d58 vaddr=40084738 size=18328h ( 99112) load[0m
+[0;32mI (456) boot: Loaded app from partition at offset 0x10000[0m
+[0;32mI (456) boot: Disabling RNG early entropy source...[0m
+[0;32mI (467) quad_psram: This chip is ESP32-D0WD[0m
+[0;32mI (469) esp_psram: Found 8MB PSRAM device[0m
+[0;32mI (469) esp_psram: Speed: 40MHz[0m
+[0;32mI (469) esp_psram: PSRAM initialized, cache is in low/high (2-core) mode.[0m
+[0;33mW (474) esp_psram: Virtual address not enough for PSRAM, map as much as we can. 4MB is mapped[0m
+[0;32mI (482) cpu_start: Multicore app[0m
+[0;32mI (1391) esp_psram: SPI SRAM memory test OK[0m
+[0;32mI (1399) cpu_start: Pro cpu start user code[0m
+[0;32mI (1399) cpu_start: cpu freq: 160000000 Hz[0m
+[0;32mI (1399) app_init: Application information:[0m
+[0;32mI (1399) app_init: Project name:     esp_camera[0m
+[0;32mI (1403) app_init: App version:      004181e-dirty[0m
+[0;32mI (1408) app_init: Compile time:     Nov 19 2025 14:15:00[0m
+[0;32mI (1413) app_init: ELF file SHA256:  d921b8c5d...[0m
+[0;32mI (1417) app_init: ESP-IDF:          v5.5[0m
+[0;32mI (1421) efuse_init: Min chip rev:     v0.0[0m
+[0;32mI (1425) efuse_init: Max chip rev:     v3.99 [0m
+[0;32mI (1429) efuse_init: Chip rev:         v3.1[0m
+[0;32mI (1434) heap_init: Initializing. RAM available for dynamic allocation:[0m
+[0;32mI (1440) heap_init: At 3FFAE6E0 len 00001920 (6 KiB): DRAM[0m
+[0;32mI (1445) heap_init: At 3FFBB208 len 00024DF8 (147 KiB): DRAM[0m
+[0;32mI (1450) heap_init: At 3FFE0440 len 00003AE0 (14 KiB): D/IRAM[0m
+[0;32mI (1455) heap_init: At 3FFE4350 len 0001BCB0 (111 KiB): D/IRAM[0m
+[0;32mI (1461) heap_init: At 4009CA60 len 000035A0 (13 KiB): IRAM[0m
+[0;32mI (1467) esp_psram: Adding pool of 4096K of PSRAM memory to heap allocator[0m
+[0;32mI (1474) spi_flash: detected chip: generic[0m
+[0;32mI (1477) spi_flash: flash io: dio[0m
+[0;33mW (1480) spi_flash: Detected size(4096k) larger than the size in the binary image header(2048k). Using the size in the binary image header.[0m
+[0;32mI (1493) main_task: Started on CPU0[0m
+[0;32mI (1503) esp_psram: Reserving pool of 32K of internal memory for DMA/internal allocations[0m
+[0;32mI (1503) main_task: Calling app_main()[0m
+[0;32mI (1543) wifi:wifi driver task: 3ffc31a4, prio:23, stack:6656, core=0[0m
+[0;32mI (1553) wifi:wifi firmware version: f3dbad7[0m
+[0;32mI (1553) wifi:wifi certification version: v7.0[0m
+[0;32mI (1553) wifi:config NVS flash: enabled[0m
+[0;32mI (1553) wifi:config nano formatting: disabled[0m
+[0;32mI (1553) wifi:Init data frame dynamic rx buffer num: 32[0m
+[0;32mI (1563) wifi:Init static rx mgmt buffer num: 5[0m
+[0;32mI (1563) wifi:Init management short buffer num: 32[0m
+[0;32mI (1573) wifi:Init dynamic tx buffer num: 32[0m
+[0;32mI (1573) wifi:Init static rx buffer size: 1600[0m
+[0;32mI (1573) wifi:Init static rx buffer num: 10[0m
+[0;32mI (1583) wifi:Init dynamic rx buffer num: 32[0m
+[0;32mI (1583) wifi_init: rx ba win: 6[0m
+[0;32mI (1583) wifi_init: accept mbox: 6[0m
+[0;32mI (1593) wifi_init: tcpip mbox: 32[0m
+[0;32mI (1593) wifi_init: udp mbox: 6[0m
+[0;32mI (1593) wifi_init: tcp mbox: 6[0m
+[0;32mI (1603) wifi_init: tcp tx win: 5760[0m
+[0;32mI (1603) wifi_init: tcp rx win: 5760[0m
+[0;32mI (1603) wifi_init: tcp mss: 1440[0m
+[0;32mI (1613) wifi_init: WiFi IRAM OP enabled[0m
+[0;32mI (1613) wifi_init: WiFi RX IRAM OP enabled[0m
+[0;32mI (1623) phy_init: phy_version 4860,6b7a6e5,Feb  6 2025,14:47:07[0m
+[0;32mI (1693) wifi:mode : softAP (c8:2e:18:90:a6:e1)[0m
+[0;32mI (1703) wifi:Total power save buffer number: 16[0m
+[0;32mI (1703) wifi:Init max length of beacon: 752/752[0m
+[0;32mI (1703) wifi:Init max length of beacon: 752/752[0m
+[0;32mI (1703) CAMERA_TEST: WiFi AP started. SSID: ESP32_CAM_AP, Password: 12345678[0m
+[0;32mI (1703) esp_netif_lwip: DHCP server started on interface WIFI_AP_DEF with IP: 192.168.4.1[0m
+[0;32mI (1723) cam_hal: cam init ok[0m
+[0;32mI (1723) sccb-ng: pin_sda 26 pin_scl 27[0m
+[0;32mI (1723) sccb-ng: sccb_i2c_port=1[0m
+[0;32mI (1743) camera: Camera PID=0x26 VER=0x42 MIDL=0x7f MIDH=0xa2[0m
+[0;32mI (1743) camera: Detected OV2640 camera[0m
+[0;32mI (1743) camera: Detected camera at address=0x30[0m
+[0;32mI (1823) cam_hal: PSRAM DMA mode disabled[0m
+[0;32mI (1823) cam_hal: buffer_size: 32768, half_buffer_size: 4096, node_buffer_size: 2048, node_cnt: 16, total_cnt: 23[0m
+[0;32mI (1823) cam_hal: Allocating 96000 Byte frame buffer in PSRAM[0m
+[0;32mI (1833) cam_hal: Allocating 96000 Byte frame buffer in PSRAM[0m
+[0;32mI (1833) cam_hal: cam config ok[0m
+[0;32mI (1833) ov2640: Set PLL: clk_2x: 0, clk_div: 0, pclk_auto: 0, pclk_div: 8[0m
+[0;32mI (1943) CAMERA_SERVER: Camera initialized successfully[0m
+[0;32mI (1943) CAMERA_TEST: ✅ Camera initialized successfully[0m
+[0;32mI (1943) CAMERA_SERVER: Starting web server on port: 80[0m
+[0;32mI (1953) CAMERA_SERVER: Web server started successfully[0m
+[0;32mI (1953) CAMERA_TEST: Web server started. Connect to: http://192.168.4.1/[0m
+[0;32mI (1953) CAMERA_SERVER: Video streaming started[0m
+[0;32mI (3963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (5963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (7963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (9963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (11963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (13963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (15373) wifi:new:<1,1>, old:<1,1>, ap:<1,1>, sta:<255,255>, prof:1, snd_ch_cfg:0x0[0m
+[0;32mI (15373) wifi:station: 30:c9:ab:8b:a0:7d join, AID=1, bgn, 40U[0m
+[0;32mI (15963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (17963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (19113) esp_netif_lwip: DHCP server assigned IP to a client, IP is: 192.168.4.2[0m
+[0;32mI (19963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (21663) wifi:<ba-add>idx:2 (ifx:1, 30:c9:ab:8b:a0:7d), tid:0, ssn:117, winSize:64[0m
+[0;32mI (21963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (23963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (25963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (27963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (29963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (31963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (33963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (35963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (37963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (39963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (41963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (43963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (45963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (47963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (49963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (51963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (53963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (55963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (57963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (59963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (61963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (63963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (65963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (67963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (69963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (71963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (73963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (75963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (77963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (79963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (81963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (83963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (85963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (87963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (89963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (91963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (93963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (95963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (97963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (99963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (101963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (103963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (105963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (107963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (109963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (111963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (113963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (115963) CAMERA_TEST: Status: Streaming active[0m
+[0;32mI (117963) CAMERA_TEST: Status: Streaming active[0m

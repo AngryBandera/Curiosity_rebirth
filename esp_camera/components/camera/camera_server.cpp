@@ -7,21 +7,23 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 
-SemaphoreHandle_t camera_mutex = NULL;
-
 static const char* TAG = "CAMERA_SERVER";
 
 // Глобальні змінні
 static httpd_handle_t server = NULL;
 static bool camera_initialized = false;
 static bool streaming_active = false;
-volatile bool stream_running = false;
+
+// Нова система для capture зі стріму
+static volatile bool capture_request_flag = false;
+static photo_data_t captured_photo = {NULL, 0};
+static volatile bool capture_ready = false;
+static SemaphoreHandle_t capture_mutex = NULL;
 
 // Конфігурація пінів для ESP32-WROVER з OV2640
-// ВАЖЛИВО: Перевір pinout своєї конкретної плати!
 static camera_config_t camera_config = {
-    .pin_pwdn = -1,        // WROVER зазвичай не має power down
-    .pin_reset = -1,       // Software reset
+    .pin_pwdn = -1,
+    .pin_reset = -1,
     .pin_xclk = 21,
     .pin_sscb_sda = 26,
     .pin_sscb_scl = 27,
@@ -43,9 +45,9 @@ static camera_config_t camera_config = {
     .ledc_channel = LEDC_CHANNEL_0,
 
     .pixel_format = PIXFORMAT_JPEG,
-    .frame_size = FRAMESIZE_SVGA,    // 800x600, можна FRAMESIZE_XGA для WROVER
-    .jpeg_quality = 12,               // 0-63, менше = краща якість
-    .fb_count = 2,                    // WROVER має багато RAM, можна 2-3
+    .frame_size = FRAMESIZE_SVGA,
+    .jpeg_quality = 12,
+    .fb_count = 2,
     .fb_location = CAMERA_FB_IN_PSRAM,
     .grab_mode = CAMERA_GRAB_WHEN_EMPTY
 };
@@ -55,15 +57,16 @@ static camera_config_t camera_config = {
 // ============================================
 
 bool initCamera(const camera_config_params_t* config) {
-    camera_mutex = xSemaphoreCreateMutex();
-    if (!camera_mutex) {
-        ESP_LOGE("CAMERA", "Failed to create mutex");
-        return false;
-    }
-
     if (camera_initialized) {
         ESP_LOGW(TAG, "Camera already initialized");
         return true;
+    }
+
+    // Створюємо мютекс для capture
+    capture_mutex = xSemaphoreCreateMutex();
+    if (!capture_mutex) {
+        ESP_LOGE(TAG, "Failed to create capture mutex");
+        return false;
     }
 
     // Якщо передали кастомну конфігурацію - використовуємо її
@@ -99,29 +102,28 @@ bool initCamera(const camera_config_params_t* config) {
     // Отримання sensor для додаткових налаштувань
     sensor_t* s = esp_camera_sensor_get();
     if (s != NULL) {
-        // Налаштування для кращого відео
-        s->set_brightness(s, 0);     // -2 to 2
-        s->set_contrast(s, 0);       // -2 to 2
-        s->set_saturation(s, 0);     // -2 to 2
-        s->set_special_effect(s, 0); // 0 = No Effect
-        s->set_whitebal(s, 1);       // 0 = disable, 1 = enable
-        s->set_awb_gain(s, 1);       // 0 = disable, 1 = enable
-        s->set_wb_mode(s, 0);        // 0 to 4
-        s->set_exposure_ctrl(s, 1);  // 0 = disable, 1 = enable
-        s->set_aec2(s, 0);           // 0 = disable, 1 = enable
-        s->set_ae_level(s, 0);       // -2 to 2
-        s->set_aec_value(s, 300);    // 0 to 1200
-        s->set_gain_ctrl(s, 1);      // 0 = disable, 1 = enable
-        s->set_agc_gain(s, 0);       // 0 to 30
-        s->set_gainceiling(s, (gainceiling_t)0); // 0 to 6
-        s->set_bpc(s, 0);            // 0 = disable, 1 = enable
-        s->set_wpc(s, 1);            // 0 = disable, 1 = enable
-        s->set_raw_gma(s, 1);        // 0 = disable, 1 = enable
-        s->set_lenc(s, 1);           // 0 = disable, 1 = enable
-        s->set_hmirror(s, 0);        // 0 = disable, 1 = enable
-        s->set_vflip(s, 0);          // 0 = disable, 1 = enable
-        s->set_dcw(s, 1);            // 0 = disable, 1 = enable
-        s->set_colorbar(s, 0);       // 0 = disable, 1 = enable
+        s->set_brightness(s, 0);
+        s->set_contrast(s, 0);
+        s->set_saturation(s, 0);
+        s->set_special_effect(s, 0);
+        s->set_whitebal(s, 1);
+        s->set_awb_gain(s, 1);
+        s->set_wb_mode(s, 0);
+        s->set_exposure_ctrl(s, 1);
+        s->set_aec2(s, 0);
+        s->set_ae_level(s, 0);
+        s->set_aec_value(s, 300);
+        s->set_gain_ctrl(s, 1);
+        s->set_agc_gain(s, 0);
+        s->set_gainceiling(s, (gainceiling_t)0);
+        s->set_bpc(s, 0);
+        s->set_wpc(s, 1);
+        s->set_raw_gma(s, 1);
+        s->set_lenc(s, 1);
+        s->set_hmirror(s, 0);
+        s->set_vflip(s, 0);
+        s->set_dcw(s, 1);
+        s->set_colorbar(s, 0);
     }
 
     camera_initialized = true;
@@ -137,14 +139,12 @@ photo_data_t capturePhoto() {
         return photo;
     }
 
-    // Захоплюємо frame
     camera_fb_t* fb = esp_camera_fb_get();
     if (!fb) {
         ESP_LOGE(TAG, "Camera capture failed");
         return photo;
     }
 
-    // Копіюємо дані (щоб можна було звільнити fb)
     photo.buffer = (uint8_t*)malloc(fb->len);
     if (photo.buffer != NULL) {
         memcpy(photo.buffer, fb->buf, fb->len);
@@ -154,9 +154,7 @@ photo_data_t capturePhoto() {
         ESP_LOGE(TAG, "Failed to allocate memory for photo");
     }
 
-    // Звільняємо frame buffer
     esp_camera_fb_return(fb);
-
     return photo;
 }
 
@@ -202,190 +200,234 @@ const char* getCameraStatus() {
 }
 
 // ============================================
+// Нові функції для capture зі стріму
+// ============================================
+
+void requestCaptureFromStream() {
+    capture_request_flag = true;
+    capture_ready = false;
+    ESP_LOGI(TAG, "Capture requested from stream");
+}
+
+bool isCaptureReady() {
+    return capture_ready;
+}
+
+photo_data_t getCapturedPhoto() {
+    photo_data_t photo = {NULL, 0};
+    
+    if (xSemaphoreTake(capture_mutex, pdMS_TO_TICKS(100))) {
+        if (capture_ready && captured_photo.buffer != NULL) {
+            photo = captured_photo;
+            // Очищаємо після отримання
+            captured_photo.buffer = NULL;
+            captured_photo.length = 0;
+            capture_ready = false;
+        }
+        xSemaphoreGive(capture_mutex);
+    }
+    
+    return photo;
+}
+
+// ============================================
 // Функції для вебсервера
 // ============================================
 
-// Handler для root сторінки
 esp_err_t handleRootRequest(httpd_req_t* req) {
     const char* html = 
         "<!DOCTYPE html><html><head><title>Mars Rover Camera</title>"
         "<meta name='viewport' content='width=device-width, initial-scale=1'>"
-        "<style>body{font-family:Arial;text-align:center;margin:20px}"
-        "img{max-width:100%;height:auto;border:2px solid #333}"
-        "button{padding:10px 20px;margin:10px;font-size:16px}</style></head>"
-        "<body><h1>Mars Rover Camera</h1>"
-        "<img id='stream' src='/stream'>"
-        "<br><button onclick='capture()'>Capture Photo</button>"
-        "<button onclick='location.reload()'>Refresh</button>"
+        "<style>"
+        "body{font-family:Arial;text-align:center;margin:20px;background:#1a1a1a;color:#fff}"
+        "img{max-width:100%;height:auto;border:2px solid #4CAF50;border-radius:8px}"
+        "button{padding:12px 24px;margin:10px;font-size:16px;background:#4CAF50;color:#fff;"
+        "border:none;border-radius:5px;cursor:pointer;transition:0.3s}"
+        "button:hover{background:#45a049}"
+        "button:disabled{background:#666;cursor:not-allowed}"
+        "#status{padding:10px;background:#333;border-radius:5px;margin:10px auto;max-width:400px}"
+        ".loading{color:#FFA500}"
+        "</style></head>"
+        "<body><h1>🚀 Mars Rover Camera</h1>"
+        "<img id='stream' src='/stream' alt='Video Stream'>"
+        "<br>"
+        "<button id='captureBtn' onclick='capturePhoto()'>📷 Capture Photo</button>"
+        "<button onclick='location.reload()'>🔄 Refresh</button>"
         "<p id='status'>Status: Ready</p>"
         "<script>"
-        "function capture(){fetch('/capture').then(r=>r.blob()).then(b=>{"
-        "let url=URL.createObjectURL(b);let a=document.createElement('a');"
-        "a.href=url;a.download='photo.jpg';a.click();})}"
+        "let capturing = false;"
+        "async function capturePhoto() {"
+        "  if (capturing) return;"
+        "  capturing = true;"
+        "  const btn = document.getElementById('captureBtn');"
+        "  const status = document.getElementById('status');"
+        "  btn.disabled = true;"
+        "  status.innerHTML = '<span class=\"loading\">📸 Capturing photo...</span>';"
+        "  try {"
+        "    const response = await fetch('/capture');"
+        "    if (!response.ok) throw new Error('Capture failed');"
+        "    const blob = await response.blob();"
+        "    const url = URL.createObjectURL(blob);"
+        "    const a = document.createElement('a');"
+        "    a.href = url;"
+        "    a.download = 'rover_photo_' + Date.now() + '.jpg';"
+        "    a.click();"
+        "    URL.revokeObjectURL(url);"
+        "    status.innerHTML = '✅ Photo captured successfully!';"
+        "    setTimeout(() => { status.innerHTML = 'Status: Ready'; }, 3000);"
+        "  } catch (err) {"
+        "    status.innerHTML = '❌ Error: ' + err.message;"
+        "  } finally {"
+        "    capturing = false;"
+        "    btn.disabled = false;"
+        "  }"
+        "}"
+        // Автоматичне оновлення статусу
+        "setInterval(async () => {"
+        "  try {"
+        "    const r = await fetch('/status');"
+        "    const data = await r.json();"
+        "    if (!capturing) {"
+        "      document.getElementById('status').innerHTML = "
+        "        'Camera: ' + data.camera + ' | Streaming: ' + data.streaming;"
+        "    }"
+        "  } catch(e) {}"
+        "}, 5000);"
         "</script></body></html>";
     
     httpd_resp_set_type(req, "text/html");
     return httpd_resp_send(req, html, strlen(html));
 }
 
-volatile bool capture_request = false; // сигнал, що клієнт хоче фото
-httpd_req_t* capture_req_handle = NULL; // зберігаємо об'єкт запиту
-
+// ОНОВЛЕНИЙ handler для capture - тепер працює зі стрімом
 esp_err_t handleCaptureRequest(httpd_req_t *req) {
-    if (!camera_mutex)
-        return ESP_FAIL;
-
-    photo_data_t photo = {NULL, 0};
-
-    if (xSemaphoreTake(camera_mutex, pdMS_TO_TICKS(5000))) {
-        camera_fb_t *fb = esp_camera_fb_get();
-        if (fb) {
-            photo.buffer = (uint8_t*)malloc(fb->len);
-            if (photo.buffer) {
-                memcpy(photo.buffer, fb->buf, fb->len);
-                photo.length = fb->len;
-            }
-            esp_camera_fb_return(fb);
-        }
-        xSemaphoreGive(camera_mutex);
-    } else {
-        httpd_resp_send_500(req);
-        return ESP_ERR_TIMEOUT;
+    ESP_LOGI(TAG, "Capture request received");
+    
+    // Встановлюємо флаг для стріму
+    requestCaptureFromStream();
+    
+    // Чекаємо поки стрім зробить фото (максимум 5 секунд)
+    int timeout_ms = 5000;
+    int waited_ms = 0;
+    while (!isCaptureReady() && waited_ms < timeout_ms) {
+        vTaskDelay(pdMS_TO_TICKS(50));
+        waited_ms += 50;
     }
-
+    
+    if (!isCaptureReady()) {
+        ESP_LOGE(TAG, "Capture timeout");
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Capture timeout");
+        return ESP_FAIL;
+    }
+    
+    // Отримуємо готове фото
+    photo_data_t photo = getCapturedPhoto();
+    
     if (!photo.buffer) {
-        httpd_resp_send_500(req);
+        ESP_LOGE(TAG, "No captured photo available");
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "No photo available");
         return ESP_FAIL;
     }
-
-    // Відправляємо як JPEG
-    httpd_resp_set_type(req, "image/jpeg");
-    httpd_resp_set_hdr(req, "Content-Disposition", "inline; filename=capture.jpg");
-    httpd_resp_send(req, (const char*)photo.buffer, photo.length);
-
-    free(photo.buffer);
-    return ESP_OK;
-}
-
-
-// Handler для MJPEG стріму
-
-// В JS на сторінці root:
-// fetch('/capture').then(...)
-// -> на сервері просто ставимо capture_request = true
-
-esp_err_t handleStreamRequest(httpd_req_t* req)
-{
-    httpd_resp_set_type(req, "multipart/x-mixed-replace; boundary=frame");
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-
-    while (true)
-    {
-        if (!streaming_active) {
-            vTaskDelay(pdMS_TO_TICKS(50));
-            continue;
-        }
-
-        if (xSemaphoreTake(camera_mutex, portMAX_DELAY))
-        {
-            camera_fb_t* fb = esp_camera_fb_get();
-            if (!fb) {
-                xSemaphoreGive(camera_mutex);
-                vTaskDelay(pdMS_TO_TICKS(50));
-                continue;
-            }
-
-            // Відправляємо frame для MJPEG стріму
-            char header[128];
-            int len = snprintf(header, sizeof(header),
-                               "--frame\r\nContent-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n",
-                               fb->len);
-
-            if (httpd_resp_send_chunk(req, header, len) != ESP_OK ||
-                httpd_resp_send_chunk(req, (const char*)fb->buf, fb->len) != ESP_OK ||
-                httpd_resp_send_chunk(req, "\r\n", 2) != ESP_OK)
-            {
-                esp_camera_fb_return(fb);
-                xSemaphoreGive(camera_mutex);
-                break;
-            }
-
-            esp_camera_fb_return(fb);
-            xSemaphoreGive(camera_mutex);
-        }
-    }
-
-    return ESP_OK;
-}
-
-
-
-
-// Handler для capture одного фото
-esp_err_t handlePhotoRequest(httpd_req_t *req)
-{
-    if (!camera_mutex)
-        return ESP_FAIL;
-
-    bool was_streaming = streaming_active;
-
-    // Тимчасово зупиняємо стрім
-    if (was_streaming) {
-        streaming_active = false;
-        vTaskDelay(pdMS_TO_TICKS(100)); // чекаємо, поки цикл стріму відреагує
-    }
-
-    // Захоплюємо фото під мютексом
-    photo_data_t photo = {NULL, 0};
-    if (xSemaphoreTake(camera_mutex, pdMS_TO_TICKS(5000))) {
-        camera_fb_t *fb = esp_camera_fb_get();
-        if (fb) {
-            photo.buffer = (uint8_t*)malloc(fb->len);
-            if (photo.buffer) {
-                memcpy(photo.buffer, fb->buf, fb->len);
-                photo.length = fb->len;
-            }
-            esp_camera_fb_return(fb);
-        }
-        xSemaphoreGive(camera_mutex);
-    } else {
-        httpd_resp_send_500(req);
-        return ESP_ERR_TIMEOUT;
-    }
-
-    if (!photo.buffer) {
-        httpd_resp_send_500(req);
-        return ESP_FAIL;
-    }
-
+    
     // Відправляємо фото
     httpd_resp_set_type(req, "image/jpeg");
     httpd_resp_set_hdr(req, "Content-Disposition", "inline; filename=capture.jpg");
-    httpd_resp_send(req, (const char*)photo.buffer, photo.length);
-
+    esp_err_t res = httpd_resp_send(req, (const char*)photo.buffer, photo.length);
+    
+    // Звільняємо буфер
     free(photo.buffer);
-
-    // Відновлюємо стрім
-    if (was_streaming) {
-        streaming_active = true;
-    }
-
-    return ESP_OK;
+    
+    ESP_LOGI(TAG, "Photo sent successfully");
+    return res;
 }
 
-// Handler для статусу
+// ОНОВЛЕНИЙ handler для стріму - тепер перевіряє флаг capture
+esp_err_t handleStreamRequest(httpd_req_t* req) {
+    esp_err_t res = ESP_OK;
+    
+    httpd_resp_set_type(req, "multipart/x-mixed-replace; boundary=frame");
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+
+    ESP_LOGI(TAG, "Stream started");
+    
+    while (streaming_active) {
+        // Отримуємо frame
+        camera_fb_t* fb = esp_camera_fb_get();
+        if (!fb) {
+            ESP_LOGE(TAG, "Camera capture failed in stream");
+            vTaskDelay(pdMS_TO_TICKS(100));
+            continue;
+        }
+
+        // Перевіряємо чи потрібен capture
+        if (capture_request_flag) {
+            ESP_LOGI(TAG, "Processing capture request in stream");
+            
+            if (xSemaphoreTake(capture_mutex, pdMS_TO_TICKS(100))) {
+                // Звільняємо старе фото якщо є
+                if (captured_photo.buffer != NULL) {
+                    free(captured_photo.buffer);
+                }
+                
+                // Зберігаємо поточний кадр
+                captured_photo.buffer = (uint8_t*)malloc(fb->len);
+                if (captured_photo.buffer != NULL) {
+                    memcpy(captured_photo.buffer, fb->buf, fb->len);
+                    captured_photo.length = fb->len;
+                    capture_ready = true;
+                    ESP_LOGI(TAG, "Photo captured in stream: %d bytes", captured_photo.length);
+                } else {
+                    ESP_LOGE(TAG, "Failed to allocate memory for capture");
+                }
+                
+                capture_request_flag = false;
+                xSemaphoreGive(capture_mutex);
+            }
+        }
+
+        // Відправляємо frame для стріму
+        char header[128];
+        int len = snprintf(header, sizeof(header),
+                           "--frame\r\nContent-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n",
+                           fb->len);
+
+        if (httpd_resp_send_chunk(req, header, len) != ESP_OK) {
+            esp_camera_fb_return(fb);
+            break;
+        }
+        
+        if (httpd_resp_send_chunk(req, (const char*)fb->buf, fb->len) != ESP_OK) {
+            esp_camera_fb_return(fb);
+            break;
+        }
+        
+        if (httpd_resp_send_chunk(req, "\r\n", 2) != ESP_OK) {
+            esp_camera_fb_return(fb);
+            break;
+        }
+
+        esp_camera_fb_return(fb);
+        
+        // ВАЖЛИВО: Невелика затримка для можливості обробки інших запитів
+        vTaskDelay(pdMS_TO_TICKS(30)); // ~33fps
+    }
+
+    ESP_LOGI(TAG, "Stream ended");
+    return res;
+}
+
 esp_err_t handleStatusRequest(httpd_req_t* req) {
     char json[200];
     snprintf(json, sizeof(json),
-             "{\"camera\":\"%s\",\"streaming\":%s,\"fps\":15}",
+             "{\"camera\":\"%s\",\"streaming\":\"%s\",\"fps\":30}",
              camera_initialized ? "initialized" : "not initialized",
-             streaming_active ? "true" : "false");
+             streaming_active ? "active" : "inactive");
 
     httpd_resp_set_type(req, "application/json");
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     return httpd_resp_send(req, json, strlen(json));
 }
 
-// Ініціалізація вебсервера
 bool initWebServer(uint16_t port) {
     if (server != NULL) {
         ESP_LOGW(TAG, "Web server already running");
@@ -398,7 +440,7 @@ bool initWebServer(uint16_t port) {
     config.max_open_sockets = 7;
     config.max_uri_handlers = 8;
     config.task_priority = 5;
-    config.stack_size = 4096;
+    config.stack_size = 8192; // Збільшено для стабільності
 
     ESP_LOGI(TAG, "Starting web server on port: %d", port);
 
@@ -407,7 +449,6 @@ bool initWebServer(uint16_t port) {
         return false;
     }
 
-    // Реєструємо URI handlers
     httpd_uri_t root_uri = {
         .uri = "/",
         .method = HTTP_GET,

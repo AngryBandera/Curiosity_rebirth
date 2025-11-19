@@ -28,9 +28,9 @@ typedef struct {
     int pin_vsync;
     int pin_href;
     int pin_pclk;
-    framesize_t frame_size;  // FRAMESIZE_QVGA, FRAMESIZE_VGA, тощо
-    int jpeg_quality;        // 0-63, менше = краща якість
-    int fb_count;            // кількість frame buffers
+    framesize_t frame_size;
+    int jpeg_quality;
+    int fb_count;
 } camera_config_params_t;
 
 // Структура для фото даних
@@ -47,6 +47,11 @@ bool stopVideoStream();
 bool isStreaming();
 void releasePhotoBuffer(photo_data_t photo);
 
+// Нова функція для capture прямо зі стріму
+void requestCaptureFromStream();
+bool isCaptureReady();
+photo_data_t getCapturedPhoto();
+
 // Функції для вебсервера
 bool initWebServer(uint16_t port);
 void stopWebServer();
@@ -55,6 +60,7 @@ httpd_handle_t getServerHandle();
 // HTTP handler функції
 esp_err_t handleStreamRequest(httpd_req_t* req);
 esp_err_t handlePhotoRequest(httpd_req_t* req);
+esp_err_t handleCaptureRequest(httpd_req_t* req);
 esp_err_t handleStatusRequest(httpd_req_t* req);
 esp_err_t handleRootRequest(httpd_req_t* req);
 
