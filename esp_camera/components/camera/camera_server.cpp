@@ -600,7 +600,7 @@ esp_err_t handleQuickCaptureRequest(httpd_req_t* req) {
     ESP_LOGI(TAG, "⚡ Quick capture request");
     
     if (!camera_initialized) {
-        httpd_resp_send_err(req, HTTPD_503_SERVICE_UNAVAILABLE, "Camera not ready");
+        httpd_resp_send_err(req, HTTPD_500_SERVICE_UNAVAILABLE, "Camera not ready");
         return ESP_FAIL;
     }
     
