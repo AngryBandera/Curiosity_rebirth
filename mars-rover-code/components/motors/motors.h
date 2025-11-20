@@ -157,6 +157,13 @@ public:
     void set_speed(int16_t speed);
     void set_angle(float angle);
 
+    /*
+     * speed:
+     *  - >= 0 => rotates clockwise
+     *  - <  0 => rotates counter clockwise
+     */
+    void rotate(int16_t speed);
+
     void tick();
     void stop();
 
