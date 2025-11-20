@@ -168,6 +168,8 @@ public:
     void stop();
 
     void print_angles();
+
+    bool is_moving();
 };
 
 
