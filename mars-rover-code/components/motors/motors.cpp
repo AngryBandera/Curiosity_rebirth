@@ -619,15 +619,17 @@ void DriveSystem::handle_spinning() {
     // Плавне обертання керованих коліс до потрібних кутів
     // Передні колеса
     if (fabsf(Cfg::SPIN_FRONT_ANGLE - right_front.spin_target_angle) > 0.5f) {
-        right_front.calculate_spin_duty(
-            right_front.spin_target_angle + (Cfg::SPIN_FRONT_ANGLE - right_front.spin_target_angle) * 0.1f
-        );
         left_front.calculate_spin_duty(
+            // -right_front.spin_target_angle
             left_front.spin_target_angle + (Cfg::SPIN_FRONT_ANGLE - left_front.spin_target_angle) * 0.1f
         );
+        right_front.calculate_spin_duty(
+            -left_front.spin_target_angle //FIX: theoreticly should be symmetrical
+            // right_front.spin_target_angle + (Cfg::SPIN_FRONT_ANGLE - right_front.spin_target_angle) * 0.1f
+        );
     } else {
-        right_front.calculate_spin_duty(Cfg::SPIN_FRONT_ANGLE);
         left_front.calculate_spin_duty(Cfg::SPIN_FRONT_ANGLE);
+        right_front.calculate_spin_duty(-Cfg::SPIN_FRONT_ANGLE);
     }
     
     // Задні колеса
@@ -636,11 +638,12 @@ void DriveSystem::handle_spinning() {
             right_back.spin_target_angle + (Cfg::SPIN_BACK_ANGLE - right_back.spin_target_angle) * 0.1f
         );
         left_back.calculate_spin_duty(
-            left_back.spin_target_angle + (Cfg::SPIN_BACK_ANGLE - left_back.spin_target_angle) * 0.1f
+            -right_back.spin_target_angle //FIX: theoreticly should be symmetrical
+            // left_back.spin_target_angle + (Cfg::SPIN_BACK_ANGLE - left_back.spin_target_angle) * 0.1f
         );
     } else {
+        left_back.calculate_spin_duty(-Cfg::SPIN_BACK_ANGLE);
         right_back.calculate_spin_duty(Cfg::SPIN_BACK_ANGLE);
-        left_back.calculate_spin_duty(Cfg::SPIN_BACK_ANGLE);
     }
     
     ESP_LOGD(TAG, "SPINNING: speed=%d, throttle=%d, brake=%d", 
