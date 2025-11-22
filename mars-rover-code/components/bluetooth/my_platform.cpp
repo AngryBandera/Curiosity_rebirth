@@ -10,7 +10,7 @@
 #define POWER_EXPONENT 3.0f
 
 static DriveSystem* g_rover = nullptr;
-
+    
 
 typedef struct my_platform_instance_s {
     uni_gamepad_seat_t gamepad_seat;
@@ -103,12 +103,13 @@ static void my_platform_on_controller_data(uni_hid_device_t* d, uni_controller_t
             int32_t speed = normalized_speed(gp->axis_y);
             float angle = normalized_angle(gp->axis_rx);
             
-            if (gp->throttle > 450 && !g_rover->is_moving()) {
-                g_rover->set(2000, 90);
-            } else if (gp->brake > 450 && !g_rover->is_moving()) {
-                g_rover->set(2000, -90);
-            }
-            else {
+            // === РЕЖИМ ОБЕРТАННЯ НАВКОЛО ОСІ ===
+            if (gp->throttle > 50 || gp->brake > 50) {
+                // Натиснута одна з кнопок для обертання
+                g_rover->set_spin_input(gp->throttle, gp->brake);
+            } else {
+                // Звичайний режим руху
+                g_rover->stop_spinning();
                 g_rover->set(speed, angle);
 
                 if ((abs(gp->axis_y) >= 450) && d->report_parser.play_dual_rumble != NULL) {

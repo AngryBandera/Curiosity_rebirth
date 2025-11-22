@@ -3,55 +3,22 @@
 
 #include "i2cdev.h"
 #include "motors_cfg.h"
+#include "pca_buffer.h"
 #include <cstdint>
 #include <sys/types.h>
-#include "pca9685.h"
 
 
-class PCA9685Buffer {
-private:
-    i2c_dev_t* device;
-    uint16_t buffer[16];  // Буфер для 16 каналів (0-4095)
-    bool dirty;           // Чи є незбережені зміни
-    const char* TAG = "PCA9685Buffer";
-    
-public:
-    PCA9685Buffer(i2c_dev_t* pca9685);
-    
-    /*
-     * Встановити PWM значення для каналу (не відправляє одразу!)
-     * channel: 0-15
-     * value: 0-4095
-     */
-    void set_channel_value(uint8_t channel, uint16_t value);
-    
-    /*
-     * Отримати поточне значення з буфера
-     */
-    uint16_t get_channel_value(uint8_t channel);
-    
-    /*
-     * Відправити всі накопичені зміни на PCA9685 однією транзакцією
-     */
-    void flush();
-    
-    /*
-     * Встановити значення і одразу відправити
-     */
-    void set_channel_immediate(uint8_t channel, uint16_t value);
-    
-    /*
-     * Чи є незбережені зміни
-     */
-    bool is_dirty() const;
-    
-    /*
-     * Очистити буфер (встановити всі канали в 0)
-     */
-    void clear();
+
+// Enum для машини станів
+enum class DriveState {
+    IDLE,           // Марсохід стоїть
+    ACCELERATING,   // Розгін до dest_speed
+    MOVING,         // Рухається зі сталою швидкістю
+    DECELERATING,   // Гальмування
+    TURNING,        // Разкий поворот зі зменшенням швидкості
+    STOPPING,       // Критичне гальмування (зміна напрямку)
+    SPINNING        // Обертання навколо своєї осі (новий стан)
 };
-
-
 
 class WheelMotor {
 protected:
@@ -90,30 +57,28 @@ class SteerableWheel: public WheelMotor {
 private:
     uint8_t servo_pca;
     float current_angle{0.0f};
-    uint16_t servo_duty{Servo::CENTER_DUTY}; //TODO: shouldn't be 0
-
+    uint16_t servo_duty{Servo::CENTER_DUTY};
+    
 public:
+    // === ПАРАМЕТРИ SPIN РЕЖИМУ ===
+    uint16_t spin_servo_duty{Servo::CENTER_DUTY};  // PWM для сервомотора при обертанні
+    float spin_target_angle{0.0f};                 // Цільовий кут при обертанні
+
     SteerableWheel(uint8_t pca1, uint8_t pca2,
             const char *TAG,
             int16_t l, int16_t d,
             uint8_t servo_pca);
 
-    /*
-     * angle - in interval [-45.00, 45.00]
-     *  STRONGLY RECOMMENDED TO GIVE ONLY VALUES AS 1.0, 2.00, 30.0...
-     */
     void update_geometry(int32_t med_radius) override;
     void update_buffer(int16_t speed, PCA9685Buffer* buffer) override;
 
     float get_angle();
+    
+    // === МЕТОДИ ДЛЯ SPIN РЕЖИМУ ===
+    void calculate_spin_duty(float spin_angle);
+    uint16_t get_spin_duty() const { return spin_servo_duty; }
 };
 
-
-
-/*
- * to use this class you should first configure a timer and give it
- * as an argument
-*/
 class DriveSystem {
 private:
     uint16_t radius{0};
@@ -142,6 +107,38 @@ private:
     //inline void rotate(float rvr_angle);
     void actual_move(int16_t speed, float angle);
 
+    // === МАШИНА СТАНІВ ===
+    DriveState current_state{DriveState::IDLE};
+    DriveState previous_state{DriveState::IDLE};
+    
+    int16_t last_dest_speed{0};
+    float last_dest_angle{0.0f};
+    uint16_t state_tick_counter{0};
+    
+    // === ПАРАМЕТРИ ІНЕРЦІЇ ===
+    int16_t inertia_speed{0};
+    uint16_t inertia_ticks_remaining{0};
+    
+    // === ПАРАМЕТРИ SPIN РЕЖИМУ ===
+    int16_t spin_input_throttle{0};    // Значення дроселя (0-512)
+    int16_t spin_input_brake{0};       // Значення гальма (0-512)
+    bool is_spinning{false};           // Чи активний режим обертання
+    
+    // Методи для роботи зі станами
+    void update_state();
+    void handle_idle();
+    void handle_accelerating();
+    void handle_moving();
+    void handle_decelerating();
+    void handle_turning();
+    void handle_stopping();
+    void handle_spinning();          // Новий обробник для SPINNING
+    
+    bool should_change_direction() const;
+    bool should_start_turning() const;
+    
+    void apply_inertia();
+
 public:
     /*
      * timer - shared timer that wheel motors will use
@@ -156,6 +153,10 @@ public:
 
     void set_speed(int16_t speed);
     void set_angle(float angle);
+    
+    // === МЕТОДИ ДЛЯ SPIN РЕЖИМУ ===
+    void set_spin_input(int16_t throttle, int16_t brake);
+    void stop_spinning();
 
     /*
      * speed:
@@ -164,10 +165,17 @@ public:
      */
     void rotate(int16_t speed);
 
+    DriveState get_current_state() const { return current_state; }
+
+    // Новий метод для отримання інформації про інерцію
+    uint16_t get_inertia_ticks_remaining() const { return inertia_ticks_remaining; }
+    bool get_is_spinning() const { return is_spinning; }
+
     void tick();
     void stop();
 
     void print_angles();
+    void print_state();
 
     bool is_moving();
 };

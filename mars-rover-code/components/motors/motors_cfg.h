@@ -38,13 +38,36 @@ namespace Cfg {
 
     constexpr int16_t DC_ACCEL = 30;
     constexpr float SERVO_ACCECL = 0.5f;
+    
+    // === НОВI ПАРАМЕТРИ ІНЕРЦІЇ ===
+    // Час (в тактах) потрібний щоб зменшити швидкість на 1 одиницю при ковзанні
+    // На швидкості 3000 будет гальмування протягом: 3000 * INERTIA_TICKS_PER_UNIT * 10ms
+    // Приклад: INERTIA_TICKS_PER_UNIT = 2 => на 3000 потрібно 3000*2*10ms = 60 секунд
+    constexpr float INERTIA_TICKS_PER_UNIT = 1.0f;  // Кількість тактів (×10мс) на одиницю швидкості
+    
+    // Максимальний час гальмування (в тактах) щоб машина не зависала
+    // 1000 тактів = 10 секунд
+    constexpr uint16_t MAX_INERTIA_TICKS = 1000;
+    
+    // === ПАРАМЕТРИ ОБЕРТАННЯ НАВКОЛО ОСІ ===
+    // Кут для переднього колеса при обертанні навколо осі (внутрішнього радіуса)
+    constexpr float SPIN_FRONT_ANGLE = 45.0f;      // градуси
+    // Кут для задніго колеса при обертанні навколо осі (внутрішнього радіуса)
+    constexpr float SPIN_BACK_ANGLE = -45.0f;      // градуси (протилежний напрям)
+    
+    // Максимальна швидкість обертання навколо осі
+    constexpr int16_t SPIN_MAX_SPEED = 2000;
 }
 
 
+// Видали дублювання Servo namespace звідсіля!
+// Тепер вони будуть в pca_buffer.h
 
-// I2C and PCA9685 definitions
-#define I2C_MASTER_SCL_IO    GPIO_NUM_22    // GPIO for SCL
-#define I2C_MASTER_SDA_IO    GPIO_NUM_21    // GPIO for SDA
-#define I2C_MASTER_FREQ_HZ   100000
-#define PCA9685_ADDR         PCA9685_ADDR_BASE  // 0x40
+// Видали:
+// #define I2C_MASTER_SCL_IO    GPIO_NUM_22
+// #define I2C_MASTER_SDA_IO    GPIO_NUM_21
+// #define I2C_MASTER_FREQ_HZ   100000
+// #define PCA9685_ADDR         PCA9685_ADDR_BASE
+
+// Тепер вони в pca_buffer.h
 
