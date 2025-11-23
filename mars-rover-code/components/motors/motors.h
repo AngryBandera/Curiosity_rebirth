@@ -103,6 +103,10 @@ private:
     int16_t dest_speed;
     float dest_angle;
 
+    float actual_speed; // it is used only for inertia calculations
+    // so don't be tricked by its name
+    // in most of the cases mem_speed is an actual speed applied for motors
+
     //inline void dc_move(int16_t speed);
     //inline void rotate(float rvr_angle);
     void actual_move(int16_t speed, float angle);

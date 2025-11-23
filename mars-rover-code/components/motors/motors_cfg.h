@@ -45,7 +45,8 @@ namespace Cfg {
     // На швидкості 3000 будет гальмування протягом: 3000 * INERTIA_TICKS_PER_UNIT * 10ms
     // Приклад: INERTIA_TICKS_PER_UNIT = 2 => на 3000 потрібно 3000*2*10ms = 60 секунд
     constexpr float INERTIA_TICKS_PER_UNIT = 1.0f;  // Кількість тактів (×10мс) на одиницю швидкості
-    
+    constexpr float UINT_PER_INERTIA_TICKS = 1.0f / INERTIA_TICKS_PER_UNIT;
+
     // Максимальний час гальмування (в тактах) щоб машина не зависала
     // 1000 тактів = 10 секунд
     constexpr uint16_t MAX_INERTIA_TICKS = 1000;
