@@ -2,12 +2,14 @@
 #include <cstdint>
 #include <cmath>
 
+constexpr float PI = 3.14159265358979323846f;
+
 namespace Servo {
-    // Серво параметри    
+    // Parameters for servo motors    
     constexpr uint16_t MIN_PULSE_US = 500;
     constexpr uint16_t MAX_PULSE_US = 2500;
-    constexpr uint16_t PERIOD_US = 3333; //20000
-    constexpr uint16_t  FREQ = 300; //50
+    constexpr uint16_t PERIOD_US = 3333; // was 20000
+    constexpr uint16_t  FREQ = 300; // it is maximum frequency for servos
     constexpr uint8_t RESOLUTION = 12;
     constexpr uint16_t MAX_DUTY = (1 << Servo::RESOLUTION);
 
@@ -19,26 +21,30 @@ namespace Servo {
 }
 
 namespace Cfg {
-    // Кути в градусах
-    constexpr float WHEEL_CENTER_ANGLE = 90.0f;
+    // Wheel motor: speed is signed in internal units (e.g. -4095..+4095).
+    // We map absolute speed -> PWM (0..4095). If you have a different internal max (e.g. 1000),
+    // adjust `SCALE` accordingly or pass a max parameter.
+    constexpr int16_t MOTOR_INTERNAL_MAX = 3000;
+    constexpr float MOTOR_SCALE = 4095.0f / static_cast<float>(MOTOR_INTERNAL_MAX);
+
+    // Default angles for steerable wheels
+    constexpr float WHEEL_CENTER_ANGLE = 90.0f; // by default
     constexpr float WHEEL_MAX_DEVIATION = 80.0f;
     
-    // Геометрія марсохода (в міліметрах)
-    constexpr float WHEELBASE_MM = 573.0f;        // відстань між передніми і задніми колесами
-    constexpr float TRACK_WIDTH_MM = 538.0f;      // відстань між лівими і правими колесами
-    
-    // Координати коліс відносно центру
-    constexpr int16_t FRONT_Y = 300;       // мм від центру (вперед +)
-    constexpr int16_t BACK_Y = -273;       // мм від центру (назад -)
-    constexpr int16_t LEFT_X = -269;       // мм від центру (ліво -)
-    constexpr int16_t RIGHT_X = 269;       // мм від центру (право +)
+    // Coordinates of wheels relative to mars rover center (in mm)
+    constexpr int16_t FRONT_Y = 300;
+    constexpr int16_t BACK_Y = -273;
+    constexpr int16_t LEFT_X = -269;
+    constexpr int16_t RIGHT_X = 269;
 
-    constexpr float PI = 3.14159265358979323846f;
-
+    // I am not sure whether we need these parameters
+    // usually it is used for deviation from center that we neglect
     constexpr float ANGLE_DEVIATION = 0.5f;
 
+    // dc motor acceleration (units per control loop tick)
     constexpr int16_t DC_ACCEL = 30;
-    constexpr float SERVO_ACCECL = 0.5f;
+    // servo speed (degrees per control loop tick)
+    constexpr float SERVO_SPEED = 0.5f;
     
     // === НОВI ПАРАМЕТРИ ІНЕРЦІЇ ===
     // Час (в тактах) потрібний щоб зменшити швидкість на 1 одиницю при ковзанні
@@ -47,29 +53,16 @@ namespace Cfg {
     constexpr float INERTIA_TICKS_PER_UNIT = 1.0f;  // Кількість тактів (×10мс) на одиницю швидкості
     constexpr float UINT_PER_INERTIA_TICKS = 1.0f / INERTIA_TICKS_PER_UNIT;
 
-    // Максимальний час гальмування (в тактах) щоб машина не зависала
-    // 1000 тактів = 10 секунд
+    // Max time for inertia effect (in ticks) to avoid too long sliding
+    // 1000 тактів * 10 ms = 10 seconds
     constexpr uint16_t MAX_INERTIA_TICKS = 1000;
     
-    // === ПАРАМЕТРИ ОБЕРТАННЯ НАВКОЛО ОСІ ===
-    // Кут для переднього колеса при обертанні навколо осі (внутрішнього радіуса)
-    constexpr float SPIN_FRONT_ANGLE = 45.0f;      // градуси
-    // Кут для задніго колеса при обертанні навколо осі (внутрішнього радіуса)
-    constexpr float SPIN_BACK_ANGLE = -45.0f;      // градуси (протилежний напрям)
+    // === PARAMETERS FOR SPINNING MODE ===
+    // Angle for front wheels when spinning around center
+    constexpr float SPIN_FRONT_ANGLE = 48.11847;      // degrees
+    // Angle for back wheels when spinning around center
+    constexpr float SPIN_BACK_ANGLE  = 45.42284;      // degrees
     
-    // Максимальна швидкість обертання навколо осі
+    // Max speed in spinning mode (internal units)
     constexpr int16_t SPIN_MAX_SPEED = 2000;
 }
-
-
-// Видали дублювання Servo namespace звідсіля!
-// Тепер вони будуть в pca_buffer.h
-
-// Видали:
-// #define I2C_MASTER_SCL_IO    GPIO_NUM_22
-// #define I2C_MASTER_SDA_IO    GPIO_NUM_21
-// #define I2C_MASTER_FREQ_HZ   100000
-// #define PCA9685_ADDR         PCA9685_ADDR_BASE
-
-// Тепер вони в pca_buffer.h
-

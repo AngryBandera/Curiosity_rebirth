@@ -34,7 +34,7 @@ extern "C" {
 }
 
 // Rover C++ headers
-#include "motors.h"
+#include "drive_system.h"
 #include "driver/ledc.h"
 #include "pca9685.h"
 
@@ -62,8 +62,6 @@ static void rover_tick_task(void *param)
 
 #define ROVER_MAX_TURN_ANGLE 60.0f
 #define ROVER_STOP_SPEED 0
-
-static int max_speed = 1000;
 
 extern "C" {
     struct uni_platform* get_my_platform(DriveSystem *ds);
