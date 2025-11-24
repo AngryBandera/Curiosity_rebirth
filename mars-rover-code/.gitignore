@@ -12,6 +12,8 @@ sdkconfig.old
 sdkconfig.ci.test
 
 .clangd
+build.log
+compile_commands.json
 
 # Component Manager
 # =========================
