@@ -12,8 +12,7 @@ DriveSystem::DriveSystem(i2c_dev_t* pca9685)
     right_middle{
         7, 6, 
        "RightMiddleMotor",
-       0, Cfg::RIGHT_X
-                    },
+       0, Cfg::RIGHT_X},
     right_front{
         9, 8,
         "RightFrontWheel", 
@@ -28,8 +27,7 @@ DriveSystem::DriveSystem(i2c_dev_t* pca9685)
     left_middle {
         13, 12,
         "LeftMiddleMotor",
-        0, Cfg::LEFT_X
-                    },
+        0, Cfg::LEFT_X},
     left_front {
         15, 14,
         "LeftFrontWheel",
