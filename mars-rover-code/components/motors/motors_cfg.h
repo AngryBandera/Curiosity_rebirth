@@ -1,3 +1,5 @@
+#pragma once
+
 #include "hal/ledc_types.h"
 #include <cstdint>
 #include <cmath>
@@ -65,4 +67,15 @@ namespace Cfg {
     
     // Max speed in spinning mode (internal units)
     constexpr int16_t SPIN_MAX_SPEED = 2000;
+}
+
+// === A4988 Stepper driver pin configuration ===
+// Set these to your board GPIO numbers used for the A4988 driver.
+// If left as -1 the pins are considered unconfigured.
+namespace A4988 {
+    constexpr int STEP_PIN = -1; // a.k.a. CLK on some boards
+    constexpr int DIR_PIN  = -1;
+    constexpr int ENABLE_PIN = -1; // optional: driver enable (active low)
+    // default pulse width for STEP in microseconds (private default)
+    constexpr int STEP_PULSE_US = 2; // typical 1..5 us pulse
 }

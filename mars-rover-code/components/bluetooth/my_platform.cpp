@@ -2,6 +2,7 @@
 #include <iostream>
 #include <uni.h>
 #include <drive_system.h>
+#include <stepper.h>
 #include <cmath>
 #include <math.h>
 
@@ -10,6 +11,7 @@
 #define POWER_EXPONENT 3.0f
 
 static DriveSystem* g_rover = nullptr;
+// static Stepper camera_pan_motor;
     
 
 typedef struct my_platform_instance_s {
@@ -102,13 +104,13 @@ static void my_platform_on_controller_data(uni_hid_device_t* d, uni_controller_t
             gp = &ctl->gamepad;
             int32_t speed = normalized_speed(gp->axis_y);
             float angle = normalized_angle(gp->axis_rx);
-            
-            // === РЕЖИМ ОБЕРТАННЯ НАВКОЛО ОСІ ===
+
+            if (gp->buttons & BUTTON_X) {
+                // camera_pan_motor.step_once_async();
+            }
             if (gp->throttle > 50 || gp->brake > 50) {
-                // Натиснута одна з кнопок для обертання
                 g_rover->set_spin_input(gp->throttle, gp->brake);
             } else {
-                // Звичайний режим руху
                 g_rover->stop_spinning();
                 g_rover->set(speed, angle);
 
@@ -180,6 +182,7 @@ static void trigger_event_on_gamepad(uni_hid_device_t* d) {
 
 extern "C" struct uni_platform* get_my_platform(DriveSystem* ds) {
     static struct uni_platform plat = {};
+    // camera_pan_motor = Stepper();
 
     g_rover = ds;
     plat.name = "custom";
