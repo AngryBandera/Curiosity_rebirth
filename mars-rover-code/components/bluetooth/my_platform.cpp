@@ -11,7 +11,7 @@
 #define POWER_EXPONENT 3.0f
 
 static DriveSystem* g_rover = nullptr;
-// static Stepper camera_pan_motor;
+static Stepper camera_pan_motor;
     
 
 typedef struct my_platform_instance_s {
@@ -86,6 +86,7 @@ static float normalized_angle(int32_t x) {
 
     return (float)(sign * non_linear_scale * MAX_ANGLE);
 }
+
 static void my_platform_on_controller_data(uni_hid_device_t* d, uni_controller_t* ctl) {
     static uint8_t leds = 0;
     static uint8_t enabled = true;
@@ -106,7 +107,9 @@ static void my_platform_on_controller_data(uni_hid_device_t* d, uni_controller_t
             float angle = normalized_angle(gp->axis_rx);
 
             if (gp->buttons & BUTTON_X) {
-                // camera_pan_motor.step_once_async();
+                logi("Controller buttons data(): %d\n", gp->buttons);
+                camera_pan_motor.set_target_angle(camera_pan_motor.get_current_angle()+angle/30.0f);
+
             }
             if (gp->throttle > 50 || gp->brake > 50) {
                 g_rover->set_spin_input(gp->throttle, gp->brake);
@@ -182,7 +185,10 @@ static void trigger_event_on_gamepad(uni_hid_device_t* d) {
 
 extern "C" struct uni_platform* get_my_platform(DriveSystem* ds) {
     static struct uni_platform plat = {};
-    // camera_pan_motor = Stepper();
+    camera_pan_motor = Stepper();
+
+    camera_pan_motor.init();
+    camera_pan_motor.start_task("camera_pan", 1, 9, 3072);
 
     g_rover = ds;
     plat.name = "custom";
