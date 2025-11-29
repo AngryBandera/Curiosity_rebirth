@@ -6,18 +6,31 @@
 #include "esp_http_server.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "freertos/queue.h"
 
 static const char* TAG = "CAMERA_SERVER";
 
 // Глобальні змінні
 static httpd_handle_t server = NULL;
 static bool camera_initialized = false;
-static bool streaming_active = false;
+static volatile bool streaming_active = false;  // volatile бо міняється з різних потоків
+
+// Черга для відправки кадрів клієнтам
+static QueueHandle_t frame_queue = NULL;
+static TaskHandle_t stream_task_handle = NULL;
+
+// Структура для зберігання клієнтських з'єднань
+typedef struct {
+    httpd_req_t* req;
+    bool active;
+} stream_client_t;
+
+static stream_client_t stream_clients[3] = {0};  // максимум 3 клієнти одночасно
 
 // Конфігурація камери для ESP32-WROVER
 static camera_config_t camera_config = {
-    .pin_pwdn = -1,        // WROVER не має power down
-    .pin_reset = -1,       // Software reset
+    .pin_pwdn = -1,
+    .pin_reset = -1,
     .pin_xclk = 21,
     .pin_sscb_sda = 26,
     .pin_sscb_scl = 27,
@@ -39,9 +52,9 @@ static camera_config_t camera_config = {
     .ledc_channel = LEDC_CHANNEL_0,
 
     .pixel_format = PIXFORMAT_JPEG,
-    .frame_size = FRAMESIZE_SVGA,    // 800x600
-    .jpeg_quality = 12,               // 0-63, менше = краща якість
-    .fb_count = 2,                    // 2 буфери для плавного стріму
+    .frame_size = FRAMESIZE_SVGA,
+    .jpeg_quality = 10,
+    .fb_count = 2,
     .fb_location = CAMERA_FB_IN_PSRAM,
     .grab_mode = CAMERA_GRAB_WHEN_EMPTY
 };
@@ -56,7 +69,6 @@ bool initCamera(const camera_config_params_t* config) {
         return true;
     }
 
-    // Якщо передали кастомну конфігурацію - використовуємо її
     if (config != NULL) {
         camera_config.pin_pwdn = config->pin_pwdn;
         camera_config.pin_reset = config->pin_reset;
@@ -79,14 +91,12 @@ bool initCamera(const camera_config_params_t* config) {
         camera_config.fb_count = config->fb_count;
     }
 
-    // Ініціалізація камери
     esp_err_t err = esp_camera_init(&camera_config);
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Camera init failed with error 0x%x", err);
         return false;
     }
 
-    // Налаштування сенсора для кращого відео
     sensor_t* s = esp_camera_sensor_get();
     if (s != NULL) {
         s->set_brightness(s, 0);
@@ -150,14 +160,13 @@ const char* getCameraStatus() {
     if (streaming_active) {
         return "Streaming active";
     }
-    return "Camera ready (stream stopped)";
+    return "Camera ready";
 }
 
 // ============================================
-// HTTP Handlers
+// HTTP Handlers - СПРОЩЕНІ
 // ============================================
 
-// Головна сторінка з вбудованим стрімом
 esp_err_t handleRootRequest(httpd_req_t* req) {
     const char* html = 
         "<!DOCTYPE html><html><head><title>Mars Rover Camera</title>"
@@ -170,8 +179,7 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
         ".controls{margin:20px 0}"
         "button{padding:15px 30px;margin:10px;font-size:18px;background:#4CAF50;color:#fff;"
         "border:none;border-radius:8px;cursor:pointer;transition:all 0.3s;font-weight:bold}"
-        "button:hover{background:#45a049;transform:scale(1.05)}"
-        "button:active{transform:scale(0.95)}"
+        "button:hover{background:#45a049}"
         "button:disabled{background:#666;cursor:not-allowed;opacity:0.5}"
         "button.stop{background:#f44336}"
         "button.stop:hover{background:#da190b}"
@@ -179,154 +187,54 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
         "max-width:500px;font-size:16px;border:2px solid #555}"
         ".active{color:#4CAF50;font-weight:bold}"
         ".inactive{color:#f44336;font-weight:bold}"
-        ".warning{color:#ff9800;font-weight:bold}"
         "</style></head>"
         "<body>"
-        "<h1>🚀 Mars Rover Camera Stream</h1>"
-        "<img id='stream' src='/stream' alt='Connecting to stream...'>"
+        "<h1>🚀 Mars Rover Camera</h1>"
+        "<img id='stream' src='/stream' alt='Loading...'>"
         "<div class='controls'>"
-        "<button id='startBtn' onclick='startStream()'>▶️ START STREAM</button>"
-        "<button id='stopBtn' class='stop' onclick='stopStream()'>⏹ STOP STREAM</button>"
+        "<button id='startBtn' onclick='toggleStream(true)'>▶️ START</button>"
+        "<button id='stopBtn' class='stop' onclick='toggleStream(false)'>⏹ STOP</button>"
         "</div>"
-        "<div id='status'>Loading status...</div>"
+        "<div id='status'>Ready</div>"
         "<script>"
-        "let streamImg = document.getElementById('stream');"
-        "let statusDiv = document.getElementById('status');"
-        "let startBtn = document.getElementById('startBtn');"
-        "let stopBtn = document.getElementById('stopBtn');"
-        "let isRequesting = false;"
+        "let statusDiv=document.getElementById('status');"
+        "let startBtn=document.getElementById('startBtn');"
+        "let stopBtn=document.getElementById('stopBtn');"
         
-        // Функція запуску стріму з покращеною обробкою
-        "async function startStream(){"
-        "  if(isRequesting) return;"
-        "  isRequesting = true;"
-        "  startBtn.disabled = true;"
-        "  console.log('🟢 Starting stream...');"
-        "  statusDiv.innerHTML='<span class=\"warning\">⏳ Starting stream...</span>';"
+        "async function toggleStream(start){"
+        "  let url=start?'/stream/start':'/stream/stop';"
+        "  startBtn.disabled=true;stopBtn.disabled=true;"
         "  try{"
-        "    const controller = new AbortController();"
-        "    const timeoutId = setTimeout(() => controller.abort(), 5000);"
-        "    const response = await fetch('/stream/start', {"
-        "      method: 'GET',"
-        "      cache: 'no-cache',"
-        "      signal: controller.signal"
-        "    });"
-        "    clearTimeout(timeoutId);"
-        "    console.log('Response status:', response.status);"
-        "    if(response.ok){"
-        "      const data = await response.json();"
-        "      console.log('✅ Stream started:', data);"
-        "      statusDiv.innerHTML='<span class=\"active\">🎥 Streaming ACTIVE</span>';"
-        "    } else {"
-        "      console.error('❌ Server returned error:', response.status);"
-        "      statusDiv.innerHTML='<span class=\"inactive\">❌ Failed to start ('+response.status+')</span>';"
+        "    let r=await fetch(url);"
+        "    if(r.ok){"
+        "      statusDiv.innerHTML=start"
+        "        ?'<span class=\"active\">🎥 STREAMING</span>'"
+        "        :'<span class=\"inactive\">⏸ STOPPED</span>';"
+        "      console.log(start?'Started':'Stopped');"
         "    }"
-        "  }catch(e){"
-        "    console.error('❌ Fetch error:', e);"
-        "    if(e.name === 'AbortError'){"
-        "      statusDiv.innerHTML='<span class=\"inactive\">❌ Timeout - server busy</span>';"
-        "    } else {"
-        "      statusDiv.innerHTML='<span class=\"inactive\">❌ Error: '+e.message+'</span>';"
-        "    }"
-        "  } finally {"
-        "    isRequesting = false;"
-        "    startBtn.disabled = false;"
-        "    setTimeout(updateStatus, 500);"
-        "  }"
+        "  }catch(e){console.error(e);}"
+        "  startBtn.disabled=false;stopBtn.disabled=false;"
         "}"
         
-        // Функція зупинки стріму з покращеною обробкою
-        "async function stopStream(){"
-        "  if(isRequesting) return;"
-        "  isRequesting = true;"
-        "  stopBtn.disabled = true;"
-        "  console.log('🔴 Stopping stream...');"
-        "  statusDiv.innerHTML='<span class=\"warning\">⏳ Stopping stream...</span>';"
+        "setInterval(async()=>{"
         "  try{"
-        "    const controller = new AbortController();"
-        "    const timeoutId = setTimeout(() => controller.abort(), 5000);"
-        "    const response = await fetch('/stream/stop', {"
-        "      method: 'GET',"
-        "      cache: 'no-cache',"
-        "      signal: controller.signal"
-        "    });"
-        "    clearTimeout(timeoutId);"
-        "    console.log('Response status:', response.status);"
-        "    if(response.ok){"
-        "      const data = await response.json();"
-        "      console.log('✅ Stream stopped:', data);"
-        "      statusDiv.innerHTML='<span class=\"inactive\">⏸ Streaming STOPPED</span>';"
-        "    } else {"
-        "      console.error('❌ Server returned error:', response.status);"
-        "      statusDiv.innerHTML='<span class=\"inactive\">❌ Failed to stop ('+response.status+')</span>';"
-        "    }"
-        "  }catch(e){"
-        "    console.error('❌ Fetch error:', e);"
-        "    if(e.name === 'AbortError'){"
-        "      statusDiv.innerHTML='<span class=\"inactive\">❌ Timeout - server busy</span>';"
-        "    } else {"
-        "      statusDiv.innerHTML='<span class=\"inactive\">❌ Error: '+e.message+'</span>';"
-        "    }"
-        "  } finally {"
-        "    isRequesting = false;"
-        "    stopBtn.disabled = false;"
-        "    setTimeout(updateStatus, 500);"
-        "  }"
-        "}"
-        
-        // Оновлення статусу (без блокування при помилці)
-        "async function updateStatus(){"
-        "  try{"
-        "    const controller = new AbortController();"
-        "    const timeoutId = setTimeout(() => controller.abort(), 2000);"
-        "    const response = await fetch('/status', {"
-        "      cache: 'no-cache',"
-        "      signal: controller.signal"
-        "    });"
-        "    clearTimeout(timeoutId);"
-        "    if(!response.ok) return;"
-        "    const data = await response.json();"
-        "    console.log('Status:', data);"
-        "    if(data.streaming){"
-        "      statusDiv.innerHTML='<span class=\"active\">🎥 Streaming ACTIVE</span>';"
-        "    }else{"
-        "      statusDiv.innerHTML='<span class=\"inactive\">⏸ Streaming STOPPED</span>';"
-        "    }"
-        "  }catch(e){"
-        "    if(e.name !== 'AbortError'){"
-        "      console.warn('Status check failed:', e.message);"
-        "    }"
-        "  }"
-        "}"
-        
-        // Перевірка з'єднання при завантаженні
-        "window.addEventListener('load', function(){"
-        "  console.log('🌐 Page loaded, checking status...');"
-        "  updateStatus();"
-        "  setInterval(updateStatus, 3000);"
-        "});"
-        
-        // Обробка помилок завантаження стріму
-        "streamImg.addEventListener('error', function(){"
-        "  console.error('❌ Stream image failed to load');"
-        "  this.alt = 'Stream error - check camera';"
-        "});"
-        
-        "streamImg.addEventListener('load', function(){"
-        "  console.log('✅ Stream image loaded');"
-        "});"
-        
+        "    let r=await fetch('/status');"
+        "    let d=await r.json();"
+        "    statusDiv.innerHTML=d.streaming"
+        "      ?'<span class=\"active\">🎥 STREAMING</span>'"
+        "      :'<span class=\"inactive\">⏸ STOPPED</span>';"
+        "  }catch(e){}"
+        "},2000);"
         "</script>"
         "</body></html>";
     
     httpd_resp_set_type(req, "text/html");
-    httpd_resp_set_hdr(req, "Cache-Control", "no-cache, no-store, must-revalidate");
     return httpd_resp_send(req, html, strlen(html));
 }
 
-// Handler для MJPEG відео стріму
+// Спрощений стрім handler
 esp_err_t handleStreamRequest(httpd_req_t* req) {
-    ESP_LOGI(TAG, "📹 Stream request received");
+    ESP_LOGI(TAG, "📹 Stream client connected");
     
     if (!camera_initialized) {
         ESP_LOGE(TAG, "Camera not initialized");
@@ -335,131 +243,101 @@ esp_err_t handleStreamRequest(httpd_req_t* req) {
     }
 
     camera_fb_t* fb = NULL;
-    esp_err_t res = ESP_OK;
     
-    // Встановлюємо заголовки для MJPEG стріму
     httpd_resp_set_type(req, "multipart/x-mixed-replace; boundary=frame");
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    httpd_resp_set_hdr(req, "X-Framerate", "10");
 
-    // Головний цикл стрімінгу
     while (true) {
-        // Якщо стрімінг активний - відправляємо реальні кадри
         if (streaming_active) {
-            // Отримуємо кадр з камери
             fb = esp_camera_fb_get();
             if (!fb) {
-                ESP_LOGE(TAG, "Camera capture failed");
-                res = ESP_FAIL;
-                break;
+                ESP_LOGW(TAG, "Frame capture failed");
+                vTaskDelay(pdMS_TO_TICKS(100));
+                continue;
             }
 
-            // Формуємо заголовок для MJPEG frame
             char part_buf[64];
             snprintf(part_buf, sizeof(part_buf), 
                      "--frame\r\nContent-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n",
                      fb->len);
             
-            // Відправляємо заголовок
             if (httpd_resp_send_chunk(req, part_buf, strlen(part_buf)) != ESP_OK) {
                 esp_camera_fb_return(fb);
-                ESP_LOGI(TAG, "Client disconnected");
                 break;
             }
 
-            // Відправляємо JPEG дані
             if (httpd_resp_send_chunk(req, (const char*)fb->buf, fb->len) != ESP_OK) {
                 esp_camera_fb_return(fb);
-                ESP_LOGI(TAG, "Client disconnected");
                 break;
             }
 
-            // Відправляємо закінчення frame
             if (httpd_resp_send_chunk(req, "\r\n", 2) != ESP_OK) {
                 esp_camera_fb_return(fb);
-                ESP_LOGI(TAG, "Client disconnected");
                 break;
             }
 
-            // Звільняємо frame buffer
             esp_camera_fb_return(fb);
             fb = NULL;
             
-            // Невелика затримка для ~10 FPS
-            vTaskDelay(pdMS_TO_TICKS(100));
+            vTaskDelay(pdMS_TO_TICKS(100));  // 10 FPS
             
         } else {
-            // Якщо стрімінг неактивний - показуємо чорний екран з текстом
-            const char* placeholder = 
+            // Показуємо placeholder
+            const char* svg = 
                 "<svg xmlns='http://www.w3.org/2000/svg' width='800' height='600'>"
                 "<rect width='100%' height='100%' fill='#000'/>"
-                "<text x='50%' y='50%' font-family='Arial' font-size='32' fill='#f44336' "
-                "text-anchor='middle' dominant-baseline='middle'>"
-                "⏸ Stream Stopped</text>"
-                "<text x='50%' y='60%' font-family='Arial' font-size='18' fill='#999' "
-                "text-anchor='middle' dominant-baseline='middle'>"
-                "Press START STREAM to begin</text>"
-                "</svg>";
+                "<text x='50%' y='50%' font-size='28' fill='#f44' text-anchor='middle'>"
+                "Stream Stopped</text></svg>";
             
-            char part_buf[128];
-            snprintf(part_buf, sizeof(part_buf), 
+            char buf[128];
+            snprintf(buf, sizeof(buf), 
                      "--frame\r\nContent-Type: image/svg+xml\r\nContent-Length: %d\r\n\r\n",
-                     (int)strlen(placeholder));
+                     (int)strlen(svg));
             
-            if (httpd_resp_send_chunk(req, part_buf, strlen(part_buf)) != ESP_OK) {
-                break;
-            }
-            if (httpd_resp_send_chunk(req, placeholder, strlen(placeholder)) != ESP_OK) {
-                break;
-            }
-            if (httpd_resp_send_chunk(req, "\r\n", 2) != ESP_OK) {
-                break;
-            }
+            if (httpd_resp_send_chunk(req, buf, strlen(buf)) != ESP_OK) break;
+            if (httpd_resp_send_chunk(req, svg, strlen(svg)) != ESP_OK) break;
+            if (httpd_resp_send_chunk(req, "\r\n", 2) != ESP_OK) break;
             
-            // Довша затримка коли стрім вимкнений
             vTaskDelay(pdMS_TO_TICKS(500));
         }
     }
 
-    // Завершуємо multipart response
     httpd_resp_send_chunk(req, NULL, 0);
-    ESP_LOGI(TAG, "🔴 Stream handler exiting");
-    return res;
+    ESP_LOGI(TAG, "🔴 Stream client disconnected");
+    return ESP_OK;
 }
 
-// Handler для запуску стріму
+// ДУЖЕ простий handler для start
 esp_err_t handleStartStreamRequest(httpd_req_t* req) {
-    ESP_LOGI(TAG, "🟢 START BUTTON PRESSED!!! Request received!");  // ⭐ додай це
+    ESP_LOGI(TAG, "🟢 START requested");
     
-    if (startVideoStream()) {
-        httpd_resp_set_type(req, "application/json");
-        const char* body = "{\"status\":\"started\",\"streaming\":true}";
-        ESP_LOGI(TAG, "✅ Sending response: started");  // ⭐ додай це
-        return httpd_resp_send(req, body, strlen(body));
-    } else {
-        ESP_LOGE(TAG, "❌ Failed to start stream");  // ⭐ додай це
-        httpd_resp_send_500(req);
-        return ESP_FAIL;
-    }
-}
-
-// Handler для зупинки стріму
-esp_err_t handleStopStreamRequest(httpd_req_t* req) {
-    ESP_LOGI(TAG, "🔴 Stop stream API called");
+    startVideoStream();
     
-    stopVideoStream();
     httpd_resp_set_type(req, "application/json");
-    const char* body = "{\"status\":\"stopped\",\"streaming\":false}";
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    const char* body = "{\"status\":\"ok\"}";
     return httpd_resp_send(req, body, strlen(body));
 }
 
-// Handler для статусу
+// ДУЖЕ простий handler для stop
+esp_err_t handleStopStreamRequest(httpd_req_t* req) {
+    ESP_LOGI(TAG, "🔴 STOP requested");
+    
+    stopVideoStream();
+    
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    const char* body = "{\"status\":\"ok\"}";
+    return httpd_resp_send(req, body, strlen(body));
+}
+
 esp_err_t handleStatusRequest(httpd_req_t* req) {
-    char json[256];
+    char json[128];
     snprintf(json, sizeof(json),
-             "{\"camera\":\"%s\",\"streaming\":%s,\"status\":\"%s\"}",
-             camera_initialized ? "initialized" : "not_initialized",
+             "{\"streaming\":%s,\"camera\":\"%s\"}",
              streaming_active ? "true" : "false",
-             getCameraStatus());
+             camera_initialized ? "ready" : "not_ready");
     
     httpd_resp_set_type(req, "application/json");
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
@@ -467,7 +345,7 @@ esp_err_t handleStatusRequest(httpd_req_t* req) {
 }
 
 // ============================================
-// Ініціалізація вебсервера
+// Ініціалізація вебсервера - ОПТИМІЗОВАНО
 // ============================================
 
 bool initWebServer(uint16_t port) {
@@ -478,75 +356,42 @@ bool initWebServer(uint16_t port) {
 
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.server_port = port;
-    config.ctrl_port = 32768;
     
-    // ⭐ ЦЕ КЛЮЧОВІ ЗМІНИ ⭐
-    config.max_open_sockets = 13;        // Збільшуємо з 7 до 13
-    config.task_priority = 5;
-    config.stack_size = 8192;            // Збільшуємо з 4096 до 8192
-    config.core_id = 0;                  // Запускаємо на окремому ядрі
+    // Оптимізовані налаштування
+    config.max_open_sockets = 7;         // Максимум дозволений
     config.max_uri_handlers = 8;
+    config.stack_size = 6144;            // 6KB
+    config.task_priority = 5;
+    config.core_id = 1;                  // Запускаємо на ядрі 1 (ядро 0 для WiFi)
     
-    // ⭐ ДОДАЄМО ЦЕ ⭐
     config.lru_purge_enable = true;      // Автоматично закривати старі з'єднання
-    config.recv_wait_timeout = 10;       // Таймаут на отримання даних
-    config.send_wait_timeout = 10;       // Таймаут на відправку даних
+    config.recv_wait_timeout = 5;
+    config.send_wait_timeout = 5;
+    config.backlog_conn = 5;
 
-    ESP_LOGI(TAG, "Starting web server on port: %d", port);
+    ESP_LOGI(TAG, "Starting web server...");
     
     if (httpd_start(&server, &config) != ESP_OK) {
         ESP_LOGE(TAG, "Failed to start web server");
         return false;
     }
 
-    // Реєструємо всі endpoints
-    httpd_uri_t uri_root = {
-        .uri = "/",
-        .method = HTTP_GET,
-        .handler = handleRootRequest,
-        .user_ctx = NULL
+    // Реєструємо handlers
+    httpd_uri_t uris[] = {
+        {.uri = "/", .method = HTTP_GET, .handler = handleRootRequest, .user_ctx = NULL},
+        {.uri = "/stream", .method = HTTP_GET, .handler = handleStreamRequest, .user_ctx = NULL},
+        {.uri = "/stream/start", .method = HTTP_GET, .handler = handleStartStreamRequest, .user_ctx = NULL},
+        {.uri = "/stream/stop", .method = HTTP_GET, .handler = handleStopStreamRequest, .user_ctx = NULL},
+        {.uri = "/status", .method = HTTP_GET, .handler = handleStatusRequest, .user_ctx = NULL}
     };
-    httpd_register_uri_handler(server, &uri_root);
 
-    httpd_uri_t uri_stream = {
-        .uri = "/stream",
-        .method = HTTP_GET,
-        .handler = handleStreamRequest,
-        .user_ctx = NULL
-    };
-    httpd_register_uri_handler(server, &uri_stream);
+    for (int i = 0; i < 5; i++) {
+        if (httpd_register_uri_handler(server, &uris[i]) != ESP_OK) {
+            ESP_LOGE(TAG, "Failed to register handler: %s", uris[i].uri);
+        }
+    }
 
-    httpd_uri_t uri_stream_start = {
-        .uri = "/stream/start",
-        .method = HTTP_GET,
-        .handler = handleStartStreamRequest,
-        .user_ctx = NULL
-    };
-    httpd_register_uri_handler(server, &uri_stream_start);
-
-    httpd_uri_t uri_stream_stop = {
-        .uri = "/stream/stop",
-        .method = HTTP_GET,
-        .handler = handleStopStreamRequest,
-        .user_ctx = NULL
-    };
-    httpd_register_uri_handler(server, &uri_stream_stop);
-
-    httpd_uri_t uri_status = {
-        .uri = "/status",
-        .method = HTTP_GET,
-        .handler = handleStatusRequest,
-        .user_ctx = NULL
-    };
-    httpd_register_uri_handler(server, &uri_status);
-
-    ESP_LOGI(TAG, "✅ Web server started successfully");
-    ESP_LOGI(TAG, "   📍 Root page: http://[IP]/");
-    ESP_LOGI(TAG, "   📹 Stream: http://[IP]/stream");
-    ESP_LOGI(TAG, "   ▶️  Start: http://[IP]/stream/start");
-    ESP_LOGI(TAG, "   ⏹  Stop: http://[IP]/stream/stop");
-    ESP_LOGI(TAG, "   📊 Status: http://[IP]/status");
-    
+    ESP_LOGI(TAG, "✅ Web server started on port %d", port);
     return true;
 }
 

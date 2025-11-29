@@ -1,0 +1,120 @@
+Command: C:\Users\bogda\.espressif\python_env\idf5.5_py3.13_env\Scripts\python.exe C:/esp/esp-idf\tools/idf_monitor.py -p COM7 -b 115200 --toolchain-prefix xtensa-esp32-elf- --target esp32 --revision 0 C:\Users\bogda\POK\Curiosity_rebirth\esp_camera\build\esp_camera.elf C:\Users\bogda\POK\Curiosity_rebirth\esp_camera\build\bootloader\bootloader.elf --force-color -m 'C:\Users\bogda\.espressif\python_env\idf5.5_py3.13_env\Scripts\python.exe' 'C:/esp/esp-idf\tools\idf.py' '-p' 'COM7'
+ets Jul �ets Jul 29 2019 12:21:46
+
+rst:0x1 (POWERON_RESET),boot:0x1b (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:6380
+ho 0 tail 12 room 4
+load:0x40078000,len:15916
+load:0x40080400,len:3860
+entry 0x40080638
+[0;32mI (29) boot: ESP-IDF v5.5 2nd stage bootloader[0m
+[0;32mI (29) boot: compile time Nov 19 2025 19:40:33[0m
+[0;32mI (29) boot: Multicore bootloader[0m
+[0;32mI (30) boot: chip revision: v3.1[0m
+[0;32mI (33) boot.esp32: SPI Speed      : 40MHz[0m
+[0;32mI (37) boot.esp32: SPI Mode       : DIO[0m
+[0;32mI (40) boot.esp32: SPI Flash Size : 2MB[0m
+[0;32mI (44) boot: Enabling RNG early entropy source...[0m
+[0;32mI (49) boot: Partition Table:[0m
+[0;32mI (51) boot: ## Label            Usage          Type ST Offset   Length[0m
+[0;32mI (57) boot:  0 nvs              WiFi data        01 02 00009000 00004000[0m
+[0;32mI (64) boot:  1 phy_init         RF data          01 01 0000d000 00001000[0m
+[0;32mI (71) boot:  2 otadata          OTA data         01 00 0000e000 00002000[0m
+[0;32mI (77) boot:  3 factory          factory app      00 00 00010000 001f0000[0m
+[0;32mI (84) boot: End of partition table[0m
+[0;32mI (87) boot: Defaulting to factory image[0m
+[0;32mI (91) esp_image: segment 0: paddr=00010020 vaddr=3f400020 size=267d8h (157656) map[0m
+[0;32mI (152) esp_image: segment 1: paddr=00036800 vaddr=3ff80000 size=00020h (    32) load[0m
+[0;32mI (152) esp_image: segment 2: paddr=00036828 vaddr=3ffb0000 size=067c0h ( 26560) load[0m
+[0;32mI (166) esp_image: segment 3: paddr=0003cff0 vaddr=40080000 size=03028h ( 12328) load[0m
+[0;32mI (171) esp_image: segment 4: paddr=00040020 vaddr=400d0020 size=a5f94h (679828) map[0m
+[0;32mI (403) esp_image: segment 5: paddr=000e5fbc vaddr=40083028 size=19a38h (105016) load[0m
+[0;32mI (459) boot: Loaded app from partition at offset 0x10000[0m
+[0;32mI (459) boot: Disabling RNG early entropy source...[0m
+[0;32mI (469) quad_psram: This chip is ESP32-D0WD[0m
+[0;32mI (471) esp_psram: Found 8MB PSRAM device[0m
+[0;32mI (471) esp_psram: Speed: 40MHz[0m
+[0;32mI (471) esp_psram: PSRAM initialized, cache is in low/high (2-core) mode.[0m
+[0;33mW (476) esp_psram: Virtual address not enough for PSRAM, map as much as we can. 4MB is mapped[0m
+[0;32mI (485) cpu_start: Multicore app[0m
+[0;32mI (1393) esp_psram: SPI SRAM memory test OK[0m
+[0;32mI (1401) cpu_start: Pro cpu start user code[0m
+[0;32mI (1401) cpu_start: cpu freq: 160000000 Hz[0m
+[0;32mI (1401) app_init: Application information:[0m
+[0;32mI (1401) app_init: Project name:     esp_camera[0m
+[0;32mI (1406) app_init: App version:      96377e9-dirty[0m
+[0;32mI (1410) app_init: Compile time:     Nov 29 2025 14:12:12[0m
+[0;32mI (1415) app_init: ELF file SHA256:  34868c8d0...[0m
+[0;32mI (1420) app_init: ESP-IDF:          v5.5[0m
+[0;32mI (1423) efuse_init: Min chip rev:     v0.0[0m
+[0;32mI (1427) efuse_init: Max chip rev:     v3.99 [0m
+[0;32mI (1431) efuse_init: Chip rev:         v3.1[0m
+[0;32mI (1436) heap_init: Initializing. RAM available for dynamic allocation:[0m
+[0;32mI (1442) heap_init: At 3FFAE6E0 len 00001920 (6 KiB): DRAM[0m
+[0;32mI (1447) heap_init: At 3FFBB200 len 00024E00 (147 KiB): DRAM[0m
+[0;32mI (1452) heap_init: At 3FFE0440 len 00003AE0 (14 KiB): D/IRAM[0m
+[0;32mI (1458) heap_init: At 3FFE4350 len 0001BCB0 (111 KiB): D/IRAM[0m
+[0;32mI (1463) heap_init: At 4009CA60 len 000035A0 (13 KiB): IRAM[0m
+[0;32mI (1469) esp_psram: Adding pool of 4096K of PSRAM memory to heap allocator[0m
+[0;32mI (1477) spi_flash: detected chip: generic[0m
+[0;32mI (1479) spi_flash: flash io: dio[0m
+[0;33mW (1482) spi_flash: Detected size(4096k) larger than the size in the binary image header(2048k). Using the size in the binary image header.[0m
+[0;32mI (1495) main_task: Started on CPU0[0m
+[0;32mI (1505) esp_psram: Reserving pool of 32K of internal memory for DMA/internal allocations[0m
+[0;32mI (1505) main_task: Calling app_main()[0m
+[0;32mI (1535) CAMERA_TEST: === Mars Rover Camera System ===[0m
+[0;32mI (1545) wifi:wifi driver task: 3ffc319c, prio:23, stack:6656, core=0[0m
+[0;32mI (1555) wifi:wifi firmware version: f3dbad7[0m
+[0;32mI (1555) wifi:wifi certification version: v7.0[0m
+[0;32mI (1555) wifi:config NVS flash: enabled[0m
+[0;32mI (1555) wifi:config nano formatting: disabled[0m
+[0;32mI (1555) wifi:Init data frame dynamic rx buffer num: 32[0m
+[0;32mI (1565) wifi:Init static rx mgmt buffer num: 5[0m
+[0;32mI (1565) wifi:Init management short buffer num: 32[0m
+[0;32mI (1575) wifi:Init dynamic tx buffer num: 32[0m
+[0;32mI (1575) wifi:Init static rx buffer size: 1600[0m
+[0;32mI (1575) wifi:Init static rx buffer num: 10[0m
+[0;32mI (1585) wifi:Init dynamic rx buffer num: 32[0m
+[0;32mI (1585) wifi_init: rx ba win: 6[0m
+[0;32mI (1585) wifi_init: accept mbox: 6[0m
+[0;32mI (1595) wifi_init: tcpip mbox: 32[0m
+[0;32mI (1595) wifi_init: udp mbox: 6[0m
+[0;32mI (1595) wifi_init: tcp mbox: 6[0m
+[0;32mI (1605) wifi_init: tcp tx win: 5760[0m
+[0;32mI (1605) wifi_init: tcp rx win: 5760[0m
+[0;32mI (1605) wifi_init: tcp mss: 1440[0m
+[0;32mI (1615) wifi_init: WiFi IRAM OP enabled[0m
+[0;32mI (1615) wifi_init: WiFi RX IRAM OP enabled[0m
+[0;32mI (1625) phy_init: phy_version 4860,6b7a6e5,Feb  6 2025,14:47:07[0m
+[0;32mI (1705) wifi:mode : softAP (c8:2e:18:90:a6:e1)[0m
+[0;32mI (1705) wifi:Total power save buffer number: 16[0m
+[0;32mI (1705) wifi:Init max length of beacon: 752/752[0m
+[0;32mI (1705) wifi:Init max length of beacon: 752/752[0m
+[0;32mI (1715) CAMERA_TEST: 📡 WiFi AP started[0m
+[0;32mI (1715) esp_netif_lwip: DHCP server started on interface WIFI_AP_DEF with IP: 192.168.4.1[0m
+[0;32mI (1725) CAMERA_TEST:    SSID: ESP32_CAM_AP[0m
+[0;32mI (1725) CAMERA_TEST:    Password: 12345678[0m
+[0;32mI (1735) CAMERA_TEST:    IP: 192.168.4.1[0m
+[0;32mI (1735) cam_hal: cam init ok[0m
+[0;32mI (1735) sccb-ng: pin_sda 26 pin_scl 27[0m
+[0;32mI (1745) sccb-ng: sccb_i2c_port=1[0m
+[0;32mI (1755) camera: Camera PID=0x26 VER=0x42 MIDL=0x7f MIDH=0xa2[0m
+[0;32mI (1755) camera: Detected OV2640 camera[0m
+[0;32mI (1755) camera: Detected camera at address=0x30[0m
+[0;32mI (1835) cam_hal: PSRAM DMA mode disabled[0m
+[0;32mI (1835) cam_hal: buffer_size: 32768, half_buffer_size: 4096, node_buffer_size: 2048, node_cnt: 16, total_cnt: 23[0m
+[0;32mI (1835) cam_hal: Allocating 96000 Byte frame buffer in PSRAM[0m
+[0;32mI (1845) cam_hal: Allocating 96000 Byte frame buffer in PSRAM[0m
+[0;32mI (1845) cam_hal: cam config ok[0m
+[0;32mI (1845) ov2640: Set PLL: clk_2x: 0, clk_div: 0, pclk_auto: 0, pclk_div: 8[0m
+[0;32mI (1955) CAMERA_SERVER: ✅ Camera initialized successfully[0m
+[0;32mI (1955) CAMERA_TEST: ✅ Camera initialized successfully[0m
+[0;32mI (1955) CAMERA_SERVER: Starting web server on port: 80[0m
+[1;31mE (1955) httpd: Config option max_open_sockets is too large (max allowed 7, 3 sockets used by HTTP server internally)[0m
+	Either decrease this or configure LWIP_MAX_SOCKETS to a larger value
+[1;31mE (1975) CAMERA_SERVER: Failed to start web server[0m
+[1;31mE (1975) CAMERA_TEST: ❌ Failed to start web server[0m
+[0;32mI (1985) main_task: Returned from app_main()[0m
