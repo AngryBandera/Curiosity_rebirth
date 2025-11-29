@@ -1,8 +1,10 @@
 #include "camera_server.h"
 #include "esp_log.h"
 #include "esp_timer.h"
+#include <string>
 #include "esp_camera.h"
 #include <string.h>
+#include <stdio.h>
 #include "esp_http_server.h"
 
 #include "freertos/FreeRTOS.h"
@@ -304,6 +306,7 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
     return httpd_resp_send(req, html, strlen(html));
 }
 
+// ...existing code...
 esp_err_t handleStreamRequest(httpd_req_t* req) {
     ESP_LOGI(TAG, "🎬 Stream request (no camera required)");
 
@@ -313,6 +316,7 @@ esp_err_t handleStreamRequest(httpd_req_t* req) {
 
     char frame_header[128];
     char svg_buf[512];
+    char status_line[64]; // <--- added
 
     while (true) {
         bool active = streaming_active;
@@ -320,25 +324,15 @@ esp_err_t handleStreamRequest(httpd_req_t* req) {
         int payload_len = 0;
 
         if (active) {
-            // Put a small timestamp or status line
-            uint64_t ms = esp_timer_get_time() / 1000; // ms
-            int n = snprintf(svg_buf, sizeof(svg_buf), svg_stream_on_template, ("Live • " + std::to_string(ms)).c_str()); // can't use std string; use snprintf
-            // Use snprintf properly because we can't use std::to_string in this C file.
-            // We'll reimplement timestamp formatting directly:
-            int len = snprintf(svg_buf, sizeof(svg_buf), svg_stream_on_template, (char[32]){0});
-            (void)len; // will be replaced by the block below
-        }
-
-        // Build the payload with timestamp manually (avoid std::string)
-        if (streaming_active) {
-            uint64_t ms = esp_timer_get_time() / 1000; // ms
-            int timestamp_len = snprintf(svg_buf, sizeof(svg_buf), svg_stream_on_template, "Live");
-            // Add a line with ms inside the svg (already handled by template with %s - we keep "Live")
+            // форматування timestamp без std::to_string
+            uint64_t ms = esp_timer_get_time() / 1000ULL; // ms
+            snprintf(status_line, sizeof(status_line), "Live • %llu ms", (unsigned long long)ms);
+            snprintf(svg_buf, sizeof(svg_buf), svg_stream_on_template, status_line);
             payload = svg_buf;
-            payload_len = timestamp_len;
+            payload_len = (int)strlen(svg_buf);
         } else {
             payload = svg_stream_off;
-            payload_len = strlen(svg_stream_off);
+            payload_len = (int)strlen(svg_stream_off);
         }
 
         int header_len = snprintf(frame_header, sizeof(frame_header),
@@ -363,7 +357,7 @@ esp_err_t handleStreamRequest(httpd_req_t* req) {
         if (streaming_active) {
             vTaskDelay(pdMS_TO_TICKS(200)); // 5 FPS
         } else {
-            vTaskDelay(pdMS_TO_TICKS(1000)); // show off image once per second while idle
+            vTaskDelay(pdMS_TO_TICKS(1000)); // show off-image once per second while idle
         }
     }
 
@@ -372,7 +366,7 @@ esp_err_t handleStreamRequest(httpd_req_t* req) {
     ESP_LOGI(TAG, "📴 Stream handler exiting");
     return ESP_OK;
 }
-
+// ...existing code...
 esp_err_t handleStartStreamRequest(httpd_req_t* req) {
     ESP_LOGI(TAG, "🟢 Start stream requested");
     startVideoStream();
