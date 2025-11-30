@@ -1,6 +1,47 @@
 | Supported Targets | ESP32 |
 | ----------------- | ----- |
 
+## Overview
+
+This project implements a control system for a Mars Rover using the ESP32 microcontroller.
+
+## The rover features:
+
+- **6 wheels**: Control the speed and direction of the rover's wheels.
+- **Steerable Wheels**: Adjust the angles of the **4 steerable wheels** for turning and spinning.
+- **Bluetooth Communication**: Use a joystick to send commands via **Classic Bluetooth**.
+- **Smooth rover behavior**: This design implements smooth speed management (acceleration, deceleration)
+
+The project provides API to control the rover's movement as a separate unit. And also it provides a wireless Bluetooth control to control it via joystick.
+
+#### Hardware requirements
+- **ESP32** development board.
+- **PCA9685 PWM driver** for motor control.
+- DC and servo motors for the wheels.
+- Joystick with Classic bluetooth
+
+#### Software Setup
+1. Install ESP-IDF
+2. Clone repository
+3. Set targeted ESP
+```bash
+idf.py set-target esp32
+```
+4. **Configure the project**           
+    ```{bash}
+    idf.py menuconfig
+    ```
+    - Enable Bluetooth SPP:
+    `Component config --> Bluetooth --> Bluedroid Options --> SPP`
+    - Set the maximum number of ACL connections:
+    `Component config --> Bluetooth --> Bluedroid Options --> BT/BLE MAX ACL CONNECTIONS`
+5. **Build and Flash:**
+Build the project and flash it to the ESP32:
+```bash
+idf.py build flash monitor -p {port}
+```
+
+
 ## ESP-IDF BT-SPP-VFS-ACCEPTOR demo + Motors interface
 
 This example is to show how to use the APIs of **Serial Port Protocol** (**SPP**) to create an SPP acceptor which performs as a server, and it will register into the VFS. We aggregate **Secure Simple Pair** (**SSP**) into this demo to show how to use SPP when creating your own APPs. We also provide the demo `bt_spp_initiator` or the demo `bt_spp_vfs_initiator` to create an SPP initiator which performs as a client. In fact, you can create SPP acceptors and SPP initiators on a single device at the same time.

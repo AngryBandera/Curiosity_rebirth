@@ -84,6 +84,10 @@ public:
     */
     void update_geometry(int32_t rvr_radius) override;
 
+    void update_duty();
+
+    void set_angle(float angle);
+
     // Writes speed and servo angle to PCA9685 buffer that will be flushed later
     void update_buffer(int16_t speed, PCA9685Buffer* buffer) override;
 

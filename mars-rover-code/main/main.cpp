@@ -13,8 +13,8 @@
 // Rover C++ headers
 #include "drive_system.h"
 
-static i2c_dev_t g_pca9685_dev{};
-static DriveSystem g_rover{&g_pca9685_dev}; // Initialize DriveSystem with PCA9685 device
+static i2c_dev_t* g_pca9685_dev = nullptr;
+static DriveSystem* g_rover = nullptr;
 
 static SemaphoreHandle_t rover_mutex = nullptr;
 
@@ -25,7 +25,9 @@ static void rover_tick_task(void *param)
     
     while (1) {
         if (xSemaphoreTake(rover_mutex, portMAX_DELAY)) {
-            g_rover.tick();
+            if (g_rover) {
+                g_rover->tick();
+            }
             xSemaphoreGive(rover_mutex);
         }
         
@@ -38,7 +40,13 @@ extern "C" {
 
     void app_main()
     {
+        static const char *TAG = "ROVER_MAIN";
+
         rover_mutex = xSemaphoreCreateMutex();
+
+        g_pca9685_dev = new i2c_dev_t{};
+
+        g_rover = new DriveSystem(g_pca9685_dev);
 
         xTaskCreatePinnedToCore(
             rover_tick_task,
@@ -55,7 +63,7 @@ extern "C" {
 
         btstack_init();
 
-        uni_platform_set_custom(get_my_platform(&g_rover));
+        uni_platform_set_custom(get_my_platform(g_rover));
 
         uni_init(0 /* argc */, NULL /* argv */);
 

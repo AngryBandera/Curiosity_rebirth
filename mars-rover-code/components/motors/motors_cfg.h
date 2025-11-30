@@ -29,7 +29,7 @@ namespace Cfg {
 
     // Default angles for steerable wheels
     constexpr float WHEEL_CENTER_ANGLE = 90.0f; // by default
-    constexpr float WHEEL_MAX_DEVIATION = 80.0f;
+    constexpr float WHEEL_MAX_DEVIATION = 60.0f;
     
     // Coordinates of wheels relative to mars rover center (in mm)
     constexpr int16_t FRONT_Y = 300;
@@ -43,14 +43,15 @@ namespace Cfg {
 
     // dc motor acceleration (units per control loop tick)
     constexpr int16_t DC_ACCEL = 30;
+    constexpr int16_t DC_DECEL = DC_ACCEL * 2;
     // servo speed (degrees per control loop tick)
-    constexpr float SERVO_SPEED = 0.5f;
+    constexpr float SERVO_SPEED = 1.0f;
     
     // === НОВI ПАРАМЕТРИ ІНЕРЦІЇ ===
     // Час (в тактах) потрібний щоб зменшити швидкість на 1 одиницю при ковзанні
     // На швидкості 3000 будет гальмування протягом: 3000 * INERTIA_TICKS_PER_UNIT * 10ms
     // Приклад: INERTIA_TICKS_PER_UNIT = 2 => на 3000 потрібно 3000*2*10ms = 60 секунд
-    constexpr float INERTIA_TICKS_PER_UNIT = 1.0f;  // Кількість тактів (×10мс) на одиницю швидкості
+    constexpr float INERTIA_TICKS_PER_UNIT = 0.06f;  // Кількість тактів (×10мс) на одиницю швидкості
     constexpr float UINT_PER_INERTIA_TICKS = 1.0f / INERTIA_TICKS_PER_UNIT;
 
     // Max time for inertia effect (in ticks) to avoid too long sliding
@@ -58,6 +59,7 @@ namespace Cfg {
     constexpr uint16_t MAX_INERTIA_TICKS = 1000;
     
     // === PARAMETERS FOR SPINNING MODE ===
+    constexpr uint16_t SPIN_DEACTIVATE_TICKS = 10; // ticks to wait before stopping spin mode after buttons released
     // Angle for front wheels when spinning around center
     constexpr float SPIN_FRONT_ANGLE = 48.11847;      // degrees
     // Angle for back wheels when spinning around center

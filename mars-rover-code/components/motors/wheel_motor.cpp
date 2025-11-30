@@ -52,7 +52,7 @@ void WheelMotor::update_buffer(int16_t speed, PCA9685Buffer* buffer) {
         buffer->set_channel_value(pca1, 0);
         buffer->set_channel_value(pca2, 0);
     }
-    ESP_LOGD(TAG, "speed=%d -> pwm=%u (ch%u/%u)", speed, pwm, pca1, pca2);
+    // ESP_LOGD(TAG, "speed=%d -> pwm=%u (ch%u/%u)", speed, pwm, pca1, pca2);
 }
 
 
@@ -91,7 +91,7 @@ void SteerableWheel::update_buffer(int16_t speed, PCA9685Buffer* buffer) {
 
     // servo_duty вже обчислено в update_geometry; тут записуємо без зміни
     buffer->set_channel_value(servo_pca, servo_duty);
-    ESP_LOGD(TAG, "speed=%d -> pwm=%u, servo=%u (servo ch %u)", speed, pwm, servo_duty, servo_pca);
+    // ESP_LOGD(TAG, "speed=%d -> pwm=%u, servo=%u (servo ch %u)", speed, pwm, servo_duty, servo_pca);
 }
 
 void SteerableWheel::update_geometry(int32_t rvr_radius) {
@@ -122,6 +122,10 @@ void SteerableWheel::update_geometry(int32_t rvr_radius) {
         if (current_angle >  Cfg::WHEEL_MAX_DEVIATION) current_angle =  Cfg::WHEEL_MAX_DEVIATION;
     }
 
+    update_duty();
+}
+
+void SteerableWheel::update_duty() {
     float servo_angle = Cfg::WHEEL_CENTER_ANGLE + current_angle;
      // max posible - 90 + 45 = 135
 
@@ -138,9 +142,14 @@ void SteerableWheel::update_geometry(int32_t rvr_radius) {
     //pca9685_set_pwm_value(pca9685, servo_pca, duty);
     servo_duty = duty;
     //buffer->set_channel_value(servo_pca, duty);
-    ESP_LOGI(TAG, "duty: %d", duty);
+    // ESP_LOGI(TAG, "duty: %d", duty);
 }
 
 float SteerableWheel::get_angle() {
     return current_angle;
+}
+
+void SteerableWheel::set_angle(float angle) {
+    current_angle = angle;
+    update_duty();
 }
