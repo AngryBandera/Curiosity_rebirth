@@ -59,7 +59,7 @@ namespace Cfg {
     constexpr uint16_t MAX_INERTIA_TICKS = 1000;
     
     // === PARAMETERS FOR SPINNING MODE ===
-    constexpr uint16_t SPIN_DEACTIVATE_TICKS = 10; // ticks to wait before stopping spin mode after buttons released
+    constexpr uint16_t SPIN_DEACTIVATE_TICKS = 5; // ticks to wait before stopping spin mode after buttons released
     // Angle for front wheels when spinning around center
     constexpr float SPIN_FRONT_ANGLE = 48.11847;      // degrees
     // Angle for back wheels when spinning around center

@@ -1,4 +1,3 @@
-
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
@@ -40,8 +39,6 @@ extern "C" {
 
     void app_main()
     {
-        static const char *TAG = "ROVER_MAIN";
-
         rover_mutex = xSemaphoreCreateMutex();
 
         g_pca9685_dev = new i2c_dev_t{};

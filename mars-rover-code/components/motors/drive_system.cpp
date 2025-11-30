@@ -55,7 +55,7 @@ void DriveSystem::print_angles() {
             right_back.get_angle(), right_front.get_angle(), left_back.get_angle(), left_front.get_angle());
 }
 
-void DriveSystem::actual_move(int16_t speed, float rvr_angle) {
+void DriveSystem::move_with_angle(int16_t speed, float rvr_angle) {
     int32_t rvr_radius;
     if (fabsf(rvr_angle) <= 1.0f) {
         rvr_radius = 16001;
@@ -63,10 +63,10 @@ void DriveSystem::actual_move(int16_t speed, float rvr_angle) {
         float alpha_rad = rvr_angle * PI / 180.0f;
         rvr_radius = static_cast<int32_t>(Cfg::FRONT_Y / tanf(alpha_rad));
     }
+
     for (uint8_t i = 0; i < 6; i++) all_wheels[i]->update_geometry(rvr_radius);
 
     if (fabsf(rvr_angle) <= 1.0f) {
-
         for (uint8_t i = 0; i < 6; i++) all_wheels[i]->update_buffer(speed, buffer);
 
     } else {
@@ -106,13 +106,10 @@ void DriveSystem::set_angle(float rvr_angle) {
     dest_angle = rvr_angle;
 }
 
-bool DriveSystem::is_moving() {
-    return mem_speed == 0 && mem_angle == 0;
-}
 
 bool DriveSystem::should_change_direction() const {
-    return (mem_speed > 0 && dest_speed < -100) || 
-           (mem_speed < 0 && dest_speed > 100);
+    return (mem_speed > 0 && -100 > dest_speed) || 
+           (0 > mem_speed && dest_speed > 100);
 }
 
 bool DriveSystem::should_start_turning() const {
@@ -127,21 +124,27 @@ void DriveSystem::handle_idle() {
 }
 
 void DriveSystem::handle_accelerating() {
-    // Звичайний розгін
+    // just a simple acceleration towards dest_speed
     if (dest_speed > mem_speed) {
         mem_speed = std::min(dest_speed, 
                              static_cast<int16_t>(mem_speed + Cfg::DC_ACCEL));
-    } else if (dest_speed < mem_speed) {
-        mem_speed = std::max(dest_speed, 
-                             static_cast<int16_t>(mem_speed - Cfg::DC_ACCEL));
+    }
+    else if (dest_speed < mem_speed) {
+        if (mem_speed > 0) {
+            mem_speed = std::max(static_cast<int16_t>(0),
+                                 static_cast<int16_t>(mem_speed - Cfg::DC_DECEL));
+        } else if (mem_speed < 0) {
+            mem_speed = std::min(static_cast<int16_t>(0), 
+                                 static_cast<int16_t>(mem_speed + Cfg::DC_DECEL));
+        }
     }
     
-    // Плавне обертання керованих коліс
+    // Smooth steering towards target angle
     if (fabsf(dest_angle - mem_angle) > 1.0f) {
         if (dest_angle > mem_angle) {
-            mem_angle += Cfg::SERVO_SPEED;
+            mem_angle += std::max(Cfg::SERVO_SPEED, (dest_angle - mem_angle) * 0.2f);
         } else {
-            mem_angle -= Cfg::SERVO_SPEED;
+            mem_angle -= std::max(Cfg::SERVO_SPEED, (mem_angle - dest_angle) * 0.2f);
         }
     } else {
         mem_angle = dest_angle;
@@ -168,18 +171,6 @@ void DriveSystem::handle_moving() {
     }
 }
 
-void DriveSystem::handle_decelerating() {
-    // Агресивне гальмування
-    int16_t decel_rate = Cfg::DC_ACCEL * 2;
-    
-    if (mem_speed > 0) {
-        mem_speed = std::max(static_cast<int16_t>(0), 
-                             static_cast<int16_t>(mem_speed - decel_rate));
-    } else if (mem_speed < 0) {
-        mem_speed = std::min(static_cast<int16_t>(0), 
-                             static_cast<int16_t>(mem_speed + decel_rate));
-    }
-}
 
 void DriveSystem::handle_turning() {
     // Decrease speed when turning sharply
@@ -233,17 +224,6 @@ void DriveSystem::handle_stopping() {
         inertia_speed += Cfg::UINT_PER_INERTIA_TICKS;
         if (inertia_speed > 0) inertia_speed = 0;
     }
-    //DEBUG: test wether this estimation will work out fine
-    
-    // // Випрямляємо колеса при екстреному гальмуванні
-    // if (fabsf(mem_angle) > 2.0f) {
-    //     mem_angle *= 0.8f;
-    // } else {
-    //     mem_angle = 0.0f;
-    // }
-
-    // Do not change mem_angle here to keep last steering position
-    // Only after stop we can continue to steer them
 }
 
 void DriveSystem::apply_inertia() {
@@ -274,12 +254,12 @@ void DriveSystem::update_state() {
                 // Якщо натиснута кнопка spin, переходимо в режим гальмування перед обертанням
                 current_state = DriveState::STOPPING;
                 state_tick_counter = 0;
-            } else if (std::abs(dest_speed) > 50 || fabsf(dest_angle) > 1.0f) {
+            } else if (std::abs(dest_speed) > 10 || fabsf(dest_angle) > 0.5f) {
                 current_state = DriveState::ACCELERATING;
                 state_tick_counter = 0;
             }
             break;
-            
+
         case DriveState::ACCELERATING:
             if (is_spinning || dest_speed == 0) {
                 current_state = DriveState::STOPPING;
@@ -289,9 +269,6 @@ void DriveSystem::update_state() {
                 state_tick_counter = 0;
             } else if (should_change_direction()) {
                 current_state = DriveState::STOPPING;
-                state_tick_counter = 0;
-            } else if (std::abs(mem_speed) > std::abs(dest_speed)) {
-                current_state = DriveState::DECELERATING;
                 state_tick_counter = 0;
             }
             break;
@@ -306,29 +283,7 @@ void DriveSystem::update_state() {
             } else if (should_start_turning()) {
                 current_state = DriveState::TURNING;
                 state_tick_counter = 0;
-            } else if (std::abs(mem_speed) > std::abs(dest_speed)) {
-                current_state = DriveState::DECELERATING;
-                state_tick_counter = 0;
-            } else if (std::abs(mem_speed) < std::abs(dest_speed)) {
-                current_state = DriveState::ACCELERATING;
-                state_tick_counter = 0;
-            }
-            break;
-            
-        case DriveState::DECELERATING:
-            if (is_spinning) {
-                current_state = DriveState::STOPPING;
-                state_tick_counter = 0;
-            } else if (dest_speed == 0) {
-                current_state = DriveState::STOPPING;
-                state_tick_counter = 0;
-            } else if (mem_speed == dest_speed) {
-                current_state = DriveState::MOVING;
-                state_tick_counter = 0;
-            } else if (should_change_direction()) {
-                current_state = DriveState::STOPPING;
-                state_tick_counter = 0;
-            } else if (std::abs(dest_speed) > std::abs(mem_speed)) {
+            } else if (mem_speed != dest_speed) {
                 current_state = DriveState::ACCELERATING;
                 state_tick_counter = 0;
             }
@@ -376,7 +331,7 @@ void DriveSystem::update_state() {
 
             if (!is_spinning) {
                 if (not_spinning_counter > Cfg::SPIN_DEACTIVATE_TICKS) {
-                    // Якщо протягом певного часу не натиснута кнопка обертання, виходимо з режиму
+                    // If spin inputs are released for enough time, stop spinning
                     is_spinning = false;
                     current_state = DriveState::IDLE;
                     state_tick_counter = 0;
@@ -410,9 +365,6 @@ void DriveSystem::tick() {
         case DriveState::MOVING:
             handle_moving();
             break;
-        case DriveState::DECELERATING:
-            handle_decelerating();
-            break;
         case DriveState::TURNING:
             handle_turning();
             break;
@@ -424,12 +376,12 @@ void DriveSystem::tick() {
             break;
     }
 
-    // Застосовуємо інерцію ПІСЛЯ обробки стану
+    // Apply innertian
+    // it is used mainly in STOPPING state
     apply_inertia();
     
-    // При обертанні використовуємо спеціальні серво-значення
+    // And now apply actual speed depending on state
     if (current_state == DriveState::SPINNING) {
-        // Мотори рухаються для обертання навколо осі
         for (uint8_t i = 0; i < 3; i++) {
             all_wheels[i]->update_buffer(-mem_speed, buffer);
         }
@@ -439,7 +391,7 @@ void DriveSystem::tick() {
         buffer->flush();
     } else {
         // Звичайний режим руху
-        actual_move(mem_speed, mem_angle);
+        move_with_angle(mem_speed, mem_angle);
     }
 }
 
@@ -522,20 +474,11 @@ void DriveSystem::handle_spinning() {
     
     // Задні колеса
     if (fabsf(Cfg::SPIN_BACK_ANGLE - right_back.get_angle()) > 0.1f) {
-        // right_back.calculate_spin_duty(
-        //     right_back.spin_target_angle + (Cfg::SPIN_BACK_ANGLE - right_back.spin_target_angle) * 1.0f
-        // );
         right_back.set_angle(right_back.get_angle() * 0.97 + Cfg::SPIN_BACK_ANGLE * 0.03f);
         left_back.set_angle(left_back.get_angle() * 0.97 - Cfg::SPIN_BACK_ANGLE * 0.03f);
-        // left_back.calculate_spin_duty(
-        //     -right_back.spin_target_angle //FIX: theoreticly should be symmetrical
-        //     // left_back.spin_target_angle + (Cfg::SPIN_BACK_ANGLE - left_back.spin_target_angle) * 0.1f
-        // );
     } else {
         right_back.set_angle(Cfg::SPIN_BACK_ANGLE);
         left_back.set_angle(-Cfg::SPIN_BACK_ANGLE);
-        // left_back.calculate_spin_duty(-Cfg::SPIN_BACK_ANGLE);
-        // right_back.calculate_spin_duty(Cfg::SPIN_BACK_ANGLE);
         ESP_LOGI(TAG, "TARGETED BACK ANGLE ACHIEVED %.1f, %.1f", left_back.get_angle(), right_back.get_angle());
     }
     

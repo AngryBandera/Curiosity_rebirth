@@ -9,7 +9,6 @@ enum class DriveState {
     IDLE,           // Mars rover is stationary
     ACCELERATING,   // Accelerating to dest_speed
     MOVING,         // Moving at constant speed
-    DECELERATING,   // Decelerating to lower speed
     TURNING,        // Sharp turn with speed reduction
     STOPPING,       // Immidiate stop
     SPINNING        // Spinning in place
@@ -68,7 +67,7 @@ private:
     // in most of the cases mem_speed is an actual speed applied for motors
 
     // Internal method to directly move wheels without state machine
-    void actual_move(int16_t speed, float angle);
+    void move_with_angle(int16_t speed, float angle);
 
     // === State machine ===
     DriveState current_state{DriveState::IDLE};
@@ -163,7 +162,6 @@ public:
     void print_angles();
     void print_state();
 
-    bool is_moving();
 };
 
 #endif
