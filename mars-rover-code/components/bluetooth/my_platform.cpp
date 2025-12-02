@@ -103,12 +103,9 @@ static void my_platform_on_controller_data(uni_hid_device_t* d, uni_controller_t
             int32_t speed = normalized_speed(gp->axis_y);
             float angle = normalized_angle(gp->axis_rx);
             
-            // === РЕЖИМ ОБЕРТАННЯ НАВКОЛО ОСІ ===
             if (gp->throttle > 10 || gp->brake > 10) {
-                // Натиснута одна з кнопок для обертання
                 g_rover->set_spin_input(gp->throttle, gp->brake);
             } else {
-                // Звичайний режим руху
                 g_rover->stop_spinning();
                 g_rover->set(speed, angle);
 

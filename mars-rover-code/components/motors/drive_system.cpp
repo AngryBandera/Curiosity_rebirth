@@ -14,7 +14,7 @@ DriveSystem::DriveSystem(i2c_dev_t* pca9685)
         "RightMiddleMotor",
         0, Cfg::RIGHT_X},
     right_front{
-        9, 8,
+        8, 9,
         "RightFrontWheel", 
         Cfg::FRONT_Y, Cfg::RIGHT_X,
         1},
@@ -25,7 +25,7 @@ DriveSystem::DriveSystem(i2c_dev_t* pca9685)
         Cfg::BACK_Y, Cfg::LEFT_X,
         2},
     left_middle {
-        13, 12,
+        12, 13,
         "LeftMiddleMotor",
         0, Cfg::LEFT_X},
     left_front {
@@ -126,16 +126,21 @@ void DriveSystem::handle_idle() {
 void DriveSystem::handle_accelerating() {
     // just a simple acceleration towards dest_speed
     if (dest_speed > mem_speed) {
-        mem_speed = std::min(dest_speed, 
+        if (mem_speed > 0) {
+            mem_speed = std::min(dest_speed, 
                              static_cast<int16_t>(mem_speed + Cfg::DC_ACCEL));
+        } else {
+            mem_speed = std::min(dest_speed, 
+                                 static_cast<int16_t>(mem_speed + Cfg::DC_DECEL));
+        }
     }
     else if (dest_speed < mem_speed) {
         if (mem_speed > 0) {
-            mem_speed = std::max(static_cast<int16_t>(0),
+            mem_speed = std::max(dest_speed,
                                  static_cast<int16_t>(mem_speed - Cfg::DC_DECEL));
-        } else if (mem_speed < 0) {
-            mem_speed = std::min(static_cast<int16_t>(0), 
-                                 static_cast<int16_t>(mem_speed + Cfg::DC_DECEL));
+        } else {
+            mem_speed = std::max(dest_speed, 
+                                 static_cast<int16_t>(mem_speed - Cfg::DC_ACCEL));
         }
     }
     
@@ -198,9 +203,6 @@ void DriveSystem::handle_turning() {
 
 void DriveSystem::handle_stopping() {
     if (mem_speed != 0) {
-        // Зупиняємо мотори (PWM = 0)
-        // Але дозволяємо машині ковзати через інерцію
-        
         // Обчислюємо час ковзання залежно від швидкості
         // Формула: час = |швидкість| * INERTIA_TICKS_PER_UNIT
         uint16_t calculated_ticks = static_cast<uint16_t>(
@@ -230,16 +232,6 @@ void DriveSystem::apply_inertia() {
     // Apply inertia effect if we are in STOPPING
     if (inertia_ticks_remaining > 0) {
         inertia_ticks_remaining--;
-        
-        // Зменшуємо inertia_speed лінійно залежно від часу, що залишився
-        // На початку full_inertia_ticks, в кінці 0
-        // float progress = static_cast<float>(inertia_ticks_remaining) / 
-        //                 (std::abs(inertia_speed) * Cfg::INERTIA_TICKS_PER_UNIT);
-        
-        // Це буде значення швидкості, на якому машина "ковзає"
-        // На логування (не використовується на моторах)
-        ESP_LOGD(TAG, "Inertia | remaining ticks: %u", 
-            inertia_ticks_remaining);
     }
 }
 
@@ -247,11 +239,9 @@ void DriveSystem::update_state() {
     previous_state = current_state;
     state_tick_counter++;
     
-    // Логіка переходів між станами
     switch (current_state) {
         case DriveState::IDLE:
             if (is_spinning) {
-                // Якщо натиснута кнопка spin, переходимо в режим гальмування перед обертанням
                 current_state = DriveState::STOPPING;
                 state_tick_counter = 0;
             } else if (std::abs(dest_speed) > 10 || fabsf(dest_angle) > 0.5f) {
@@ -305,7 +295,6 @@ void DriveSystem::update_state() {
         case DriveState::STOPPING:
             if (inertia_ticks_remaining > 0) {
                 if (is_spinning) {
-                    // Продовжуємо гальмувати перед обертанням
                     break;
                 } else if (dest_speed > actual_speed && dest_speed > 50) {
                     current_state = DriveState::TURNING;
@@ -319,7 +308,6 @@ void DriveSystem::update_state() {
                     current_state = DriveState::SPINNING;
                     state_tick_counter = 0;
                 } else if (!is_spinning) {
-                    // Звичайне гальмування завершено
                     current_state = DriveState::IDLE;
                     state_tick_counter = 0;
                 }
@@ -390,7 +378,6 @@ void DriveSystem::tick() {
         }
         buffer->flush();
     } else {
-        // Звичайний режим руху
         move_with_angle(mem_speed, mem_angle);
     }
 }
@@ -412,27 +399,11 @@ void DriveSystem::stop() {
     buffer->flush();
 }
 
-// === МЕТОДИ STEERABLE WHEEL ДЛЯ SPIN РЕЖИМУ ===
-void SteerableWheel::calculate_spin_duty(float spin_angle) {
-    spin_target_angle = spin_angle;
-    
-    float servo_angle = Cfg::WHEEL_CENTER_ANGLE + spin_angle;
-    
-    if (servo_angle < 0.0f) servo_angle = 0.0f;
-    if (servo_angle > 180.0f) servo_angle = 180.0f;
-    
-    uint16_t pulse_width_us = Servo::MIN_PULSE_US + 
-        static_cast<uint16_t>(servo_angle * Servo::DEGREE_TO_US);
-    
-    spin_servo_duty = (Servo::MAX_DUTY * pulse_width_us) / Servo::PERIOD_US;
-}
 
-// === НОВІ МЕТОДИ DRIVE SYSTEM ===
 void DriveSystem::set_spin_input(int16_t throttle, int16_t brake) {
     spin_input_throttle = throttle;
     spin_input_brake = brake;
     
-    // Якщо хоча б одна кнопка натиснута, переходимо в режим обертання
     if (throttle > 20 || brake > 20) {
         is_spinning = true;
     }
@@ -445,14 +416,13 @@ void DriveSystem::stop_spinning() {
 }
 
 void DriveSystem::handle_spinning() {
-    // Обчислюємо швидкість обертання з різниці дроселя і гальма
+    // Speed = throttle - brake
     int16_t spin_speed_input = spin_input_throttle - spin_input_brake;
     
-    // Нормалізуємо до діапазону [-SPIN_MAX_SPEED, SPIN_MAX_SPEED]
-    float normalized = (float)spin_speed_input / 512.0f;  // 512 - половина осі
+    // Normalize to range [-SPIN_MAX_SPEED, SPIN_MAX_SPEED]
+    float normalized = (float)spin_speed_input / 512.0f;  // 512 - max speed
     int16_t spin_speed = static_cast<int16_t>(normalized * Cfg::SPIN_MAX_SPEED);
     
-    // Плавне наближення до потрібної швидкості обертання
     if (spin_speed > mem_speed) {
         mem_speed = std::min(spin_speed, 
                             static_cast<int16_t>(mem_speed + Cfg::DC_ACCEL));
@@ -461,18 +431,17 @@ void DriveSystem::handle_spinning() {
                             static_cast<int16_t>(mem_speed - Cfg::DC_ACCEL));
     }
     
-    // Плавне обертання керованих коліс до потрібних кутів
-    // Передні колеса
+    // Front wheels
     if (fabsf(Cfg::SPIN_FRONT_ANGLE - right_front.spin_target_angle) > 0.5f) {
-        left_front.set_angle(left_front.get_angle() * 0.99 + Cfg::SPIN_BACK_ANGLE * 0.01f);
-        right_front.set_angle(right_front.get_angle() * 0.99 - Cfg::SPIN_BACK_ANGLE * 0.01f);
+        left_front.set_angle(left_front.get_angle() * 0.97 + Cfg::SPIN_BACK_ANGLE * 0.03f);
+        right_front.set_angle(right_front.get_angle() * 0.97 - Cfg::SPIN_BACK_ANGLE * 0.03f);
     } else {
-        left_front.calculate_spin_duty(Cfg::SPIN_FRONT_ANGLE);
-        right_front.calculate_spin_duty(-Cfg::SPIN_FRONT_ANGLE);
+        left_back.set_angle(Cfg::SPIN_FRONT_ANGLE);
+        right_back.set_angle(-Cfg::SPIN_FRONT_ANGLE);
         ESP_LOGI(TAG, "TARGETED FRONT ANGLE ACHIEVED LEFT %.1f, RIGHT %.1f", left_front.get_angle(), right_front.get_angle());
     }
     
-    // Задні колеса
+    // Back wheels
     if (fabsf(Cfg::SPIN_BACK_ANGLE - right_back.get_angle()) > 0.1f) {
         right_back.set_angle(right_back.get_angle() * 0.97 + Cfg::SPIN_BACK_ANGLE * 0.03f);
         left_back.set_angle(left_back.get_angle() * 0.97 - Cfg::SPIN_BACK_ANGLE * 0.03f);
