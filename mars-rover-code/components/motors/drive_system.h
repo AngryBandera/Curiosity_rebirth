@@ -147,6 +147,13 @@ public:
         speed - normalized speed from -1.0 (full left) to 1.0 (full right)
     */
     void set_stepper_speed(float speed);
+    
+    /* === SERVO CONTROL ===
+        Control camera vertical (tilt) servo
+        angle - normalized angle from -1.0 (down) to 1.0 (up)
+    */
+    void set_servo_angle(float angle);
+    
     StepperMotor* get_stepper_motor() { return camera_stepper; }
 
     

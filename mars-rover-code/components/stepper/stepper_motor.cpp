@@ -15,6 +15,11 @@ StepperMotor::StepperMotor(const Config& config)
     , initialized(false)
     , current_freq_hz(config.min_speed_hz)
     , target_freq_hz(config.min_speed_hz)
+    , servo_pin(config.servo_pin)
+    , servo_angle(0.0f)
+    , servo_target_angle(0.0f)
+    , servo_chan(LEDC_CHANNEL_0)
+    , servo_initialized(false)
     , task_handle(nullptr)
     , mutex(nullptr)
     , task_running(false)
@@ -132,6 +137,29 @@ esp_err_t StepperMotor::init()
     // Enable RMT channel
     ESP_ERROR_CHECK(rmt_enable(motor_chan));
 
+    // Initialize servo on LEDC
+    ledc_timer_config_t timer_config = {
+        .speed_mode = LEDC_LOW_SPEED_MODE,
+        .duty_resolution = LEDC_TIMER_13_BIT, 
+        .timer_num = LEDC_TIMER_0,
+        .freq_hz = 50,
+        .clk_cfg = LEDC_AUTO_CLK,
+    };
+    ESP_ERROR_CHECK(ledc_timer_config(&timer_config));
+
+    ledc_channel_config_t channel_config = {
+        .gpio_num = servo_pin,
+        .speed_mode = LEDC_LOW_SPEED_MODE,
+        .channel = LEDC_CHANNEL_0,
+        .intr_type = LEDC_INTR_DISABLE,
+        .timer_sel = LEDC_TIMER_0,
+        .duty = 1500,
+        .hpoint = 0,
+    };
+    ESP_ERROR_CHECK(ledc_channel_config(&channel_config));
+    servo_chan = LEDC_CHANNEL_0;
+    servo_initialized = true;
+
     initialized = true;
     ESP_LOGI(TAG, "Stepper motor initialized successfully");
     
@@ -140,17 +168,12 @@ esp_err_t StepperMotor::init()
 
 void StepperMotor::set_speed(float speed)
 {
-    // Clamp speed to [-1.0, 1.0]
     speed = std::max(-1.0f, std::min(1.0f, speed));
     
     if (xSemaphoreTake(mutex, portMAX_DELAY)) {
         target_speed = speed;
         
-        // Calculate target frequency based on absolute speed
         target_freq_hz = speed_to_frequency(std::abs(speed));
-        
-        // Note: Direction change is now handled in update_internal() based on current_speed
-        // to prevent direction flip during deceleration through zero
         
         xSemaphoreGive(mutex);
     }
@@ -199,7 +222,6 @@ void StepperMotor::update()
 
 void StepperMotor::update_internal()
 {
-    // Smoothly transition current speed towards target speed
     if (std::abs(current_speed - target_speed) > 0.01f) {
         float speed_diff = target_speed - current_speed;
         float speed_change = std::copysign(
@@ -211,8 +233,6 @@ void StepperMotor::update_internal()
         current_speed = target_speed;
     }
 
-    // Update direction based on current_speed (not target), and only when motor is actually moving
-    // This prevents direction flip when decelerating through zero
     if (std::abs(current_speed) > 0.01f) {
         Direction new_dir = (current_speed >= 0) ? Direction::CLOCKWISE : Direction::COUNTER_CLOCKWISE;
         if (new_dir != current_direction) {
@@ -221,7 +241,6 @@ void StepperMotor::update_internal()
         }
     }
 
-    // Smoothly transition current frequency towards target frequency
     if (current_freq_hz != target_freq_hz) {
         int32_t freq_diff = target_freq_hz - current_freq_hz;
         int32_t freq_step = (freq_diff > 0) ? 
@@ -230,36 +249,45 @@ void StepperMotor::update_internal()
         current_freq_hz += freq_step;
     }
 
-    // Send pulses if motor is moving
     if (std::abs(current_speed) > 0.01f) {
         send_pulses();
     }
+
+    if (std::abs(servo_angle - servo_target_angle) > 0.01f) {
+        float angle_diff = servo_target_angle - servo_angle;
+        float angle_change = std::copysign(std::min(SERVO_SPEED, std::abs(angle_diff)), angle_diff);
+        servo_angle += angle_change;
+    } else {
+        servo_angle = servo_target_angle;
+    }
+
+    // Map servo angle [-1.0, 1.0] to PWM duty [1000, 2000] microseconds
+    // 1000 = -90°, 1500 = 0°, 2000 = +90°
+    // For LEDC with 13-bit resolution at 50Hz: 8191 / 20000 * 1000 ≈ 409.55
+    uint32_t pulse_us = 1500 + static_cast<int32_t>(servo_angle * 500);
+    uint32_t duty = (pulse_us * 8191) / 20000; 
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, servo_chan, duty);
+    ledc_update_duty(LEDC_LOW_SPEED_MODE, servo_chan);
 }
 
 void StepperMotor::send_pulses()
 {
-    // Prepare transmission configuration
     rmt_transmit_config_t tx_config = {
         .loop_count = 0,
         .flags = {
             .eot_level = 0,
-            .queue_nonblocking = true,  // Non-blocking to keep filling the queue
+            .queue_nonblocking = true,
         }
     };
 
-    // Send continuous pulses at current frequency
-    // Try to add a few transmissions to keep queue filled, but stop when full
-    // Reduced from 20 to 5 to avoid flooding the queue
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 20; i++) {
         esp_err_t err = rmt_transmit(motor_chan, uniform_encoder, &current_freq_hz, 
                                       sizeof(current_freq_hz), &tx_config);
         
-        // If queue is full, stop trying - this is normal during continuous operation
         if (err == ESP_ERR_INVALID_STATE) {
             break;
         }
         
-        // Silently ignore errors - they don't affect operation
         if (err != ESP_OK) {
             break;
         }
@@ -272,7 +300,6 @@ uint32_t StepperMotor::speed_to_frequency(float speed) const
         return config.min_speed_hz;
     }
     
-    // Linear mapping from speed [0, 1] to frequency [min_speed_hz, max_speed_hz]
     uint32_t freq_range = config.max_speed_hz - config.min_speed_hz;
     uint32_t freq = config.min_speed_hz + static_cast<uint32_t>(speed * freq_range);
     
@@ -325,7 +352,7 @@ void StepperMotor::task_function(void* param)
 {
     StepperMotor* motor = static_cast<StepperMotor*>(param);
     TickType_t xLastWakeTime = xTaskGetTickCount();
-    const TickType_t xFrequency = pdMS_TO_TICKS(10); // 10ms update rate (100Hz) for smooth motion
+    const TickType_t xFrequency = pdMS_TO_TICKS(10);
 
     ESP_LOGI(motor->TAG, "Task running");
 
@@ -336,4 +363,14 @@ void StepperMotor::task_function(void* param)
 
     ESP_LOGI(motor->TAG, "Task exiting");
     vTaskDelete(NULL);
+}
+
+void StepperMotor::set_servo_angle(float angle)
+{
+    angle = std::max(-1.0f, std::min(1.0f, angle));
+    
+    if (xSemaphoreTake(mutex, portMAX_DELAY)) {
+        servo_target_angle = angle;
+        xSemaphoreGive(mutex);
+    }
 }

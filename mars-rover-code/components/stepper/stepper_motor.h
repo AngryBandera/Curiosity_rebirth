@@ -6,6 +6,7 @@
 #include "freertos/semphr.h"
 #include "driver/rmt_tx.h"
 #include "driver/gpio.h"
+#include "driver/ledc.h"
 #include "esp_log.h"
 #include "stepper_motor_encoder.h"
 
@@ -25,6 +26,7 @@ public:
         gpio_num_t gpio_en;              // Enable pin
         gpio_num_t gpio_dir;             // Direction pin
         gpio_num_t gpio_step;            // Step pin
+        gpio_num_t servo_pin;            // Servo PWM pin
         uint8_t enable_level;            // Level to enable motor (0 or 1)
         uint32_t resolution_hz;          // RMT resolution in Hz (e.g., 1MHz)
         uint32_t min_speed_hz;           // Minimum speed in Hz (e.g., 500)
@@ -119,6 +121,19 @@ public:
      */
     void stop_task();
 
+    /**
+     * @brief Set vertical servo angle (for camera tilt)
+     * @param angle Normalized angle (-1.0 to 1.0)
+     *              -1.0 = down, 0.0 = center, 1.0 = up
+     */
+    void set_servo_angle(float angle);
+
+    /**
+     * @brief Get current servo angle
+     * @return Current normalized angle (-1.0 to 1.0)
+     */
+    float get_servo_angle() const { return servo_angle; }
+
 private:
     // Configuration
     Config config;
@@ -139,6 +154,16 @@ private:
     // Speed control
     uint32_t current_freq_hz;     // Current frequency in Hz
     uint32_t target_freq_hz;      // Target frequency in Hz
+    
+    // Servo control
+    gpio_num_t servo_pin;         // Servo PWM pin
+    float servo_angle;            // Current angle (-1.0 to 1.0)
+    float servo_target_angle;     // Target angle
+    ledc_channel_t servo_chan;    // LEDC channel
+    bool servo_initialized;
+    
+    // Servo speed control
+    static constexpr float SERVO_SPEED = 0.02f;  // Rate of angle change per update (smoother movement)
     
     // Acceleration parameters
     static constexpr uint32_t ACCEL_STEPS_PER_UPDATE = 10;  // Steps per update cycle

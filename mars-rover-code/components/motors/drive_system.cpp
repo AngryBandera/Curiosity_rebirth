@@ -54,10 +54,11 @@ DriveSystem::DriveSystem(i2c_dev_t* pca9685)
         .gpio_en = GPIO_NUM_0,          // Enable pin
         .gpio_dir = GPIO_NUM_19,        // Direction pin
         .gpio_step = GPIO_NUM_18,       // Step pin
-        .enable_level = 0,              // DRV8825 is enabled on low level
+        .servo_pin = GPIO_NUM_5,        // Servo pin for vertical tilt
+        .enable_level = 0,              // A4988 is enabled on low level
         .resolution_hz = 1000000,       // 1MHz resolution
         .min_speed_hz = 500,            // Minimum speed 500Hz
-        .max_speed_hz = 1000,           // Maximum speed 1200Hz (reduced for better control)
+        .max_speed_hz = 1200,           // Maximum speed 1200Hz (reduced for better control)
         .accel_sample_points = 500      // 500 sample points for acceleration
     };
     
@@ -481,5 +482,11 @@ void DriveSystem::handle_spinning() {
 void DriveSystem::set_stepper_speed(float speed) {
     if (camera_stepper) {
         camera_stepper->set_speed(speed);
+    }
+}
+
+void DriveSystem::set_servo_angle(float angle) {
+    if (camera_stepper) {
+        camera_stepper->set_servo_angle(angle);
     }
 }
