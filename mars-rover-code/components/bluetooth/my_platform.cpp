@@ -103,6 +103,16 @@ static void my_platform_on_controller_data(uni_hid_device_t* d, uni_controller_t
             int32_t speed = normalized_speed(gp->axis_y);
             float angle = normalized_angle(gp->axis_rx);
             
+            // Camera pan control using left stick X axis (axis_x)
+            // Map axis_x range [-512, 512] to normalized speed [-1.0, 1.0]
+            float stepper_speed = 0.0f;
+            if (std::abs(gp->axis_x) > DEAD_ZONE) {
+                stepper_speed = static_cast<float>(gp->axis_x) / AXIS_MAX_INPUT;
+                // Apply non-linear response for better control
+                stepper_speed = std::copysign(std::pow(std::abs(stepper_speed), POWER_EXPONENT), stepper_speed);
+            }
+            g_rover->set_stepper_speed(stepper_speed);
+            
             if (gp->throttle > 10 || gp->brake > 10) {
                 g_rover->set_spin_input(gp->throttle, gp->brake);
             } else {

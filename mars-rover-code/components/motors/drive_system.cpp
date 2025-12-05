@@ -48,6 +48,29 @@ DriveSystem::DriveSystem(i2c_dev_t* pca9685)
     all_wheels[3] = &left_front;
     all_wheels[4] = &left_middle;
     all_wheels[5] = &left_back;
+
+    // Initialize stepper motor for camera pan
+    StepperMotor::Config stepper_config = {
+        .gpio_en = GPIO_NUM_0,          // Enable pin
+        .gpio_dir = GPIO_NUM_19,        // Direction pin
+        .gpio_step = GPIO_NUM_18,       // Step pin
+        .enable_level = 0,              // DRV8825 is enabled on low level
+        .resolution_hz = 1000000,       // 1MHz resolution
+        .min_speed_hz = 500,            // Minimum speed 500Hz
+        .max_speed_hz = 1000,           // Maximum speed 1200Hz (reduced for better control)
+        .accel_sample_points = 500      // 500 sample points for acceleration
+    };
+    
+    camera_stepper = new StepperMotor(stepper_config);
+    esp_err_t err = camera_stepper->init();
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to initialize stepper motor");
+    } else {
+        camera_stepper->set_enabled(true);
+        // Start stepper motor task
+        camera_stepper->start_task("stepper_task", 5, 1);
+        ESP_LOGI(TAG, "Stepper motor initialized and task started");
+    }
 }
 
 void DriveSystem::print_angles() {
@@ -383,15 +406,15 @@ void DriveSystem::tick() {
 }
 
 void DriveSystem::print_state() {
-    const char* state_names[] = {
+    [[maybe_unused]] const char* state_names[] = {
         "IDLE", "ACCELERATING", "MOVING", "DECELERATING", "TURNING", "STOPPING", "SPINNING"
     };
-    ESP_LOGI(TAG, "State: %s | Speed: %d/%d | Angle: %.1f/%.1f | Inertia: %u | Spinning: %s",
-            state_names[static_cast<int>(current_state)],
-            mem_speed, dest_speed,
-            mem_angle, dest_angle,
-            inertia_ticks_remaining,
-            is_spinning ? "YES" : "NO");
+    // ESP_LOGI(TAG, "State: %s | Speed: %d/%d | Angle: %.1f/%.1f | Inertia: %u | Spinning: %s",
+    //         state_names[static_cast<int>(current_state)],
+    //         mem_speed, dest_speed,
+    //         mem_angle, dest_angle,
+    //         inertia_ticks_remaining,
+    //         is_spinning ? "YES" : "NO");
 }
 
 void DriveSystem::stop() {
@@ -453,4 +476,10 @@ void DriveSystem::handle_spinning() {
     
     ESP_LOGI(TAG, "SPINNING: speed=%d, throttle=%d, brake=%d", 
              mem_speed, spin_input_throttle, spin_input_brake);
+}
+
+void DriveSystem::set_stepper_speed(float speed) {
+    if (camera_stepper) {
+        camera_stepper->set_speed(speed);
+    }
 }

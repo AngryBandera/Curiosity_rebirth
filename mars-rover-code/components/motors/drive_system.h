@@ -2,6 +2,7 @@
 #define DRIVE_SYSTEM_H
 
 #include "wheel_motor.h"
+#include "stepper_motor.h"
 
 
 // Enum for states of the drive system
@@ -51,6 +52,9 @@ private:
     SteerableWheel* all_steerable_wheels[4];
 
     WheelMotor* all_wheels[6];
+
+    // Stepper motor for camera pan control
+    StepperMotor* camera_stepper;
 
     // === CURRENT AND DESTINATION SPEED/ANGLE ===
     // mem_speed - current speed that we are applying to motors (in real life that speed can be different due to inertia)
@@ -137,6 +141,13 @@ public:
     */
     void set_spin_input(int16_t throttle, int16_t brake);
     void stop_spinning();
+
+    /* === STEPPER MOTOR CONTROL ===
+        Control camera pan stepper motor
+        speed - normalized speed from -1.0 (full left) to 1.0 (full right)
+    */
+    void set_stepper_speed(float speed);
+    StepperMotor* get_stepper_motor() { return camera_stepper; }
 
     
     // Methods to get internal parameters for debugging
