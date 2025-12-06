@@ -6,26 +6,13 @@
 #include "esp_http_server.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "freertos/queue.h"
 
 static const char* TAG = "CAMERA_SERVER";
 
 // Глобальні змінні
 static httpd_handle_t server = NULL;
 static bool camera_initialized = false;
-static volatile bool streaming_active = false;  // volatile бо міняється з різних потоків
-
-// Черга для відправки кадрів клієнтам
-static QueueHandle_t frame_queue = NULL;
-static TaskHandle_t stream_task_handle = NULL;
-
-// Структура для зберігання клієнтських з'єднань
-typedef struct {
-    httpd_req_t* req;
-    bool active;
-} stream_client_t;
-
-static stream_client_t stream_clients[3] = {0};  // максимум 3 клієнти одночасно
+static volatile bool streaming_active = false;
 
 // Конфігурація камери для ESP32-WROVER
 static camera_config_t camera_config = {
@@ -164,7 +151,7 @@ const char* getCameraStatus() {
 }
 
 // ============================================
-// HTTP Handlers - СПРОЩЕНІ
+// HTTP Handlers - СИНХРОННІ АЛЕ БЕЗ БЛОКУВАННЯ
 // ============================================
 
 esp_err_t handleRootRequest(httpd_req_t* req) {
@@ -232,80 +219,9 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
     return httpd_resp_send(req, html, strlen(html));
 }
 
-// Stream handler з використанням async task (як в Arduino прикладі)
-static void stream_handler_task(void* arg) {
-    httpd_req_t* req = (httpd_req_t*)arg;
-    camera_fb_t* fb = NULL;
-    
-    ESP_LOGI(TAG, "📹 Stream task started");
-    
-    // Set response headers
-    httpd_resp_set_type(req, "multipart/x-mixed-replace; boundary=frame");
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-    httpd_resp_set_hdr(req, "X-Framerate", "10");
-    
-    while (true) {
-        if (streaming_active) {
-            fb = esp_camera_fb_get();
-            if (!fb) {
-                ESP_LOGW(TAG, "Frame capture failed");
-                vTaskDelay(pdMS_TO_TICKS(100));
-                continue;
-            }
-
-            char part_buf[64];
-            snprintf(part_buf, sizeof(part_buf), 
-                     "--frame\r\nContent-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n",
-                     fb->len);
-            
-            if (httpd_resp_send_chunk(req, part_buf, strlen(part_buf)) != ESP_OK) {
-                esp_camera_fb_return(fb);
-                break;
-            }
-
-            if (httpd_resp_send_chunk(req, (const char*)fb->buf, fb->len) != ESP_OK) {
-                esp_camera_fb_return(fb);
-                break;
-            }
-
-            if (httpd_resp_send_chunk(req, "\r\n", 2) != ESP_OK) {
-                esp_camera_fb_return(fb);
-                break;
-            }
-
-            esp_camera_fb_return(fb);
-            fb = NULL;
-            
-            vTaskDelay(pdMS_TO_TICKS(100));  // 10 FPS
-            
-        } else {
-            const char* svg = 
-                "<svg xmlns='http://www.w3.org/2000/svg' width='800' height='600'>"
-                "<rect width='100%' height='100%' fill='#000'/>"
-                "<text x='50%' y='50%' font-size='28' fill='#f44' text-anchor='middle'>"
-                "Stream Stopped</text></svg>";
-            
-            char buf[128];
-            snprintf(buf, sizeof(buf), 
-                     "--frame\r\nContent-Type: image/svg+xml\r\nContent-Length: %d\r\n\r\n",
-                     (int)strlen(svg));
-            
-            if (httpd_resp_send_chunk(req, buf, strlen(buf)) != ESP_OK) break;
-            if (httpd_resp_send_chunk(req, svg, strlen(svg)) != ESP_OK) break;
-            if (httpd_resp_send_chunk(req, "\r\n", 2) != ESP_OK) break;
-            
-            vTaskDelay(pdMS_TO_TICKS(500));
-        }
-    }
-
-    httpd_resp_send_chunk(req, NULL, 0);
-    ESP_LOGI(TAG, "🔴 Stream task ended");
-    vTaskDelete(NULL);
-}
-
-// HTTP handler для стріму - створює окрему задачу
+// ⭐ КРИТИЧНА ЗМІНА: Стрім БЕЗ нескінченного циклу
 esp_err_t handleStreamRequest(httpd_req_t* req) {
-    ESP_LOGI(TAG, "📹 Stream request received");
+    ESP_LOGI(TAG, "📹 Stream connected");
     
     if (!camera_initialized) {
         ESP_LOGE(TAG, "Camera not initialized");
@@ -313,23 +229,102 @@ esp_err_t handleStreamRequest(httpd_req_t* req) {
         return ESP_FAIL;
     }
 
-    // ВАЖЛИВО: Створюємо окрему задачу для стріму щоб не блокувати HTTP сервер
-    TaskHandle_t task;
-    xTaskCreatePinnedToCore(
-        stream_handler_task,   // Function
-        "stream_task",         // Name
-        4096,                  // Stack size
-        (void*)req,            // Parameter
-        5,                     // Priority
-        &task,                 // Handle
-        1                      // Core 1
-    );
+    camera_fb_t* fb = NULL;
+    esp_err_t res = ESP_OK;
+    size_t _jpg_buf_len = 0;
+    uint8_t * _jpg_buf = NULL;
     
-    // Повертаємось ОДРАЗУ, не блокуючи HTTP сервер
-    return ESP_OK;
+    httpd_resp_set_type(req, "multipart/x-mixed-replace; boundary=frame");
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    httpd_resp_set_hdr(req, "X-Framerate", "10");
+
+    // ⭐ КЛЮЧ: Використовуємо httpd_socket для прямої роботи з сокетом
+    int fd = httpd_req_to_sockfd(req);
+    
+    while (true) {
+        // Перевірка чи клієнт ще підключений
+        if (fd < 0) {
+            ESP_LOGW(TAG, "Invalid socket");
+            break;
+        }
+        
+        if (streaming_active) {
+            fb = esp_camera_fb_get();
+            if (!fb) {
+                ESP_LOGW(TAG, "Frame get failed");
+                vTaskDelay(pdMS_TO_TICKS(10));
+                continue;
+            }
+
+            _jpg_buf_len = fb->len;
+            _jpg_buf = fb->buf;
+
+            char part_buf[128];
+            size_t hlen = snprintf(part_buf, sizeof(part_buf), 
+                "--frame\r\n"
+                "Content-Type: image/jpeg\r\n"
+                "Content-Length: %u\r\n"
+                "\r\n", 
+                _jpg_buf_len);
+            
+            // Відправляємо заголовок
+            if (httpd_socket_send(fd, part_buf, hlen, 0) < 0) {
+                esp_camera_fb_return(fb);
+                ESP_LOGI(TAG, "Client disconnected (header)");
+                break;
+            }
+
+            // Відправляємо JPEG
+            if (httpd_socket_send(fd, (const char *)_jpg_buf, _jpg_buf_len, 0) < 0) {
+                esp_camera_fb_return(fb);
+                ESP_LOGI(TAG, "Client disconnected (body)");
+                break;
+            }
+
+            // Відправляємо boundary
+            if (httpd_socket_send(fd, "\r\n", 2, 0) < 0) {
+                esp_camera_fb_return(fb);
+                ESP_LOGI(TAG, "Client disconnected (boundary)");
+                break;
+            }
+
+            esp_camera_fb_return(fb);
+            fb = NULL;
+            
+            // 10 FPS
+            vTaskDelay(pdMS_TO_TICKS(100));
+            
+        } else {
+            // Placeholder коли стрім зупинено
+            const char* svg = 
+                "<svg xmlns='http://www.w3.org/2000/svg' width='800' height='600'>"
+                "<rect width='100%' height='100%' fill='#000'/>"
+                "<text x='50%' y='50%' font-size='28' fill='#f44' text-anchor='middle'>"
+                "Stream Stopped</text></svg>";
+            
+            char buf[256];
+            size_t len = snprintf(buf, sizeof(buf), 
+                "--frame\r\n"
+                "Content-Type: image/svg+xml\r\n"
+                "Content-Length: %d\r\n"
+                "\r\n%s\r\n",
+                (int)strlen(svg), svg);
+            
+            if (httpd_socket_send(fd, buf, len, 0) < 0) {
+                break;
+            }
+            
+            vTaskDelay(pdMS_TO_TICKS(500));
+        }
+        
+        // ⭐ ВАЖЛИВО: Даємо можливість іншим задачам працювати
+        taskYIELD();
+    }
+
+    ESP_LOGI(TAG, "🔴 Stream ended");
+    return res;
 }
 
-// ДУЖЕ простий handler для start
 esp_err_t handleStartStreamRequest(httpd_req_t* req) {
     ESP_LOGI(TAG, "🟢 START requested");
     
@@ -341,7 +336,6 @@ esp_err_t handleStartStreamRequest(httpd_req_t* req) {
     return httpd_resp_send(req, body, strlen(body));
 }
 
-// ДУЖЕ простий handler для stop
 esp_err_t handleStopStreamRequest(httpd_req_t* req) {
     ESP_LOGI(TAG, "🔴 STOP requested");
     
@@ -366,7 +360,7 @@ esp_err_t handleStatusRequest(httpd_req_t* req) {
 }
 
 // ============================================
-// Ініціалізація вебсервера - ОПТИМІЗОВАНО
+// Ініціалізація вебсервера
 // ============================================
 
 bool initWebServer(uint16_t port) {
@@ -377,18 +371,27 @@ bool initWebServer(uint16_t port) {
 
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.server_port = port;
+    config.ctrl_port = 32768;
     
-    // Оптимізовані налаштування
-    config.max_open_sockets = 7;         // Максимум дозволений
+    // ⭐ КРИТИЧНІ налаштування для роботи зі стрімом
+    config.max_open_sockets = 7;
     config.max_uri_handlers = 8;
-    config.stack_size = 6144;            // 6KB
+    config.stack_size = 8192;           // Збільшений стек
     config.task_priority = 5;
-    config.core_id = 1;                  // Запускаємо на ядрі 1 (ядро 0 для WiFi)
+    config.core_id = 1;
     
-    config.lru_purge_enable = true;      // Автоматично закривати старі з'єднання
-    config.recv_wait_timeout = 5;
-    config.send_wait_timeout = 5;
+    config.lru_purge_enable = true;
+    config.recv_wait_timeout = 10;
+    config.send_wait_timeout = 10;
     config.backlog_conn = 5;
+    
+    // ⭐ Важливо для стріму
+    config.global_user_ctx = NULL;
+    config.global_user_ctx_free_fn = NULL;
+    config.global_transport_ctx = NULL;
+    config.global_transport_ctx_free_fn = NULL;
+    config.open_fn = NULL;
+    config.close_fn = NULL;
 
     ESP_LOGI(TAG, "Starting web server...");
     
@@ -398,19 +401,45 @@ bool initWebServer(uint16_t port) {
     }
 
     // Реєструємо handlers
-    httpd_uri_t uris[] = {
-        {.uri = "/", .method = HTTP_GET, .handler = handleRootRequest, .user_ctx = NULL},
-        {.uri = "/stream", .method = HTTP_GET, .handler = handleStreamRequest, .user_ctx = NULL},
-        {.uri = "/stream/start", .method = HTTP_GET, .handler = handleStartStreamRequest, .user_ctx = NULL},
-        {.uri = "/stream/stop", .method = HTTP_GET, .handler = handleStopStreamRequest, .user_ctx = NULL},
-        {.uri = "/status", .method = HTTP_GET, .handler = handleStatusRequest, .user_ctx = NULL}
+    httpd_uri_t uri_root = {
+        .uri = "/",
+        .method = HTTP_GET,
+        .handler = handleRootRequest,
+        .user_ctx = NULL
     };
+    httpd_register_uri_handler(server, &uri_root);
 
-    for (int i = 0; i < 5; i++) {
-        if (httpd_register_uri_handler(server, &uris[i]) != ESP_OK) {
-            ESP_LOGE(TAG, "Failed to register handler: %s", uris[i].uri);
-        }
-    }
+    httpd_uri_t uri_stream = {
+        .uri = "/stream",
+        .method = HTTP_GET,
+        .handler = handleStreamRequest,
+        .user_ctx = NULL
+    };
+    httpd_register_uri_handler(server, &uri_stream);
+
+    httpd_uri_t uri_start = {
+        .uri = "/stream/start",
+        .method = HTTP_GET,
+        .handler = handleStartStreamRequest,
+        .user_ctx = NULL
+    };
+    httpd_register_uri_handler(server, &uri_start);
+
+    httpd_uri_t uri_stop = {
+        .uri = "/stream/stop",
+        .method = HTTP_GET,
+        .handler = handleStopStreamRequest,
+        .user_ctx = NULL
+    };
+    httpd_register_uri_handler(server, &uri_stop);
+
+    httpd_uri_t uri_status = {
+        .uri = "/status",
+        .method = HTTP_GET,
+        .handler = handleStatusRequest,
+        .user_ctx = NULL
+    };
+    httpd_register_uri_handler(server, &uri_status);
 
     ESP_LOGI(TAG, "✅ Web server started on port %d", port);
     return true;
