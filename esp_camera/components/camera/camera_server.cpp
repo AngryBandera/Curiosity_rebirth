@@ -304,7 +304,7 @@ esp_err_t handleStreamRequest(httpd_req_t* req) {
                 "<text x='50%' y='50%' font-size='28' fill='#f44' text-anchor='middle'>"
                 "Stream Stopped</text></svg>";
             
-            char buf[256];
+            char buf[512];
             size_t len = snprintf(buf, sizeof(buf), 
                 "--frame\r\n"
                 "Content-Type: image/svg+xml\r\n"
