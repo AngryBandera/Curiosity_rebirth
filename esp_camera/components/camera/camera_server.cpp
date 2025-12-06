@@ -232,22 +232,18 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
     return httpd_resp_send(req, html, strlen(html));
 }
 
-// Спрощений стрім handler
-esp_err_t handleStreamRequest(httpd_req_t* req) {
-    ESP_LOGI(TAG, "📹 Stream client connected");
-    
-    if (!camera_initialized) {
-        ESP_LOGE(TAG, "Camera not initialized");
-        httpd_resp_send_500(req);
-        return ESP_FAIL;
-    }
-
+// Stream handler з використанням async task (як в Arduino прикладі)
+static void stream_handler_task(void* arg) {
+    httpd_req_t* req = (httpd_req_t*)arg;
     camera_fb_t* fb = NULL;
     
+    ESP_LOGI(TAG, "📹 Stream task started");
+    
+    // Set response headers
     httpd_resp_set_type(req, "multipart/x-mixed-replace; boundary=frame");
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     httpd_resp_set_hdr(req, "X-Framerate", "10");
-
+    
     while (true) {
         if (streaming_active) {
             fb = esp_camera_fb_get();
@@ -283,7 +279,6 @@ esp_err_t handleStreamRequest(httpd_req_t* req) {
             vTaskDelay(pdMS_TO_TICKS(100));  // 10 FPS
             
         } else {
-            // Показуємо placeholder
             const char* svg = 
                 "<svg xmlns='http://www.w3.org/2000/svg' width='800' height='600'>"
                 "<rect width='100%' height='100%' fill='#000'/>"
@@ -304,7 +299,33 @@ esp_err_t handleStreamRequest(httpd_req_t* req) {
     }
 
     httpd_resp_send_chunk(req, NULL, 0);
-    ESP_LOGI(TAG, "🔴 Stream client disconnected");
+    ESP_LOGI(TAG, "🔴 Stream task ended");
+    vTaskDelete(NULL);
+}
+
+// HTTP handler для стріму - створює окрему задачу
+esp_err_t handleStreamRequest(httpd_req_t* req) {
+    ESP_LOGI(TAG, "📹 Stream request received");
+    
+    if (!camera_initialized) {
+        ESP_LOGE(TAG, "Camera not initialized");
+        httpd_resp_send_500(req);
+        return ESP_FAIL;
+    }
+
+    // ВАЖЛИВО: Створюємо окрему задачу для стріму щоб не блокувати HTTP сервер
+    TaskHandle_t task;
+    xTaskCreatePinnedToCore(
+        stream_handler_task,   // Function
+        "stream_task",         // Name
+        4096,                  // Stack size
+        (void*)req,            // Parameter
+        5,                     // Priority
+        &task,                 // Handle
+        1                      // Core 1
+    );
+    
+    // Повертаємось ОДРАЗУ, не блокуючи HTTP сервер
     return ESP_OK;
 }
 
