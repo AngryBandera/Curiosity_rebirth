@@ -219,7 +219,7 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
     return httpd_resp_send(req, html, strlen(html));
 }
 
-// ⭐ КРИТИЧНА ЗМІНА: Стрім БЕЗ нескінченного циклу
+// ⭐ КРИТИЧНА ЗМІНА: Стрім з правильним використанням httpd_socket_send
 esp_err_t handleStreamRequest(httpd_req_t* req) {
     ESP_LOGI(TAG, "📹 Stream connected");
     
@@ -238,7 +238,8 @@ esp_err_t handleStreamRequest(httpd_req_t* req) {
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     httpd_resp_set_hdr(req, "X-Framerate", "10");
 
-    // ⭐ КЛЮЧ: Використовуємо httpd_socket для прямої роботи з сокетом
+    // ⭐ Отримуємо handle сервера та socket fd
+    httpd_handle_t hd = server;  // Глобальна змінна сервера
     int fd = httpd_req_to_sockfd(req);
     
     while (true) {
@@ -267,22 +268,23 @@ esp_err_t handleStreamRequest(httpd_req_t* req) {
                 "\r\n", 
                 _jpg_buf_len);
             
+            // ⭐ ПРАВИЛЬНА сигнатура: httpd_socket_send(handle, sockfd, buf, len, flags)
             // Відправляємо заголовок
-            if (httpd_socket_send(fd, part_buf, hlen, 0) < 0) {
+            if (httpd_socket_send(hd, fd, part_buf, hlen, 0) < 0) {
                 esp_camera_fb_return(fb);
                 ESP_LOGI(TAG, "Client disconnected (header)");
                 break;
             }
 
             // Відправляємо JPEG
-            if (httpd_socket_send(fd, (const char *)_jpg_buf, _jpg_buf_len, 0) < 0) {
+            if (httpd_socket_send(hd, fd, (const char *)_jpg_buf, _jpg_buf_len, 0) < 0) {
                 esp_camera_fb_return(fb);
                 ESP_LOGI(TAG, "Client disconnected (body)");
                 break;
             }
 
             // Відправляємо boundary
-            if (httpd_socket_send(fd, "\r\n", 2, 0) < 0) {
+            if (httpd_socket_send(hd, fd, "\r\n", 2, 0) < 0) {
                 esp_camera_fb_return(fb);
                 ESP_LOGI(TAG, "Client disconnected (boundary)");
                 break;
@@ -310,7 +312,7 @@ esp_err_t handleStreamRequest(httpd_req_t* req) {
                 "\r\n%s\r\n",
                 (int)strlen(svg), svg);
             
-            if (httpd_socket_send(fd, buf, len, 0) < 0) {
+            if (httpd_socket_send(hd, fd, buf, len, 0) < 0) {
                 break;
             }
             
