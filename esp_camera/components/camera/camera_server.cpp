@@ -17,12 +17,14 @@ static bool camera_initialized = false;
 static volatile bool streaming_active = false;
 static SemaphoreHandle_t stream_mutex = NULL;
 static volatile int active_stream_clients = 0;
-static TaskHandle_t control_task_handle = NULL;
 
-// ⭐ НАЛАШТУВАННЯ СТРІМУ
-#define FRAMES_PER_BATCH 30        // Відправка 30 кадрів
-#define BATCH_PAUSE_MS 200         // Пауза 200мс між пакетами
-#define FRAME_DELAY_MS 100         // Затримка між кадрами (~10 FPS)
+// ⭐ НАЛАШТУВАННЯ СТРІМУ - КОРОТШІ ПАКЕТИ!
+#define FRAMES_PER_BATCH 3         // Тільки 3 кадри (~300мс)
+#define BATCH_PAUSE_MS 500         // ДОВША пауза 500мс для кнопок
+#define FRAME_DELAY_MS 100         // 100мс між кадрами (~10 FPS)
+
+// WebSocket для контролю
+static int control_ws_fd = -1;
 
 // Конфігурація камери для ESP32-WROVER
 static camera_config_t camera_config = {
@@ -55,23 +57,6 @@ static camera_config_t camera_config = {
     .fb_location = CAMERA_FB_IN_PSRAM,
     .grab_mode = CAMERA_GRAB_WHEN_EMPTY
 };
-
-// ============================================
-// ⭐ ОКРЕМА ЗАДАЧА ДЛЯ КОНТРОЛЮ (працює на ядрі 0)
-// ============================================
-void controlMonitorTask(void* pvParameters) {
-    ESP_LOGI(TAG, "🎮 Control monitor task started on core %d", xPortGetCoreID());
-    
-    while (true) {
-        // Ця задача просто тримає ядро 0 активним для обробки HTTP запитів
-        vTaskDelay(pdMS_TO_TICKS(50));
-        
-        // Можна додати додаткову логіку моніторингу тут
-        if (active_stream_clients > 0 && !streaming_active) {
-            ESP_LOGW(TAG, "⚠️ Stream client active but streaming stopped");
-        }
-    }
-}
 
 // ============================================
 // Функції для камери
@@ -161,7 +146,6 @@ bool startVideoStream() {
         ESP_LOGI(TAG, "🎥 Video streaming STARTED");
         return true;
     }
-    ESP_LOGE(TAG, "Failed to acquire mutex for start");
     return false;
 }
 
@@ -172,12 +156,9 @@ bool stopVideoStream() {
         streaming_active = false;
         xSemaphoreGive(stream_mutex);
         ESP_LOGI(TAG, "✅ Video streaming STOPPED");
-        
-        // Даємо час клієнтам закрити з'єднання
         vTaskDelay(pdMS_TO_TICKS(300));
         return true;
     }
-    ESP_LOGE(TAG, "Failed to acquire mutex for stop");
     return false;
 }
 
@@ -197,6 +178,84 @@ const char* getCameraStatus() {
         return "Streaming active";
     }
     return "Camera ready";
+}
+
+// ============================================
+// ⭐ WebSocket для контролю (окреме з'єднання!)
+// ============================================
+
+esp_err_t handleWebSocketControl(httpd_req_t* req) {
+    if (req->method == HTTP_GET) {
+        ESP_LOGI(TAG, "🔌 WebSocket handshake");
+        control_ws_fd = httpd_req_to_sockfd(req);
+        return ESP_OK;
+    }
+
+    httpd_ws_frame_t ws_pkt;
+    memset(&ws_pkt, 0, sizeof(httpd_ws_frame_t));
+    ws_pkt.type = HTTPD_WS_TYPE_TEXT;
+    
+    esp_err_t ret = httpd_ws_recv_frame(req, &ws_pkt, 0);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "httpd_ws_recv_frame failed");
+        return ret;
+    }
+
+    if (ws_pkt.len) {
+        uint8_t* buf = (uint8_t*)calloc(1, ws_pkt.len + 1);
+        if (buf == NULL) {
+            ESP_LOGE(TAG, "Failed to allocate memory");
+            return ESP_ERR_NO_MEM;
+        }
+        ws_pkt.payload = buf;
+        ret = httpd_ws_recv_frame(req, &ws_pkt, ws_pkt.len);
+        if (ret != ESP_OK) {
+            free(buf);
+            return ret;
+        }
+
+        ESP_LOGI(TAG, "📨 WebSocket received: %s", ws_pkt.payload);
+
+        const char* response = NULL;
+        
+        // Обробка команд
+        if (strcmp((char*)ws_pkt.payload, "START") == 0) {
+            ESP_LOGI(TAG, "🟢 WS: START command");
+            if (startVideoStream()) {
+                response = "{\"status\":\"ok\",\"streaming\":true,\"via\":\"websocket\"}";
+            } else {
+                response = "{\"status\":\"error\",\"streaming\":false}";
+            }
+        } 
+        else if (strcmp((char*)ws_pkt.payload, "STOP") == 0) {
+            ESP_LOGI(TAG, "🔴 WS: STOP command");
+            if (stopVideoStream()) {
+                response = "{\"status\":\"ok\",\"streaming\":false,\"via\":\"websocket\"}";
+            } else {
+                response = "{\"status\":\"error\",\"streaming\":true}";
+            }
+        }
+        else if (strcmp((char*)ws_pkt.payload, "STATUS") == 0) {
+            char status_buf[128];
+            snprintf(status_buf, sizeof(status_buf),
+                     "{\"streaming\":%s,\"camera\":\"%s\",\"clients\":%d}",
+                     streaming_active ? "true" : "false",
+                     camera_initialized ? "ready" : "not_ready",
+                     active_stream_clients);
+            response = status_buf;
+        }
+
+        if (response) {
+            ws_pkt.payload = (uint8_t*)response;
+            ws_pkt.len = strlen(response);
+            ws_pkt.type = HTTPD_WS_TYPE_TEXT;
+            httpd_ws_send_frame(req, &ws_pkt);
+        }
+
+        free(buf);
+    }
+
+    return ESP_OK;
 }
 
 // ============================================
@@ -226,6 +285,7 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
         ".active{color:#4CAF50;font-weight:bold}"
         ".inactive{color:#f44336;font-weight:bold}"
         "#debug{font-size:12px;color:#888;margin-top:10px}"
+        ".ws-status{color:#4CAF50;font-size:12px}"
         "</style></head>"
         "<body>"
         "<h1>🚀 Mars Rover Camera</h1>"
@@ -235,100 +295,124 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
         "<button id='stopBtn' class='stop' onclick='stopStream()' disabled>⏹ STOP</button>"
         "</div>"
         "<div id='status'>Ready</div>"
-        "<div id='debug'>Stream updates: 30 frames → 200ms pause → repeat</div>"
+        "<div id='debug'>"
+        "<div class='ws-status' id='wsStatus'>WebSocket: connecting...</div>"
+        "Stream: 3 frames (300ms) → 500ms pause → repeat"
+        "</div>"
         "<script>"
         "let container=document.getElementById('streamContainer');"
         "let statusDiv=document.getElementById('status');"
         "let debugDiv=document.getElementById('debug');"
+        "let wsStatusDiv=document.getElementById('wsStatus');"
         "let startBtn=document.getElementById('startBtn');"
         "let stopBtn=document.getElementById('stopBtn');"
         "let streamImg=null;"
         "let isStreaming=false;"
-        "let requestCount=0;"
+        "let ws=null;"
         
-        "async function startStream(){"
+        // ⭐ WebSocket для контролю (окреме з'єднання!)
+        "function connectWebSocket(){"
+        "  let wsUrl='ws://'+window.location.hostname+':'+window.location.port+'/ws';"
+        "  console.log('Connecting to WebSocket:',wsUrl);"
+        "  ws=new WebSocket(wsUrl);"
+        "  ws.onopen=()=>{"
+        "    console.log('✅ WebSocket connected');"
+        "    wsStatusDiv.textContent='WebSocket: ✅ connected';"
+        "    wsStatusDiv.style.color='#4CAF50';"
+        "  };"
+        "  ws.onclose=()=>{"
+        "    console.log('❌ WebSocket disconnected');"
+        "    wsStatusDiv.textContent='WebSocket: ❌ disconnected - reconnecting...';"
+        "    wsStatusDiv.style.color='#f44336';"
+        "    setTimeout(connectWebSocket,2000);"
+        "  };"
+        "  ws.onerror=(e)=>{"
+        "    console.error('WebSocket error:',e);"
+        "    wsStatusDiv.textContent='WebSocket: ⚠️ error';"
+        "    wsStatusDiv.style.color='#ff9800';"
+        "  };"
+        "  ws.onmessage=(e)=>{"
+        "    console.log('📨 WS response:',e.data);"
+        "    try{"
+        "      let data=JSON.parse(e.data);"
+        "      if(data.streaming!==undefined){"
+        "        if(data.streaming && !isStreaming){"
+        "          console.log('Stream started via WS');"
+        "          loadStream();"
+        "        }else if(!data.streaming && isStreaming){"
+        "          console.log('Stream stopped via WS');"
+        "          unloadStream();"
+        "        }"
+        "      }"
+        "    }catch(err){console.error('Parse error:',err);}"
+        "  };"
+        "}"
+        
+        "function sendWS(cmd){"
+        "  if(ws && ws.readyState===WebSocket.OPEN){"
+        "    console.log('📤 Sending WS:',cmd);"
+        "    ws.send(cmd);"
+        "    return true;"
+        "  }else{"
+        "    console.error('WebSocket not ready');"
+        "    wsStatusDiv.textContent='WebSocket: ⚠️ not connected';"
+        "    return false;"
+        "  }"
+        "}"
+        
+        "function loadStream(){"
+        "  isStreaming=true;"
+        "  container.innerHTML='';"
+        "  streamImg=document.createElement('img');"
+        "  streamImg.style.width='100%';"
+        "  streamImg.style.height='auto';"
+        "  streamImg.onerror=()=>{"
+        "    console.error('Stream error');"
+        "    debugDiv.textContent='Stream error';"
+        "  };"
+        "  container.appendChild(streamImg);"
+        "  streamImg.src='/stream?_t='+Date.now();"
+        "  statusDiv.innerHTML='<span class=\"active\">🎥 STREAMING (via WebSocket)</span>';"
+        "  stopBtn.disabled=false;"
+        "  startBtn.disabled=true;"
+        "}"
+        
+        "function unloadStream(){"
+        "  isStreaming=false;"
+        "  if(streamImg){"
+        "    streamImg.src='';"
+        "    streamImg.remove();"
+        "    streamImg=null;"
+        "  }"
+        "  container.innerHTML='Stream stopped - Press START to resume';"
+        "  statusDiv.innerHTML='<span class=\"inactive\">⏸ STOPPED</span>';"
+        "  startBtn.disabled=false;"
+        "  stopBtn.disabled=true;"
+        "}"
+        
+        "function startStream(){"
         "  if(isStreaming)return;"
         "  startBtn.disabled=true;"
-        "  requestCount++;"
-        "  console.log('['+requestCount+'] Starting stream...');"
-        "  debugDiv.textContent='Sending START request...';"
-        "  try{"
-        "    let controller=new AbortController();"
-        "    let timeout=setTimeout(()=>controller.abort(),5000);"
-        "    let r=await fetch('/stream/start',{"
-        "      method:'GET',"
-        "      cache:'no-cache',"
-        "      signal:controller.signal"
-        "    });"
-        "    clearTimeout(timeout);"
-        "    let data=await r.json();"
-        "    console.log('['+requestCount+'] Start response:',data);"
-        "    if(r.ok && data.status=='ok'){"
-        "      isStreaming=true;"
-        "      container.innerHTML='';"
-        "      streamImg=document.createElement('img');"
-        "      streamImg.style.width='100%';"
-        "      streamImg.style.height='auto';"
-        "      streamImg.onerror=()=>{"
-        "        console.error('Stream load error');"
-        "        debugDiv.textContent='Stream error - try reloading';"
-        "      };"
-        "      container.appendChild(streamImg);"
-        "      setTimeout(()=>{"
-        "        streamImg.src='/stream?_t='+Date.now();"
-        "      },200);"
-        "      statusDiv.innerHTML='<span class=\"active\">🎥 STREAMING (30 frames/batch)</span>';"
-        "      debugDiv.textContent='Stream active: 30 frames → 200ms pause';"
-        "      stopBtn.disabled=false;"
-        "      startBtn.disabled=true;"
-        "    }else{"
-        "      debugDiv.textContent='Start failed: '+JSON.stringify(data);"
-        "      startBtn.disabled=false;"
-        "    }"
-        "  }catch(e){"
-        "    console.error('['+requestCount+'] Start error:',e);"
-        "    debugDiv.textContent='Start error: '+e.message;"
+        "  if(sendWS('START')){"
+        "    console.log('START command sent via WebSocket');"
+        "  }else{"
         "    startBtn.disabled=false;"
         "  }"
         "}"
         
-        "async function stopStream(){"
-        "  requestCount++;"
-        "  console.log('['+requestCount+'] Stopping stream...');"
-        "  debugDiv.textContent='Sending STOP request...';"
+        "function stopStream(){"
+        "  if(!isStreaming)return;"
         "  stopBtn.disabled=true;"
-        "  try{"
-        "    let controller=new AbortController();"
-        "    let timeout=setTimeout(()=>controller.abort(),5000);"
-        "    let r=await fetch('/stream/stop',{"
-        "      method:'GET',"
-        "      cache:'no-cache',"
-        "      signal:controller.signal"
-        "    });"
-        "    clearTimeout(timeout);"
-        "    let data=await r.json();"
-        "    console.log('['+requestCount+'] Stop response:',data);"
-        "    if(r.ok && data.status=='ok'){"
-        "      isStreaming=false;"
-        "      if(streamImg){"
-        "        streamImg.src='';"
-        "        streamImg.remove();"
-        "        streamImg=null;"
-        "      }"
-        "      container.innerHTML='Stream stopped - Press START to resume';"
-        "      statusDiv.innerHTML='<span class=\"inactive\">⏸ STOPPED</span>';"
-        "      debugDiv.textContent='Stream stopped successfully';"
-        "      startBtn.disabled=false;"
-        "      stopBtn.disabled=true;"
-        "    }else{"
-        "      debugDiv.textContent='Stop failed: '+JSON.stringify(data);"
-        "    }"
-        "  }catch(e){"
-        "    console.error('['+requestCount+'] Stop error:',e);"
-        "    debugDiv.textContent='Stop error: '+e.message;"
+        "  if(sendWS('STOP')){"
+        "    console.log('STOP command sent via WebSocket');"
+        "  }else{"
         "    stopBtn.disabled=false;"
         "  }"
         "}"
+        
+        // Підключаємося до WebSocket при завантаженні
+        "connectWebSocket();"
+        
         "</script>"
         "</body></html>";
     
@@ -337,7 +421,7 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
     return httpd_resp_send(req, html, strlen(html));
 }
 
-// ⭐ ПАКЕТНИЙ MJPEG стрім: 30 кадрів → пауза 200мс
+// ⭐ КОРОТКІ ПАКЕТИ: 3 кадри → пауза 500мс
 esp_err_t handleStreamRequest(httpd_req_t* req) {
     ESP_LOGI(TAG, "📹 Stream client connected on core %d", xPortGetCoreID());
     
@@ -354,22 +438,21 @@ esp_err_t handleStreamRequest(httpd_req_t* req) {
     esp_err_t res = ESP_OK;
     char part_buf[128];
     
-    // Встановлюємо правильні заголовки для MJPEG стріму
     httpd_resp_set_type(req, "multipart/x-mixed-replace; boundary=frame");
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     httpd_resp_set_hdr(req, "Cache-Control", "no-cache, no-store, must-revalidate");
     httpd_resp_set_hdr(req, "Pragma", "no-cache");
     httpd_resp_set_hdr(req, "Expires", "0");
     
-    ESP_LOGI(TAG, "🟢 Stream loop started - BATCH MODE");
+    ESP_LOGI(TAG, "🟢 Stream loop: %d frames per batch, %dms pause", 
+             FRAMES_PER_BATCH, BATCH_PAUSE_MS);
     
     int total_frames = 0;
     int batch_count = 0;
     
     while (streaming_active) {
-        // ⭐ ПАКЕТ: відправляємо 30 кадрів
+        // ⭐ ПАКЕТ: відправляємо тільки 3 кадри (~300мс)
         for (int frame_in_batch = 0; frame_in_batch < FRAMES_PER_BATCH; frame_in_batch++) {
-            // Перевірка чи ще активний стрім
             if (!streaming_active) {
                 ESP_LOGI(TAG, "Stream stopped during batch");
                 break;
@@ -382,7 +465,6 @@ esp_err_t handleStreamRequest(httpd_req_t* req) {
                 continue;
             }
 
-            // Формуємо заголовок MJPEG кадру
             size_t hlen = snprintf(part_buf, sizeof(part_buf),
                 "--frame\r\n"
                 "Content-Type: image/jpeg\r\n"
@@ -390,21 +472,18 @@ esp_err_t handleStreamRequest(httpd_req_t* req) {
                 "\r\n",
                 fb->len);
 
-            // Відправляємо заголовок
             res = httpd_resp_send_chunk(req, part_buf, hlen);
             if (res != ESP_OK) {
                 esp_camera_fb_return(fb);
                 goto stream_end;
             }
 
-            // Відправляємо JPEG дані
             res = httpd_resp_send_chunk(req, (const char *)fb->buf, fb->len);
             if (res != ESP_OK) {
                 esp_camera_fb_return(fb);
                 goto stream_end;
             }
 
-            // Відправляємо boundary
             res = httpd_resp_send_chunk(req, "\r\n", 2);
             if (res != ESP_OK) {
                 esp_camera_fb_return(fb);
@@ -415,7 +494,6 @@ esp_err_t handleStreamRequest(httpd_req_t* req) {
             fb = NULL;
             total_frames++;
             
-            // Затримка між кадрами (~10 FPS)
             vTaskDelay(pdMS_TO_TICKS(FRAME_DELAY_MS));
         }
         
@@ -425,85 +503,23 @@ esp_err_t handleStreamRequest(httpd_req_t* req) {
             break;
         }
         
-        // ⭐ ПАУЗА 200мс після пакету - ТУТ МОЖУТЬ ОБРОБЛЯТИСЯ КНОПКИ!
-        ESP_LOGI(TAG, "📦 Batch %d complete (%d frames), PAUSING %dms for control requests", 
-                 batch_count, FRAMES_PER_BATCH, BATCH_PAUSE_MS);
+        // ⭐ ДОВГА ПАУЗА 500мс - WebSocket встигає обробити команди!
+        if (batch_count % 10 == 0) {
+            ESP_LOGI(TAG, "📦 Batch %d complete (%d total frames), PAUSING %dms", 
+                     batch_count, total_frames, BATCH_PAUSE_MS);
+        }
         vTaskDelay(pdMS_TO_TICKS(BATCH_PAUSE_MS));
     }
 
 stream_end:
-    // Завершуємо chunked response
     if (res == ESP_OK) {
         httpd_resp_send_chunk(req, NULL, 0);
     }
 
     active_stream_clients--;
-    ESP_LOGI(TAG, "🔴 Stream ended. Total frames: %d, Batches: %d, Active clients: %d", 
+    ESP_LOGI(TAG, "🔴 Stream ended. Total: %d frames, %d batches, Active clients: %d", 
              total_frames, batch_count, active_stream_clients);
     return res;
-}
-
-// ⭐ ШВИДКІ обробники для кнопок
-esp_err_t handleStartStreamRequest(httpd_req_t* req) {
-    ESP_LOGI(TAG, "🟢 START button pressed on core %d", xPortGetCoreID());
-    
-    if (!camera_initialized) {
-        ESP_LOGE(TAG, "Camera not initialized");
-        httpd_resp_set_type(req, "application/json");
-        const char* body = "{\"status\":\"error\",\"message\":\"camera not ready\"}";
-        return httpd_resp_send(req, body, strlen(body));
-    }
-    
-    bool started = startVideoStream();
-    
-    httpd_resp_set_type(req, "application/json");
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-    httpd_resp_set_hdr(req, "Cache-Control", "no-cache");
-    
-    char response[128];
-    snprintf(response, sizeof(response), 
-             "{\"status\":\"%s\",\"streaming\":%s,\"message\":\"Core %d\"}", 
-             started ? "ok" : "error",
-             started ? "true" : "false",
-             xPortGetCoreID());
-    
-    ESP_LOGI(TAG, "✅ START response sent: %s", response);
-    return httpd_resp_send(req, response, strlen(response));
-}
-
-esp_err_t handleStopStreamRequest(httpd_req_t* req) {
-    ESP_LOGI(TAG, "🔴 STOP button pressed on core %d", xPortGetCoreID());
-    
-    bool stopped = stopVideoStream();
-    
-    httpd_resp_set_type(req, "application/json");
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-    httpd_resp_set_hdr(req, "Cache-Control", "no-cache");
-    
-    char response[128];
-    snprintf(response, sizeof(response), 
-             "{\"status\":\"%s\",\"streaming\":%s,\"message\":\"Core %d\"}", 
-             stopped ? "ok" : "error",
-             stopped ? "false" : "true",
-             xPortGetCoreID());
-    
-    ESP_LOGI(TAG, "✅ STOP response sent: %s", response);
-    return httpd_resp_send(req, response, strlen(response));
-}
-
-esp_err_t handleStatusRequest(httpd_req_t* req) {
-    char json[128];
-    snprintf(json, sizeof(json),
-             "{\"streaming\":%s,\"camera\":\"%s\",\"clients\":%d,\"core\":%d}",
-             streaming_active ? "true" : "false",
-             camera_initialized ? "ready" : "not_ready",
-             active_stream_clients,
-             xPortGetCoreID());
-    
-    httpd_resp_set_type(req, "application/json");
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-    httpd_resp_set_hdr(req, "Cache-Control", "no-cache");
-    return httpd_resp_send(req, json, strlen(json));
 }
 
 // ============================================
@@ -520,39 +536,25 @@ bool initWebServer(uint16_t port) {
     config.server_port = port;
     config.ctrl_port = 32768;
     
-    // ⭐ КРИТИЧНІ налаштування
     config.max_open_sockets = 7;
     config.max_uri_handlers = 8;
-    config.stack_size = 10240;              // ⭐ ЗБІЛЬШЕНО
+    config.stack_size = 10240;
     config.task_priority = 5;
-    config.core_id = tskNO_AFFINITY;        // ⭐ ОБА ЯДРА
+    config.core_id = tskNO_AFFINITY;
     
     config.lru_purge_enable = true;
-    config.recv_wait_timeout = 3;           // ⭐ ЩЕ МЕНШЕ
-    config.send_wait_timeout = 3;           // ⭐ ЩЕ МЕНШЕ
+    config.recv_wait_timeout = 3;
+    config.send_wait_timeout = 3;
     config.backlog_conn = 5;
 
-    ESP_LOGI(TAG, "Starting web server on BOTH cores...");
+    ESP_LOGI(TAG, "Starting web server...");
     
     if (httpd_start(&server, &config) != ESP_OK) {
         ESP_LOGE(TAG, "Failed to start web server");
         return false;
     }
 
-    // ⭐ ЗАПУСКАЄМО КОНТРОЛЬНУ ЗАДАЧУ НА ЯДРІ 0
-    xTaskCreatePinnedToCore(
-        controlMonitorTask,
-        "control_monitor",
-        2048,
-        NULL,
-        6,              // ⭐ ВИЩИЙ ПРІОРИТЕТ ЗА HTTP СЕРВЕР
-        &control_task_handle,
-        0               // ⭐ ЯДРО 0
-    );
-    
-    ESP_LOGI(TAG, "✅ Control monitor task created on core 0");
-
-    // Реєструємо handlers
+    // HTML сторінка
     httpd_uri_t uri_root = {
         .uri = "/",
         .method = HTTP_GET,
@@ -561,6 +563,18 @@ bool initWebServer(uint16_t port) {
     };
     httpd_register_uri_handler(server, &uri_root);
 
+    // ⭐ WebSocket для контролю (окреме з'єднання)
+    httpd_uri_t uri_ws = {
+        .uri = "/ws",
+        .method = HTTP_GET,
+        .handler = handleWebSocketControl,
+        .user_ctx = NULL,
+        .is_websocket = true,
+        .handle_ws_control_frames = true
+    };
+    httpd_register_uri_handler(server, &uri_ws);
+
+    // MJPEG стрім (окреме з'єднання)
     httpd_uri_t uri_stream = {
         .uri = "/stream",
         .method = HTTP_GET,
@@ -569,43 +583,14 @@ bool initWebServer(uint16_t port) {
     };
     httpd_register_uri_handler(server, &uri_stream);
 
-    httpd_uri_t uri_start = {
-        .uri = "/stream/start",
-        .method = HTTP_GET,
-        .handler = handleStartStreamRequest,
-        .user_ctx = NULL
-    };
-    httpd_register_uri_handler(server, &uri_start);
-
-    httpd_uri_t uri_stop = {
-        .uri = "/stream/stop",
-        .method = HTTP_GET,
-        .handler = handleStopStreamRequest,
-        .user_ctx = NULL
-    };
-    httpd_register_uri_handler(server, &uri_stop);
-
-    httpd_uri_t uri_status = {
-        .uri = "/status",
-        .method = HTTP_GET,
-        .handler = handleStatusRequest,
-        .user_ctx = NULL
-    };
-    httpd_register_uri_handler(server, &uri_status);
-
     ESP_LOGI(TAG, "✅ Web server started on port %d", port);
-    ESP_LOGI(TAG, "📊 Stream config: %d frames/batch, %dms pause between batches", 
-             FRAMES_PER_BATCH, BATCH_PAUSE_MS);
+    ESP_LOGI(TAG, "📊 Config: %d frames/batch (%dms), %dms pause between batches", 
+             FRAMES_PER_BATCH, FRAMES_PER_BATCH * FRAME_DELAY_MS, BATCH_PAUSE_MS);
+    ESP_LOGI(TAG, "🔌 WebSocket control available at /ws");
     return true;
 }
 
 void stopWebServer() {
-    if (control_task_handle != NULL) {
-        vTaskDelete(control_task_handle);
-        control_task_handle = NULL;
-        ESP_LOGI(TAG, "Control monitor task stopped");
-    }
-    
     if (server != NULL) {
         stopVideoStream();
         vTaskDelay(pdMS_TO_TICKS(500));
