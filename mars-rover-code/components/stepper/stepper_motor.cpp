@@ -244,8 +244,8 @@ void StepperMotor::update_internal()
     if (current_freq_hz != target_freq_hz) {
         int32_t freq_diff = target_freq_hz - current_freq_hz;
         int32_t freq_step = (freq_diff > 0) ? 
-            std::min((int32_t)20, freq_diff) : 
-            std::max((int32_t)-20, freq_diff);
+            std::min((int32_t)10, freq_diff) :     // Reduced from 20 to 10 for smoother ramps
+            std::max((int32_t)-10, freq_diff);
         current_freq_hz += freq_step;
     }
 

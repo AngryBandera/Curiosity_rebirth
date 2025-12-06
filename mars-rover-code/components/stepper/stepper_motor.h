@@ -167,7 +167,7 @@ private:
     
     // Acceleration parameters
     static constexpr uint32_t ACCEL_STEPS_PER_UPDATE = 10;  // Steps per update cycle
-    static constexpr float SPEED_CHANGE_RATE = 0.1f;        // Rate of speed change per update
+    static constexpr float SPEED_CHANGE_RATE = 0.05f;       // Reduced from 0.1f for smoother acceleration
 
     // RTOS task
     TaskHandle_t task_handle;
