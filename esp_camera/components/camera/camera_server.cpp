@@ -320,9 +320,6 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
     return httpd_resp_send(req, html, strlen(html));
 }
 
-// ⭐ КОРОТКІ ПАКЕТИ: 3 кадри → пауза 500мс
-// ⭐ КОРОТКІ ПАКЕТИ: 3 кадри → пауза 500мс
-esp_err_t handleStreamRequest(httpd_req_t* req) {
 esp_err_t handleStartStreamRequest(httpd_req_t* req) {
     ESP_LOGI(TAG, "🟢 START button pressed on core %d", xPortGetCoreID());
     
@@ -392,6 +389,8 @@ esp_err_t handleStatusRequest(httpd_req_t* req) {
     httpd_resp_set_hdr(req, "Cache-Control", "no-cache");
     return httpd_resp_send(req, json, strlen(json));
 }
+
+esp_err_t handleStreamRequest(httpd_req_t* req) {
     ESP_LOGI(TAG, "📹 Stream client connected on core %d", xPortGetCoreID());
     
     if (!camera_initialized) {
@@ -476,7 +475,7 @@ esp_err_t handleStatusRequest(httpd_req_t* req) {
             break;
         }
         
-        // ⭐ ДОВГА ПАУЗА 500мс - WebSocket встигає обробити команди!
+        // ⭐ ДОВГА ПАУЗА 500мс - тут можуть оброблятися кнопки!
         if (batch_count % 10 == 0) {
             ESP_LOGI(TAG, "📦 Batch %d complete (%d total frames), PAUSING %dms", 
                      batch_count, total_frames, BATCH_PAUSE_MS);
