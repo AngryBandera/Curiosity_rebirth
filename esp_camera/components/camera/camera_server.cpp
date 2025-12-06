@@ -16,7 +16,8 @@ static httpd_handle_t server = NULL;
 static bool camera_initialized = false;
 static volatile bool streaming_active = false;
 static SemaphoreHandle_t stream_mutex = NULL;
-static volatile int active_stream_clients = 0;
+static int active_stream_clients = 0;
+static SemaphoreHandle_t clients_mutex = NULL;
 
 // ⭐ НАЛАШТУВАННЯ СТРІМУ - КОРОТШІ ПАКЕТИ!
 #define FRAMES_PER_BATCH 3         // Тільки 3 кадри (~300мс)
@@ -122,10 +123,18 @@ bool initCamera(const camera_config_params_t* config) {
         s->set_colorbar(s, 0);
     }
 
-    // Створюємо мьютекс для синхронізації
+    // Створюємо мьютекси для синхронізації
     stream_mutex = xSemaphoreCreateMutex();
     if (stream_mutex == NULL) {
-        ESP_LOGE(TAG, "Failed to create mutex");
+        ESP_LOGE(TAG, "Failed to create stream mutex");
+        return false;
+    }
+
+    clients_mutex = xSemaphoreCreateMutex();
+    if (clients_mutex == NULL) {
+        ESP_LOGE(TAG, "Failed to create clients mutex");
+        vSemaphoreDelete(stream_mutex);
+        stream_mutex = NULL;
         return false;
     }
 
@@ -431,8 +440,12 @@ esp_err_t handleStreamRequest(httpd_req_t* req) {
         return ESP_FAIL;
     }
 
-    active_stream_clients++;
-    ESP_LOGI(TAG, "Active stream clients: %d", active_stream_clients);
+    // Безпечно збільшуємо лічильник
+    if (xSemaphoreTake(clients_mutex, pdMS_TO_TICKS(100)) == pdTRUE) {
+        active_stream_clients++;
+        ESP_LOGI(TAG, "Active stream clients: %d", active_stream_clients);
+        xSemaphoreGive(clients_mutex);
+    }
 
     camera_fb_t* fb = NULL;
     esp_err_t res = ESP_OK;
@@ -516,9 +529,14 @@ stream_end:
         httpd_resp_send_chunk(req, NULL, 0);
     }
 
-    active_stream_clients--;
-    ESP_LOGI(TAG, "🔴 Stream ended. Total: %d frames, %d batches, Active clients: %d", 
-             total_frames, batch_count, active_stream_clients);
+    // Безпечно зменшуємо лічильник
+    if (xSemaphoreTake(clients_mutex, pdMS_TO_TICKS(100)) == pdTRUE) {
+        active_stream_clients--;
+        ESP_LOGI(TAG, "🔴 Stream ended. Total: %d frames, %d batches, Active clients: %d", 
+                 total_frames, batch_count, active_stream_clients);
+        xSemaphoreGive(clients_mutex);
+    }
+    
     return res;
 }
 
@@ -568,9 +586,7 @@ bool initWebServer(uint16_t port) {
         .uri = "/ws",
         .method = HTTP_GET,
         .handler = handleWebSocketControl,
-        .user_ctx = NULL,
-        .is_websocket = true,
-        .handle_ws_control_frames = true
+        .user_ctx = NULL
     };
     httpd_register_uri_handler(server, &uri_ws);
 
@@ -602,6 +618,11 @@ void stopWebServer() {
     if (stream_mutex != NULL) {
         vSemaphoreDelete(stream_mutex);
         stream_mutex = NULL;
+    }
+    
+    if (clients_mutex != NULL) {
+        vSemaphoreDelete(clients_mutex);
+        clients_mutex = NULL;
     }
 }
 
