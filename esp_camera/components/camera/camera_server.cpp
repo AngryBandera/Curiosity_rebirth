@@ -9,8 +9,10 @@
 
 static const char* TAG = "CAMERA_SERVER";
 
-// Глобальні змінні
-static httpd_handle_t server = NULL;
+// ⭐ ДВА ОКРЕМИХ СЕРВЕРА - як в оригінальному коді!
+static httpd_handle_t control_server = NULL;  // Порт 80 - кнопки
+static httpd_handle_t stream_server = NULL;   // Порт 81 - стрім
+
 static bool camera_initialized = false;
 static volatile bool streaming_active = false;
 
@@ -182,6 +184,7 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
         "max-width:500px;font-size:16px;border:2px solid #555}"
         ".active{color:#4CAF50;font-weight:bold}"
         ".inactive{color:#f44336;font-weight:bold}"
+        ".info{font-size:12px;color:#888;margin-top:10px}"
         "</style></head>"
         "<body>"
         "<h1>🚀 Mars Rover Camera</h1>"
@@ -191,6 +194,7 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
         "<button id='stopBtn' class='stop' onclick='stopStream()' disabled>⏹ STOP</button>"
         "</div>"
         "<div id='status'>Ready</div>"
+        "<div class='info'>Control: Port 80 | Stream: Port 81</div>"
         "<script>"
         "let container=document.getElementById('streamContainer');"
         "let statusDiv=document.getElementById('status');"
@@ -202,24 +206,35 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
         "async function startStream(){"
         "  if(isStreaming)return;"
         "  startBtn.disabled=true;"
+        "  console.log('Starting stream...');"
         "  try{"
         "    let r=await fetch('/stream/start');"
         "    let data=await r.json();"
+        "    console.log('Start response:',data);"
         "    if(r.ok && data.status=='ok'){"
         "      isStreaming=true;"
         "      container.innerHTML='';"
         "      streamImg=document.createElement('img');"
-        "      streamImg.src='/stream';"
+        "      let streamPort=parseInt(window.location.port)||80;"
+        "      streamPort+=1;"  // Порт 81
+        "      streamImg.src='http://'+window.location.hostname+':'+streamPort+'/stream';"
         "      streamImg.style.width='100%';"
-        "      streamImg.onerror=()=>{console.error('Stream error');stopStream();};"
+        "      streamImg.onerror=()=>{"
+        "        console.error('Stream error');"
+        "        statusDiv.innerHTML='<span class=\"inactive\">⚠️ Stream error</span>';"
+        "      };"
+        "      streamImg.onload=()=>{"
+        "        console.log('Stream loaded!');"
+        "      };"
         "      container.appendChild(streamImg);"
         "      statusDiv.innerHTML='<span class=\"active\">🎥 STREAMING</span>';"
         "      stopBtn.disabled=false;"
         "    }else{"
+        "      console.error('Failed to start');"
         "      startBtn.disabled=false;"
         "    }"
         "  }catch(e){"
-        "    console.error(e);"
+        "    console.error('Start error:',e);"
         "    startBtn.disabled=false;"
         "  }"
         "}"
@@ -227,9 +242,11 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
         "async function stopStream(){"
         "  if(!isStreaming)return;"
         "  stopBtn.disabled=true;"
+        "  console.log('Stopping stream...');"
         "  try{"
         "    let r=await fetch('/stream/stop');"
         "    let data=await r.json();"
+        "    console.log('Stop response:',data);"
         "    if(r.ok){"
         "      isStreaming=false;"
         "      if(streamImg){"
@@ -237,12 +254,12 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
         "        streamImg.remove();"
         "        streamImg=null;"
         "      }"
-        "      container.innerHTML='Stream stopped';"
+        "      container.innerHTML='Stream stopped - Press START to resume';"
         "      statusDiv.innerHTML='<span class=\"inactive\">⏸ STOPPED</span>';"
         "      startBtn.disabled=false;"
         "    }"
         "  }catch(e){"
-        "    console.error(e);"
+        "    console.error('Stop error:',e);"
         "    stopBtn.disabled=false;"
         "  }"
         "}"
@@ -253,7 +270,6 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
     return httpd_resp_send(req, html, strlen(html));
 }
 
-// ⭐ КЛЮЧОВА ЗМІНА: Швидкі handler'и для кнопок
 esp_err_t handleStartStreamRequest(httpd_req_t* req) {
     ESP_LOGI(TAG, "🟢 START requested");
     startVideoStream();
@@ -286,13 +302,13 @@ esp_err_t handleStatusRequest(httpd_req_t* req) {
     return httpd_resp_send(req, json, strlen(json));
 }
 
-// ⭐ НОВИЙ ПІДХІД: як у app_httpd.cpp, але з перевіркою streaming_active
+// ⭐ СТРІМ НА ОКРЕМОМУ СЕРВЕРІ (порт 81)
 esp_err_t handleStreamRequest(httpd_req_t* req) {
     camera_fb_t* fb = NULL;
     esp_err_t res = ESP_OK;
     char part_buf[128];
     
-    ESP_LOGI(TAG, "📹 Stream started");
+    ESP_LOGI(TAG, "📹 Stream client connected");
     
     // Встановлюємо тип контенту
     res = httpd_resp_set_type(req, STREAM_CONTENT_TYPE);
@@ -303,7 +319,9 @@ esp_err_t handleStreamRequest(httpd_req_t* req) {
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     httpd_resp_set_hdr(req, "X-Framerate", "10");
     
-    // ⭐ ГОЛОВНИЙ ЦИКЛ - як у їхньому коді, БЕЗ пауз
+    int frame_count = 0;
+    
+    // Безперервний цикл як в оригінальному коді
     while (streaming_active) {
         fb = esp_camera_fb_get();
         if (!fb) {
@@ -337,54 +355,58 @@ esp_err_t handleStreamRequest(httpd_req_t* req) {
         esp_camera_fb_return(fb);
         fb = NULL;
         
-        // ⭐ МІНІМАЛЬНА затримка для ~10 FPS (не блокуюча!)
+        frame_count++;
+        if (frame_count % 50 == 0) {
+            ESP_LOGI(TAG, "Streamed %d frames", frame_count);
+        }
+        
+        // Затримка для ~10 FPS
         vTaskDelay(pdMS_TO_TICKS(100));
     }
     
     // Завершуємо chunked response
     httpd_resp_send_chunk(req, NULL, 0);
     
-    ESP_LOGI(TAG, "🔴 Stream ended");
+    ESP_LOGI(TAG, "🔴 Stream ended after %d frames", frame_count);
     return res;
 }
 
 // ============================================
-// Ініціалізація вебсервера
+// ⭐ Ініціалізація ДВОХ серверів
 // ============================================
 
 bool initWebServer(uint16_t port) {
-    if (server != NULL) {
-        ESP_LOGW(TAG, "Web server already running");
+    if (control_server != NULL || stream_server != NULL) {
+        ESP_LOGW(TAG, "Web servers already running");
         return true;
     }
 
+    // ⭐ СЕРВЕР 1: Контроль (порт 80)
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.server_port = port;
     config.ctrl_port = 32768;
-    config.max_open_sockets = 7;
+    config.max_open_sockets = 5;
     config.max_uri_handlers = 8;
-    config.stack_size = 8192;
+    config.stack_size = 4096;
     config.task_priority = 5;
-    config.core_id = tskNO_AFFINITY;  // Обидва ядра
+    config.core_id = 0;  // Ядро 0 для контролю
     config.lru_purge_enable = true;
-    config.recv_wait_timeout = 10;
-    config.send_wait_timeout = 10;
 
-    ESP_LOGI(TAG, "Starting web server...");
+    ESP_LOGI(TAG, "Starting control server on port %d...", config.server_port);
     
-    if (httpd_start(&server, &config) != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to start web server");
+    if (httpd_start(&control_server, &config) != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to start control server");
         return false;
     }
 
-    // Реєструємо handlers
+    // Реєструємо контрольні handlers
     httpd_uri_t uri_root = {
         .uri = "/",
         .method = HTTP_GET,
         .handler = handleRootRequest,
         .user_ctx = NULL
     };
-    httpd_register_uri_handler(server, &uri_root);
+    httpd_register_uri_handler(control_server, &uri_root);
 
     httpd_uri_t uri_start = {
         .uri = "/stream/start",
@@ -392,7 +414,7 @@ bool initWebServer(uint16_t port) {
         .handler = handleStartStreamRequest,
         .user_ctx = NULL
     };
-    httpd_register_uri_handler(server, &uri_start);
+    httpd_register_uri_handler(control_server, &uri_start);
 
     httpd_uri_t uri_stop = {
         .uri = "/stream/stop",
@@ -400,7 +422,7 @@ bool initWebServer(uint16_t port) {
         .handler = handleStopStreamRequest,
         .user_ctx = NULL
     };
-    httpd_register_uri_handler(server, &uri_stop);
+    httpd_register_uri_handler(control_server, &uri_stop);
 
     httpd_uri_t uri_status = {
         .uri = "/status",
@@ -408,28 +430,57 @@ bool initWebServer(uint16_t port) {
         .handler = handleStatusRequest,
         .user_ctx = NULL
     };
-    httpd_register_uri_handler(server, &uri_status);
+    httpd_register_uri_handler(control_server, &uri_status);
 
+    ESP_LOGI(TAG, "✅ Control server started on port %d", port);
+
+    // ⭐ СЕРВЕР 2: Стрім (порт 81)
+    config.server_port = port + 1;
+    config.ctrl_port = 32769;
+    config.max_open_sockets = 2;  // Тільки для стріму
+    config.max_uri_handlers = 2;
+    config.stack_size = 8192;     // Більше для стріму
+    config.core_id = 1;           // Ядро 1 для стріму
+
+    ESP_LOGI(TAG, "Starting stream server on port %d...", config.server_port);
+    
+    if (httpd_start(&stream_server, &config) != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to start stream server");
+        httpd_stop(control_server);
+        control_server = NULL;
+        return false;
+    }
+
+    // Реєструємо тільки стрім handler
     httpd_uri_t uri_stream = {
         .uri = "/stream",
         .method = HTTP_GET,
         .handler = handleStreamRequest,
         .user_ctx = NULL
     };
-    httpd_register_uri_handler(server, &uri_stream);
+    httpd_register_uri_handler(stream_server, &uri_stream);
 
-    ESP_LOGI(TAG, "✅ Web server started on port %d", port);
+    ESP_LOGI(TAG, "✅ Stream server started on port %d", port + 1);
+    ESP_LOGI(TAG, "🎯 Architecture: Control (port %d, core 0) | Stream (port %d, core 1)", 
+             port, port + 1);
+    
     return true;
 }
 
 void stopWebServer() {
-    if (server != NULL) {
-        httpd_stop(server);
-        server = NULL;
-        ESP_LOGI(TAG, "Web server stopped");
+    if (stream_server != NULL) {
+        httpd_stop(stream_server);
+        stream_server = NULL;
+        ESP_LOGI(TAG, "Stream server stopped");
+    }
+    
+    if (control_server != NULL) {
+        httpd_stop(control_server);
+        control_server = NULL;
+        ESP_LOGI(TAG, "Control server stopped");
     }
 }
 
 httpd_handle_t getServerHandle() {
-    return server;
+    return control_server;
 }
