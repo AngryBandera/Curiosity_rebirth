@@ -192,6 +192,7 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
         "<div class='controls'>"
         "<button id='startBtn' onclick='startStream()'>▶️ START</button>"
         "<button id='stopBtn' class='stop' onclick='stopStream()' disabled>⏹ STOP</button>"
+        "<button id='captureBtn' onclick='capturePhoto()'>📸 PHOTO</button>"
         "</div>"
         "<div id='status'>Ready</div>"
         "<div class='info'>Control: Port 80 | Stream: Port 81</div>"
@@ -200,6 +201,7 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
         "let statusDiv=document.getElementById('status');"
         "let startBtn=document.getElementById('startBtn');"
         "let stopBtn=document.getElementById('stopBtn');"
+        "let captureBtn=document.getElementById('captureBtn');"
         "let streamImg=null;"
         "let isStreaming=false;"
         
@@ -263,6 +265,38 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
         "    stopBtn.disabled=false;"
         "  }"
         "}"
+        
+        "async function capturePhoto(){"
+        "  captureBtn.disabled=true;"
+        "  statusDiv.innerHTML='<span class=\"active\">📸 Capturing...</span>';"
+        "  console.log('Capturing photo...');"
+        "  try{"
+        "    let timestamp=Date.now();"
+        "    let r=await fetch('/capture?t='+timestamp);"
+        "    if(r.ok){"
+        "      let blob=await r.blob();"
+        "      let url=URL.createObjectURL(blob);"
+        "      let img=document.createElement('img');"
+        "      img.src=url;"
+        "      img.style.width='100%';"
+        "      container.innerHTML='';"
+        "      container.appendChild(img);"
+        "      statusDiv.innerHTML='<span class=\"active\">✅ Photo captured!</span>';"
+        "      console.log('Photo captured successfully');"
+        "      let link=document.createElement('a');"
+        "      link.href=url;"
+        "      link.download='capture_'+timestamp+'.jpg';"
+        "      link.click();"
+        "    }else{"
+        "      console.error('Capture failed');"
+        "      statusDiv.innerHTML='<span class=\"inactive\">❌ Capture failed</span>';"
+        "    }"
+        "  }catch(e){"
+        "    console.error('Capture error:',e);"
+        "    statusDiv.innerHTML='<span class=\"inactive\">❌ Error: '+e.message+'</span>';"
+        "  }"
+        "  captureBtn.disabled=false;"
+        "}"
         "</script>"
         "</body></html>";
     
@@ -300,6 +334,48 @@ esp_err_t handleStatusRequest(httpd_req_t* req) {
     httpd_resp_set_type(req, "application/json");
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     return httpd_resp_send(req, json, strlen(json));
+}
+
+// ⭐ НОВИЙ: Handler для захоплення одного кадру (фотографія)
+esp_err_t handleCaptureRequest(httpd_req_t* req) {
+    camera_fb_t* fb = NULL;
+    esp_err_t res = ESP_OK;
+    
+    ESP_LOGI(TAG, "📸 Capture photo requested");
+    
+    if (!camera_initialized) {
+        ESP_LOGE(TAG, "Camera not initialized");
+        httpd_resp_send_500(req);
+        return ESP_FAIL;
+    }
+    
+    // Захоплюємо кадр
+    fb = esp_camera_fb_get();
+    if (!fb) {
+        ESP_LOGE(TAG, "Camera capture failed");
+        httpd_resp_send_500(req);
+        return ESP_FAIL;
+    }
+    
+    // Встановлюємо заголовки
+    httpd_resp_set_type(req, "image/jpeg");
+    httpd_resp_set_hdr(req, "Content-Disposition", "inline; filename=capture.jpg");
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    
+    // Додаємо timestamp
+    char ts[32];
+    snprintf(ts, sizeof(ts), "%lld.%06ld", fb->timestamp.tv_sec, fb->timestamp.tv_usec);
+    httpd_resp_set_hdr(req, "X-Timestamp", ts);
+    
+    // Відправляємо JPEG
+    res = httpd_resp_send(req, (const char*)fb->buf, fb->len);
+    
+    // Звільняємо буфер
+    esp_camera_fb_return(fb);
+    
+    ESP_LOGI(TAG, "✅ Photo captured: %u bytes", fb->len);
+    
+    return res;
 }
 
 // ⭐ СТРІМ НА ОКРЕМОМУ СЕРВЕРІ (порт 81)
@@ -431,6 +507,14 @@ bool initWebServer(uint16_t port) {
         .user_ctx = NULL
     };
     httpd_register_uri_handler(control_server, &uri_status);
+
+    httpd_uri_t uri_capture = {
+        .uri = "/capture",
+        .method = HTTP_GET,
+        .handler = handleCaptureRequest,
+        .user_ctx = NULL
+    };
+    httpd_register_uri_handler(control_server, &uri_capture);
 
     ESP_LOGI(TAG, "✅ Control server started on port %d", port);
 
