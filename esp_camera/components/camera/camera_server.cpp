@@ -16,6 +16,9 @@ static httpd_handle_t stream_server = NULL;   // Порт 81 - стрім
 static bool camera_initialized = false;
 static volatile bool streaming_active = false;
 
+// ⭐ Мьютекс для захисту доступу до камери
+static SemaphoreHandle_t camera_mutex = NULL;
+
 // MJPEG boundary
 #define PART_BOUNDARY "123456789000000000000987654321"
 static const char* STREAM_CONTENT_TYPE = "multipart/x-mixed-replace;boundary=" PART_BOUNDARY;
@@ -116,6 +119,13 @@ bool initCamera(const camera_config_params_t* config) {
         s->set_vflip(s, 0);
         s->set_dcw(s, 1);
         s->set_colorbar(s, 0);
+    }
+
+    // ⭐ Створюємо мьютекс для захисту доступу до камери
+    camera_mutex = xSemaphoreCreateMutex();
+    if (camera_mutex == NULL) {
+        ESP_LOGE(TAG, "Failed to create camera mutex");
+        return false;
     }
 
     camera_initialized = true;
@@ -349,10 +359,19 @@ esp_err_t handleCaptureRequest(httpd_req_t* req) {
         return ESP_FAIL;
     }
     
+    // ⭐ КРИТИЧНО: Захоплюємо мьютекс перед доступом до камери
+    if (xSemaphoreTake(camera_mutex, pdMS_TO_TICKS(1000)) != pdTRUE) {
+        ESP_LOGE(TAG, "Failed to acquire camera mutex for capture");
+        httpd_resp_send_500(req);
+        return ESP_FAIL;
+    }
+    
     // Захоплюємо кадр
     fb = esp_camera_fb_get();
+    
     if (!fb) {
         ESP_LOGE(TAG, "Camera capture failed");
+        xSemaphoreGive(camera_mutex);  // Звільняємо мьютекс
         httpd_resp_send_500(req);
         return ESP_FAIL;
     }
@@ -370,10 +389,11 @@ esp_err_t handleCaptureRequest(httpd_req_t* req) {
     // Відправляємо JPEG
     res = httpd_resp_send(req, (const char*)fb->buf, fb->len);
     
-    // Звільняємо буфер
-    esp_camera_fb_return(fb);
-    
     ESP_LOGI(TAG, "✅ Photo captured: %u bytes", fb->len);
+    
+    // Звільняємо буфер і мьютекс
+    esp_camera_fb_return(fb);
+    xSemaphoreGive(camera_mutex);
     
     return res;
 }
@@ -399,9 +419,18 @@ esp_err_t handleStreamRequest(httpd_req_t* req) {
     
     // Безперервний цикл як в оригінальному коді
     while (streaming_active) {
+        // ⭐ КРИТИЧНО: Захоплюємо мьютекс перед доступом до камери
+        if (xSemaphoreTake(camera_mutex, pdMS_TO_TICKS(100)) != pdTRUE) {
+            // Якщо не можемо отримати мьютекс (напр. фото робиться), пропускаємо кадр
+            vTaskDelay(pdMS_TO_TICKS(10));
+            continue;
+        }
+        
         fb = esp_camera_fb_get();
+        
         if (!fb) {
             ESP_LOGE(TAG, "Camera capture failed");
+            xSemaphoreGive(camera_mutex);  // Звільняємо мьютекс
             res = ESP_FAIL;
             break;
         }
@@ -410,6 +439,7 @@ esp_err_t handleStreamRequest(httpd_req_t* req) {
         res = httpd_resp_send_chunk(req, STREAM_BOUNDARY, strlen(STREAM_BOUNDARY));
         if (res != ESP_OK) {
             esp_camera_fb_return(fb);
+            xSemaphoreGive(camera_mutex);
             break;
         }
         
@@ -418,6 +448,7 @@ esp_err_t handleStreamRequest(httpd_req_t* req) {
         res = httpd_resp_send_chunk(req, part_buf, hlen);
         if (res != ESP_OK) {
             esp_camera_fb_return(fb);
+            xSemaphoreGive(camera_mutex);
             break;
         }
         
@@ -425,11 +456,15 @@ esp_err_t handleStreamRequest(httpd_req_t* req) {
         res = httpd_resp_send_chunk(req, (const char*)fb->buf, fb->len);
         if (res != ESP_OK) {
             esp_camera_fb_return(fb);
+            xSemaphoreGive(camera_mutex);
             break;
         }
         
         esp_camera_fb_return(fb);
         fb = NULL;
+        
+        // ⭐ Звільняємо мьютекс ОДРАЗУ після отримання кадру
+        xSemaphoreGive(camera_mutex);
         
         frame_count++;
         if (frame_count % 50 == 0) {
@@ -562,6 +597,12 @@ void stopWebServer() {
         httpd_stop(control_server);
         control_server = NULL;
         ESP_LOGI(TAG, "Control server stopped");
+    }
+    
+    if (camera_mutex != NULL) {
+        vSemaphoreDelete(camera_mutex);
+        camera_mutex = NULL;
+        ESP_LOGI(TAG, "Camera mutex deleted");
     }
 }
 
