@@ -47,6 +47,8 @@ public:
     // Writes speed value to PCA9685 buffer that will be flushed later
     virtual void update_buffer(int16_t speed, PCA9685Buffer* buffer);
 
+    virtual void update_rotation_geometry();
+
     // Get current inner radius
     uint32_t get_radius();
 };
@@ -66,13 +68,13 @@ private:
     // 0 degrees means rotating straight forward
     float current_angle{0.0f};
 
-    // Current PWM duty cycle for the servo
+    // Current PWM duty cycle fordest_angle) * 0.2f the servo
     uint16_t servo_duty{Servo::CENTER_DUTY};
 
 public:
     // === PARAMETERS FOR SPINNING MODE ===
     uint16_t spin_servo_duty{Servo::CENTER_DUTY};  // PWM for servo in spinning mode
-    float spin_target_angle{0.0f};                 // Target angle for spinning mode
+    float spin_target_angle;                       // Target angle for spinning mode
 
     SteerableWheel(uint8_t pca1, uint8_t pca2,
             const char *TAG,
@@ -83,6 +85,8 @@ public:
         Update wheel geometry based on rvr_radius and position of the wheel in space
     */
     void update_geometry(int32_t rvr_radius) override;
+
+    void update_rotation_geometry() override;
 
     void update_duty();
 

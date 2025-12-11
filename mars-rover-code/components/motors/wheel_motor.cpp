@@ -72,7 +72,10 @@ SteerableWheel::SteerableWheel(uint8_t pca1, uint8_t pca2,
         int16_t l, int16_t d,
         uint8_t servo_pca)
     : WheelMotor{pca1, pca2, TAG, l, d},
-        servo_pca{servo_pca} {}
+        servo_pca{servo_pca}
+{
+    spin_target_angle = -std::atanf(static_cast<float>(l) / static_cast<float>(d));
+}
 
 void SteerableWheel::update_buffer(int16_t speed, PCA9685Buffer* buffer) {
     int32_t abs_speed = std::abs(static_cast<int32_t>(speed));

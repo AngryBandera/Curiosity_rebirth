@@ -42,16 +42,16 @@ namespace Cfg {
     constexpr float ANGLE_DEVIATION = 0.5f;
 
     // dc motor acceleration (units per control loop tick)
-    constexpr int16_t DC_ACCEL = 30;
+    constexpr int16_t DC_ACCEL = 10;
     constexpr int16_t DC_DECEL = DC_ACCEL * 2;
     // servo speed (degrees per control loop tick)
-    constexpr float SERVO_SPEED = 1.0f;
+    constexpr float SERVO_SPEED = 0.5f;
     
     // === НОВI ПАРАМЕТРИ ІНЕРЦІЇ ===
     // Час (в тактах) потрібний щоб зменшити швидкість на 1 одиницю при ковзанні
     // На швидкості 3000 будет гальмування протягом: 3000 * INERTIA_TICKS_PER_UNIT * 10ms
     // Приклад: INERTIA_TICKS_PER_UNIT = 2 => на 3000 потрібно 3000*2*10ms = 60 секунд
-    constexpr float INERTIA_TICKS_PER_UNIT = 0.06f;  // Кількість тактів (×10мс) на одиницю швидкості
+    constexpr float INERTIA_TICKS_PER_UNIT = 0.01f;  // Кількість тактів (×10мс) на одиницю швидкості
     constexpr float UINT_PER_INERTIA_TICKS = 1.0f / INERTIA_TICKS_PER_UNIT;
 
     // Max time for inertia effect (in ticks) to avoid too long sliding
@@ -66,5 +66,5 @@ namespace Cfg {
     constexpr float SPIN_BACK_ANGLE  = 45.42284;      // degrees
     
     // Max speed in spinning mode (internal units)
-    constexpr int16_t SPIN_MAX_SPEED = 2000;
+    constexpr int16_t SPIN_MAX_SPEED = 600;
 }

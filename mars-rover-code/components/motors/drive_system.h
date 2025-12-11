@@ -76,10 +76,6 @@ private:
     // === State machine ===
     DriveState current_state{DriveState::IDLE};
     DriveState previous_state{DriveState::IDLE};
-    
-    // Last destination values for detecting changes
-    int16_t last_dest_speed{0};
-    float last_dest_angle{0.0f};
 
     // Tick counter for the current state
     uint16_t state_tick_counter{0};

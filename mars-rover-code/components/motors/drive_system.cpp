@@ -169,11 +169,11 @@ void DriveSystem::handle_accelerating() {
     }
     
     // Smooth steering towards target angle
-    if (fabsf(dest_angle - mem_angle) > 1.0f) {
+    if (fabsf(dest_angle - mem_angle) > 0.5f) {
         if (dest_angle > mem_angle) {
-            mem_angle += std::max(Cfg::SERVO_SPEED, (dest_angle - mem_angle) * 0.2f);
+            mem_angle += std::max(Cfg::SERVO_SPEED, (dest_angle - mem_angle) * 0.1f);
         } else {
-            mem_angle -= std::max(Cfg::SERVO_SPEED, (mem_angle - dest_angle) * 0.2f);
+            mem_angle -= std::max(Cfg::SERVO_SPEED, (mem_angle - dest_angle) * 0.1f);
         }
     } else {
         mem_angle = dest_angle;
@@ -217,11 +217,11 @@ void DriveSystem::handle_turning() {
     }
 
     // Faster steering towards target angle
-    constexpr float servo_rate = Cfg::SERVO_SPEED * 2.0f;
+    constexpr float servo_rate = Cfg::SERVO_SPEED * 1.5f;
     if (dest_angle > mem_angle) {
-        mem_angle += std::max(servo_rate, (dest_angle - mem_angle) * 0.2f);
+        mem_angle += std::max(servo_rate, (dest_angle - mem_angle) * 0.1f);
     } else {
-        mem_angle -= std::max(servo_rate, (mem_angle - dest_angle) * 0.2f);
+        mem_angle -= std::max(servo_rate, (mem_angle - dest_angle) * 0.1f);
     }
 }
 
@@ -357,9 +357,6 @@ void DriveSystem::update_state() {
             }
             break;
     }
-    
-    last_dest_speed = dest_speed;
-    last_dest_angle = dest_angle;
 }
 
 void DriveSystem::tick() {
