@@ -55,82 +55,6 @@ static void init_wifi_ap()
     ESP_LOGI(TAG, "========================================");
 }
 
-// -------------------------
-// COMMAND LOGIC
-// -------------------------
-// Функція для обробки команд (симуляція do_task_based_on_pins, якщо її немає в хедері)
-// 0 = 00 = IDLE
-// 1 = 01 = START STREAM
-// 2 = 10 = STOP STREAM
-// 3 = 11 = TAKE PHOTO
-typedef struct {
-    gpio_num_t pin1;
-    gpio_num_t pin2;
-} pins_t;
-
-pins_t command_pins = {GPIO_CMD_BIT_0, GPIO_CMD_BIT_1};
-uint8_t get_pins_status(const pins_t *pins){
-    gpio_num_t pins_array[2] = {
-        pins->pin1,
-        pins->pin2
-    };
-
-    uint8_t mask = 0;
-    for (int i = 0; i < 2; i++){
-        int state = gpio_get_level(pins_array[i]);
-        mask |= (state << i);
-    };
-    return mask;
-
-}
-void process_rover_command(uint8_t command) {
-    static uint8_t last_command = 255; // Щоб не спамити логами
-    
-    // Якщо команда "Фото" (3), ми виконуємо її завжди, навіть якщо вона повторюється.
-    // Для інших команд виконуємо тільки при зміні стану.
-    if (command == last_command && command != 3) {
-        return; 
-    }
-    
-    last_command = command;
-
-    switch (command) {
-        case 0: // 00
-            // Idle state - нічого не робимо, просто чекаємо
-            // ESP_LOGD(TAG, "Command: IDLE");
-            break;
-
-        case 1: // 01
-            if (!isStreaming()) {
-                ESP_LOGI(TAG, "🚀 Command received: START STREAM");
-                startVideoStream();
-            }
-            break;
-
-        case 2: // 10
-            if (isStreaming()) {
-                ESP_LOGI(TAG, "🛑 Command received: STOP STREAM");
-                stopVideoStream();
-            }
-            break;
-
-        case 3: // 11
-            ESP_LOGI(TAG, "📸 Command received: TAKE PHOTO");
-            // Викликаємо нашу нову функцію
-            if (take_photo_internal()) {
-                ESP_LOGI(TAG, ">> Photo captured successfully via PIN command");
-            } else {
-                ESP_LOGE(TAG, ">> Photo capture failed (Camera busy?)");
-            }
-            // Робимо невелику паузу, щоб не зробити 100 фото за секунду, поки пін затиснутий
-            vTaskDelay(pdMS_TO_TICKS(1000)); 
-            break;
-
-        default:
-            ESP_LOGW(TAG, "Unknown command: %d", command);
-            break;
-    }
-}
 
 // -------------------------
 // MAIN
@@ -164,33 +88,12 @@ extern "C" void app_main(void)
     }
     ESP_LOGI(TAG, "✅ Web Server Running on Port 80 & 81");
 
-    // 5. GPIO Config
-    // ВАЖЛИВО: Налаштуємо піни тут, щоб бути впевненими
-    gpio_config_t io_conf = {};
-    io_conf.intr_type = GPIO_INTR_DISABLE;
-    io_conf.mode = GPIO_MODE_INPUT;
-    io_conf.pin_bit_mask = (1ULL << GPIO_CMD_BIT_0) | (1ULL << GPIO_CMD_BIT_1);
-    io_conf.pull_down_en = GPIO_PULLDOWN_ENABLE; // Або PULLUP, залежить від вашої схеми!
-    io_conf.pull_up_en = GPIO_PULLUP_DISABLE;
-    gpio_config(&io_conf);
-
-    ESP_LOGI(TAG, "✅ GPIO Configured. Waiting for commands...");
-    ESP_LOGI(TAG, "   Bit 0: GPIO %d", GPIO_CMD_BIT_0);
-    ESP_LOGI(TAG, "   Bit 1: GPIO %d", GPIO_CMD_BIT_1);
 
     // За замовчуванням запускаємо стрім, щоб одразу бачити картинку
     // startVideoStream();
 
     // 6. Main Loop
     while (true) {
-        // Отримуємо статус пінів
-        // Припускаємо, що get_pins_status повертає десяткове значення (0, 1, 2, 3)
-        // на основі двійкового коду з пінів.
-        uint8_t command = get_pins_status(&command_pins);
-
-        // Виконуємо логіку
-        process_rover_command(command);
-
         // Лог статусу кожні 5 секунд (щоб не засмічувати консоль)
         static uint32_t loop_cnt = 0;
         if (loop_cnt++ % 10 == 0) { // 10 * 500ms = 5 sec
