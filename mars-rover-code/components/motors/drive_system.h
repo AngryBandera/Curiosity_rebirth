@@ -73,6 +73,8 @@ private:
     // Internal method to directly move wheels without state machine
     void move_with_angle(int16_t speed, float angle);
 
+    void rotate_in_place(int16_t speed);
+
     // === State machine ===
     DriveState current_state{DriveState::IDLE};
     DriveState previous_state{DriveState::IDLE};

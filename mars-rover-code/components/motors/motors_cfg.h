@@ -16,15 +16,14 @@ namespace Servo {
     constexpr float DEGREE_TO_US = static_cast<float>(Servo::MAX_PULSE_US
             - Servo::MIN_PULSE_US) / 180.0f;
 
-    constexpr uint16_t CENTER_DUTY = (Servo::MAX_DUTY *
-            ((Servo::MIN_PULSE_US + Servo::MAX_PULSE_US) / 2)) / Servo::PERIOD_US;
+    constexpr uint16_t CENTER_DUTY = ((uint32_t)Servo::MAX_DUTY * 1500) / Servo::PERIOD_US;
 }
 
 namespace Cfg {
     // Wheel motor: speed is signed in internal units (e.g. -4095..+4095).
     // We map absolute speed -> PWM (0..4095). If you have a different internal max (e.g. 1000),
     // adjust `SCALE` accordingly or pass a max parameter.
-    constexpr int16_t MOTOR_INTERNAL_MAX = 3000;
+    constexpr int16_t MOTOR_INTERNAL_MAX = 2000;
     constexpr float MOTOR_SCALE = 4095.0f / static_cast<float>(MOTOR_INTERNAL_MAX);
 
     // Default angles for steerable wheels
@@ -45,7 +44,7 @@ namespace Cfg {
     constexpr int16_t DC_ACCEL = 10;
     constexpr int16_t DC_DECEL = DC_ACCEL * 2;
     // servo speed (degrees per control loop tick)
-    constexpr float SERVO_SPEED = 0.5f;
+    constexpr float SERVO_SPEED = 0.8f;
     
     // === НОВI ПАРАМЕТРИ ІНЕРЦІЇ ===
     // Час (в тактах) потрібний щоб зменшити швидкість на 1 одиницю при ковзанні

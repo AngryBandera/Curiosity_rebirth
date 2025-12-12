@@ -36,6 +36,8 @@ protected:
 
 public:
 
+    uint32_t spin_radius;
+
     WheelMotor(uint8_t pca1, uint8_t pca2,
             const char *TAG,
             int16_t l = 0, int16_t d = 0);
@@ -46,8 +48,6 @@ public:
 
     // Writes speed value to PCA9685 buffer that will be flushed later
     virtual void update_buffer(int16_t speed, PCA9685Buffer* buffer);
-
-    virtual void update_rotation_geometry();
 
     // Get current inner radius
     uint32_t get_radius();
@@ -85,8 +85,6 @@ public:
         Update wheel geometry based on rvr_radius and position of the wheel in space
     */
     void update_geometry(int32_t rvr_radius) override;
-
-    void update_rotation_geometry() override;
 
     void update_duty();
 

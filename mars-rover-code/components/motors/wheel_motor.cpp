@@ -36,7 +36,13 @@ WheelMotor::WheelMotor(uint8_t pca1, uint8_t pca2,
         int16_t l, int16_t d)
     : pca1{pca1}, pca2{pca2},
       TAG{TAG},
-      l{l}, d{d} {}
+      l{l}, d{d}
+{
+    spin_radius = isqrt(static_cast<uint32_t>(
+        (uint32_t)l * l +
+        (uint32_t)d * d)
+    );
+}
 
 void WheelMotor::update_buffer(int16_t speed, PCA9685Buffer* buffer) {
     int32_t abs_speed = std::abs(static_cast<int32_t>(speed));
