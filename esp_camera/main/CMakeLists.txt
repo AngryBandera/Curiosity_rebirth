@@ -1,5 +1,5 @@
 # Опція: що збираємо
-option(Build_FULL_Project "Build full ESP-CAM project" OFF)
+option(Build_FULL_Project "Build full ESP-CAM project" ON)
 
 set(INCLUDE_DIRS ".")
 set(PRIV_REQUIRES_LIST "")
@@ -8,7 +8,6 @@ if(Build_FULL_Project)
     message(STATUS "Building FULL_CAM project")
     set(SRC_FILES 
         esp_cam_main.cpp 
-        command_get.cpp
         )
 else()
     message(STATUS "Building TEST_CAMERA project")

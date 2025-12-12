@@ -1,0 +1,225 @@
+Command: C:\Users\bogda\.espressif\python_env\idf5.5_py3.13_env\Scripts\python.exe C:/esp/esp-idf\tools/idf_monitor.py -p COM9 -b 115200 --toolchain-prefix xtensa-esp32-elf- --target esp32 --revision 0 C:\Users\bogda\POK\Curiosity_rebirth\esp_camera\build\esp_camera.elf C:\Users\bogda\POK\Curiosity_rebirth\esp_camera\build\bootloader\bootloader.elf --force-color -m 'C:\Users\bogda\.espressif\python_env\idf5.5_py3.13_env\Scripts\python.exe' 'C:/esp/esp-idf\tools\idf.py' '-p' 'COM9'
+ets Jul �ets Jul 29 2019 12:21:46
+
+rst:0x1 (POWERON_RESET),boot:0x1b (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:6380
+ho 0 tail 12 room 4
+load:0x40078000,len:15916
+load:0x40080400,len:3860
+entry 0x40080638
+[0;32mI (29) boot: ESP-IDF v5.5 2nd stage bootloader[0m
+[0;32mI (29) boot: compile time Dec 12 2025 15:24:43[0m
+[0;32mI (29) boot: Multicore bootloader[0m
+[0;32mI (30) boot: chip revision: v3.1[0m
+[0;32mI (33) boot.esp32: SPI Speed      : 40MHz[0m
+[0;32mI (37) boot.esp32: SPI Mode       : DIO[0m
+[0;32mI (40) boot.esp32: SPI Flash Size : 2MB[0m
+[0;32mI (44) boot: Enabling RNG early entropy source...[0m
+[0;32mI (49) boot: Partition Table:[0m
+[0;32mI (51) boot: ## Label            Usage          Type ST Offset   Length[0m
+[0;32mI (57) boot:  0 nvs              WiFi data        01 02 00009000 00004000[0m
+[0;32mI (64) boot:  1 phy_init         RF data          01 01 0000d000 00001000[0m
+[0;32mI (71) boot:  2 otadata          OTA data         01 00 0000e000 00002000[0m
+[0;32mI (77) boot:  3 factory          factory app      00 00 00010000 001f0000[0m
+[0;32mI (84) boot: End of partition table[0m
+[0;32mI (87) boot: Defaulting to factory image[0m
+[0;32mI (91) esp_image: segment 0: paddr=00010020 vaddr=3f400020 size=26428h (156712) map[0m
+[0;32mI (152) esp_image: segment 1: paddr=00036450 vaddr=3ff80000 size=00020h (    32) load[0m
+[0;32mI (152) esp_image: segment 2: paddr=00036478 vaddr=3ffb0000 size=067c0h ( 26560) load[0m
+[0;32mI (165) esp_image: segment 3: paddr=0003cc40 vaddr=40080000 size=033d8h ( 13272) load[0m
+[0;32mI (171) esp_image: segment 4: paddr=00040020 vaddr=400d0020 size=a61e0h (680416) map[0m
+[0;32mI (403) esp_image: segment 5: paddr=000e6208 vaddr=400833d8 size=19688h (104072) load[0m
+[0;32mI (458) boot: Loaded app from partition at offset 0x10000[0m
+[0;32mI (458) boot: Disabling RNG early entropy source...[0m
+[0;32mI (469) quad_psram: This chip is ESP32-D0WD[0m
+[0;32mI (471) esp_psram: Found 8MB PSRAM device[0m
+[0;32mI (471) esp_psram: Speed: 40MHz[0m
+[0;32mI (471) esp_psram: PSRAM initialized, cache is in low/high (2-core) mode.[0m
+[0;33mW (476) esp_psram: Virtual address not enough for PSRAM, map as much as we can. 4MB is mapped[0m
+[0;32mI (484) cpu_start: Multicore app[0m
+[0;32mI (1393) esp_psram: SPI SRAM memory test OK[0m
+[0;32mI (1401) cpu_start: Pro cpu start user code[0m
+[0;32mI (1401) cpu_start: cpu freq: 160000000 Hz[0m
+[0;32mI (1401) app_init: Application information:[0m
+[0;32mI (1401) app_init: Project name:     esp_camera[0m
+[0;32mI (1405) app_init: App version:      05fa58b-dirty[0m
+[0;32mI (1410) app_init: Compile time:     Dec 12 2025 15:23:05[0m
+[0;32mI (1415) app_init: ELF file SHA256:  b67f06857...[0m
+[0;32mI (1420) app_init: ESP-IDF:          v5.5[0m
+[0;32mI (1423) efuse_init: Min chip rev:     v0.0[0m
+[0;32mI (1427) efuse_init: Max chip rev:     v3.99 [0m
+[0;32mI (1431) efuse_init: Chip rev:         v3.1[0m
+[0;32mI (1436) heap_init: Initializing. RAM available for dynamic allocation:[0m
+[0;32mI (1442) heap_init: At 3FFAE6E0 len 00001920 (6 KiB): DRAM[0m
+[0;32mI (1447) heap_init: At 3FFBB370 len 00024C90 (147 KiB): DRAM[0m
+[0;32mI (1452) heap_init: At 3FFE0440 len 00003AE0 (14 KiB): D/IRAM[0m
+[0;32mI (1458) heap_init: At 3FFE4350 len 0001BCB0 (111 KiB): D/IRAM[0m
+[0;32mI (1463) heap_init: At 4009CA60 len 000035A0 (13 KiB): IRAM[0m
+[0;32mI (1469) esp_psram: Adding pool of 4096K of PSRAM memory to heap allocator[0m
+[0;32mI (1477) spi_flash: detected chip: generic[0m
+[0;32mI (1479) spi_flash: flash io: dio[0m
+[0;33mW (1482) spi_flash: Detected size(4096k) larger than the size in the binary image header(2048k). Using the size in the binary image header.[0m
+[0;32mI (1495) main_task: Started on CPU0[0m
+[0;32mI (1505) esp_psram: Reserving pool of 32K of internal memory for DMA/internal allocations[0m
+[0;32mI (1505) main_task: Calling app_main()[0m
+[0;32mI (1545) CAMERA_TEST: === Mars Rover Camera System ===[0m
+[0;32mI (1555) wifi:wifi driver task: 3ffc3390, prio:23, stack:6656, core=0[0m
+[0;32mI (1565) wifi:wifi firmware version: f3dbad7[0m
+[0;32mI (1565) wifi:wifi certification version: v7.0[0m
+[0;32mI (1565) wifi:config NVS flash: enabled[0m
+[0;32mI (1565) wifi:config nano formatting: disabled[0m
+[0;32mI (1575) wifi:Init data frame dynamic rx buffer num: 32[0m
+[0;32mI (1575) wifi:Init static rx mgmt buffer num: 5[0m
+[0;32mI (1585) wifi:Init management short buffer num: 32[0m
+[0;32mI (1585) wifi:Init dynamic tx buffer num: 32[0m
+[0;32mI (1585) wifi:Init static rx buffer size: 1600[0m
+[0;32mI (1595) wifi:Init static rx buffer num: 10[0m
+[0;32mI (1595) wifi:Init dynamic rx buffer num: 32[0m
+[0;32mI (1605) wifi_init: rx ba win: 6[0m
+[0;32mI (1605) wifi_init: accept mbox: 6[0m
+[0;32mI (1605) wifi_init: tcpip mbox: 32[0m
+[0;32mI (1615) wifi_init: udp mbox: 6[0m
+[0;32mI (1615) wifi_init: tcp mbox: 6[0m
+[0;32mI (1615) wifi_init: tcp tx win: 5760[0m
+[0;32mI (1615) wifi_init: tcp rx win: 5760[0m
+[0;32mI (1625) wifi_init: tcp mss: 1440[0m
+[0;32mI (1625) wifi_init: WiFi IRAM OP enabled[0m
+[0;32mI (1625) wifi_init: WiFi RX IRAM OP enabled[0m
+[0;32mI (1635) phy_init: phy_version 4860,6b7a6e5,Feb  6 2025,14:47:07[0m
+[0;32mI (1705) phy_init: Saving new calibration data due to checksum failure or outdated calibration data, mode(0)[0m
+[0;32mI (1795) wifi:mode : softAP (c8:2e:18:90:a6:e1)[0m
+[0;32mI (1795) wifi:Total power save buffer number: 16[0m
+[0;32mI (1795) wifi:Init max length of beacon: 752/752[0m
+[0;32mI (1795) wifi:Init max length of beacon: 752/752[0m
+[0;32mI (1805) CAMERA_TEST: 📡 WiFi AP started[0m
+[0;32mI (1805) esp_netif_lwip: DHCP server started on interface WIFI_AP_DEF with IP: 192.168.4.1[0m
+[0;32mI (1815) CAMERA_TEST:    SSID: ESP32_CAM_AP[0m
+[0;32mI (1815) CAMERA_TEST:    Password: 12345678[0m
+[0;32mI (1825) CAMERA_TEST:    IP: 192.168.4.1[0m
+[0;32mI (1825) cam_hal: cam init ok[0m
+[0;32mI (1825) sccb-ng: pin_sda 26 pin_scl 27[0m
+[0;32mI (1835) sccb-ng: sccb_i2c_port=1[0m
+[0;32mI (1845) camera: Camera PID=0x26 VER=0x42 MIDL=0x7f MIDH=0xa2[0m
+[0;32mI (1845) camera: Detected OV2640 camera[0m
+[0;32mI (1845) camera: Detected camera at address=0x30[0m
+[0;32mI (1925) cam_hal: PSRAM DMA mode disabled[0m
+[0;32mI (1925) cam_hal: buffer_size: 32768, half_buffer_size: 4096, node_buffer_size: 2048, node_cnt: 16, total_cnt: 23[0m
+[0;32mI (1925) cam_hal: Allocating 96000 Byte frame buffer in PSRAM[0m
+[0;32mI (1935) cam_hal: Allocating 96000 Byte frame buffer in PSRAM[0m
+[0;32mI (1935) cam_hal: cam config ok[0m
+[0;32mI (1935) ov2640: Set PLL: clk_2x: 0, clk_div: 0, pclk_auto: 0, pclk_div: 8[0m
+[0;32mI (2045) CAMERA_SERVER: ✅ Camera initialized successfully[0m
+[0;32mI (2045) CAMERA_TEST: ✅ Camera initialized successfully[0m
+[0;32mI (2045) CAMERA_SERVER: Starting control server on port 80...[0m
+[0;32mI (2055) CAMERA_SERVER: ✅ Control server started on port 80[0m
+[0;32mI (2055) CAMERA_SERVER: Starting stream server on port 81...[0m
+[0;32mI (2065) CAMERA_SERVER: ✅ Stream server started on port 81[0m
+[0;32mI (2065) CAMERA_SERVER: 🎯 Architecture: Control (port 80, core 0) | Stream (port 81, core 1)[0m
+[0;32mI (2075) CAMERA_TEST: ✅ Web server started[0m
+[0;32mI (2075) CAMERA_TEST: [0m
+[0;32mI (2075) CAMERA_TEST: 🌐 Connect to: http://192.168.4.1/[0m
+[0;32mI (2085) CAMERA_TEST: [0m
+[0;32mI (2085) CAMERA_SERVER: 🎥 Video streaming STARTED[0m
+[0;32mI (7095) CAMERA_TEST: [1] Status: Streaming active | Streaming: ON[0m
+[0;32mI (12095) CAMERA_TEST: [2] Status: Streaming active | Streaming: ON[0m
+[0;32mI (12775) wifi:new:<1,1>, old:<1,1>, ap:<1,1>, sta:<255,255>, prof:1, snd_ch_cfg:0x0[0m
+[0;32mI (12775) wifi:station: 30:c9:ab:8b:a0:7d join, AID=1, bgn, 40U[0m
+[0;32mI (13495) esp_netif_lwip: DHCP server assigned IP to a client, IP is: 192.168.4.2[0m
+[0;33mW (16155) httpd_uri: httpd_uri: URI '/favicon.ico' not found[0m
+[0;33mW (16155) httpd_txrx: httpd_resp_send_err: 404 Not Found - Nothing matches the given URI[0m
+[0;32mI (17095) CAMERA_TEST: [3] Status: Streaming active | Streaming: ON[0m
+[0;32mI (19305) CAMERA_SERVER: 🟢 START requested[0m
+[0;32mI (19315) CAMERA_SERVER: 🎥 Video streaming STARTED[0m
+[0;32mI (20335) CAMERA_SERVER: 📹 Stream client connected[0m
+[0;32mI (20345) wifi:<ba-add>idx:2 (ifx:1, 30:c9:ab:8b:a0:7d), tid:0, ssn:115, winSize:64[0m
+[0;32mI (22095) CAMERA_TEST: [4] Status: Streaming active | Streaming: ON[0m
+[0;32mI (26985) CAMERA_SERVER: 🔴 STOP requested[0m
+[0;32mI (26985) CAMERA_SERVER: 🛑 Video streaming STOPPED[0m
+[0;32mI (27095) CAMERA_TEST: [5] Status: Camera ready | Streaming: OFF[0m
+[0;33mW (27095) httpd_txrx: httpd_sock_err: error in send : 104[0m
+[0;32mI (27095) CAMERA_SERVER: 🔴 Stream ended after 43 frames[0m
+[0;33mW (27095) httpd_txrx: httpd_sock_err: error in recv : 104[0m
+[0;32mI (29875) CAMERA_SERVER: 🟢 START requested[0m
+[0;32mI (29875) CAMERA_SERVER: 🎥 Video streaming STARTED[0m
+[0;32mI (29955) CAMERA_SERVER: 📹 Stream client connected[0m
+[0;32mI (32095) CAMERA_TEST: [6] Status: Streaming active | Streaming: ON[0m
+[0;32mI (32265) CAMERA_SERVER: 📸 Capture photo requested[0m
+[0;32mI (32315) CAMERA_SERVER: ✅ Photo captured: 32674 bytes[0m
+[0;32mI (35275) CAMERA_SERVER: 🔴 STOP requested[0m
+[0;32mI (35275) CAMERA_SERVER: 🛑 Video streaming STOPPED[0m
+[0;32mI (35295) CAMERA_SERVER: 🔴 Stream ended after 35 frames[0m
+[0;32mI (35835) CAMERA_SERVER: 🟢 START requested[0m
+[0;32mI (35835) CAMERA_SERVER: 🎥 Video streaming STARTED[0m
+[0;32mI (37095) CAMERA_TEST: [7] Status: Streaming active | Streaming: ON[0m
+[0;32mI (42095) CAMERA_TEST: [8] Status: Streaming active | Streaming: ON[0m
+[0;32mI (42365) CAMERA_SERVER: 🔴 STOP requested[0m
+[0;32mI (42365) CAMERA_SERVER: 🛑 Video streaming STOPPED[0m
+[0;32mI (44165) CAMERA_SERVER: 🟢 START requested[0m
+[0;32mI (44165) CAMERA_SERVER: 🎥 Video streaming STARTED[0m
+[0;32mI (47095) CAMERA_TEST: [9] Status: Streaming active | Streaming: ON[0m
+[0;32mI (50145) CAMERA_SERVER: 🔴 STOP requested[0m
+[0;32mI (50145) CAMERA_SERVER: 🛑 Video streaming STOPPED[0m
+[0;32mI (50955) CAMERA_SERVER: 🟢 START requested[0m
+[0;32mI (50955) CAMERA_SERVER: 🎥 Video streaming STARTED[0m
+[0;32mI (52095) CAMERA_TEST: [10] Status: Streaming active | Streaming: ON[0m
+[0;32mI (57095) CAMERA_TEST: [11] Status: Streaming active | Streaming: ON[0m
+[0;32mI (57685) CAMERA_SERVER: 🔴 STOP requested[0m
+[0;32mI (57685) CAMERA_SERVER: 🛑 Video streaming STOPPED[0m
+[0;32mI (58855) CAMERA_SERVER: 🟢 START requested[0m
+[0;32mI (58855) CAMERA_SERVER: 🎥 Video streaming STARTED[0m
+[0;32mI (62095) CAMERA_TEST: [12] Status: Streaming active | Streaming: ON[0m
+[0;32mI (64785) CAMERA_SERVER: 🔴 STOP requested[0m
+[0;32mI (64785) CAMERA_SERVER: 🛑 Video streaming STOPPED[0m
+[0;32mI (65755) CAMERA_SERVER: 🟢 START requested[0m
+[0;32mI (65755) CAMERA_SERVER: 🎥 Video streaming STARTED[0m
+[0;32mI (67095) CAMERA_TEST: [13] Status: Streaming active | Streaming: ON[0m
+[0;32mI (72095) CAMERA_TEST: [14] Status: Streaming active | Streaming: ON[0m
+[0;32mI (73985) CAMERA_SERVER: 🟢 START requested[0m
+[0;32mI (73985) CAMERA_SERVER: 🎥 Video streaming STARTED[0m
+[0;32mI (74055) CAMERA_SERVER: 📹 Stream client connected[0m
+[0;32mI (77095) CAMERA_TEST: [15] Status: Streaming active | Streaming: ON[0m
+[0;32mI (80155) CAMERA_SERVER: Streamed 50 frames[0m
+[0;32mI (82055) CAMERA_SERVER: 📸 Capture photo requested[0m
+[0;32mI (82095) CAMERA_TEST: [16] Status: Streaming active | Streaming: ON[0m
+[0;32mI (82105) CAMERA_SERVER: ✅ Photo captured: 25409 bytes[0m
+[0;32mI (86825) CAMERA_SERVER: Streamed 100 frames[0m
+[0;32mI (87095) CAMERA_TEST: [17] Status: Streaming active | Streaming: ON[0m
+[0;32mI (89825) CAMERA_SERVER: 🔴 STOP requested[0m
+[0;32mI (89825) CAMERA_SERVER: 🛑 Video streaming STOPPED[0m
+[0;32mI (89895) CAMERA_SERVER: 🔴 Stream ended after 121 frames[0m
+[0;33mW (89895) httpd_txrx: httpd_sock_err: error in recv : 104[0m
+[0;32mI (90795) CAMERA_SERVER: 🟢 START requested[0m
+[0;32mI (90795) CAMERA_SERVER: 🎥 Video streaming STARTED[0m
+[0;32mI (90875) CAMERA_SERVER: 📹 Stream client connected[0m
+[0;32mI (92095) CAMERA_TEST: [18] Status: Streaming active | Streaming: ON[0m
+[0;32mI (97095) CAMERA_TEST: [19] Status: Streaming active | Streaming: ON[0m
+[0;32mI (97295) CAMERA_SERVER: Streamed 50 frames[0m
+[0;32mI (98005) CAMERA_SERVER: 📸 Capture photo requested[0m
+[0;32mI (98065) CAMERA_SERVER: ✅ Photo captured: 24481 bytes[0m
+[0;32mI (102095) CAMERA_TEST: [20] Status: Streaming active | Streaming: ON[0m
+[0;32mI (102115) CAMERA_SERVER: 🔴 STOP requested[0m
+[0;32mI (102115) CAMERA_SERVER: 🛑 Video streaming STOPPED[0m
+[0;32mI (102215) CAMERA_SERVER: 🔴 Stream ended after 87 frames[0m
+[0;33mW (102215) httpd_txrx: httpd_sock_err: error in recv : 104[0m
+[0;32mI (103255) CAMERA_SERVER: 🟢 START requested[0m
+[0;32mI (103255) CAMERA_SERVER: 🎥 Video streaming STARTED[0m
+[0;32mI (103315) CAMERA_SERVER: 📹 Stream client connected[0m
+[0;32mI (107095) CAMERA_TEST: [21] Status: Streaming active | Streaming: ON[0m
+[0;32mI (109135) CAMERA_SERVER: Streamed 50 frames[0m
+[0;32mI (112095) CAMERA_TEST: [22] Status: Streaming active | Streaming: ON[0m
+[0;32mI (116775) CAMERA_SERVER: Streamed 100 frames[0m
+[0;32mI (117095) CAMERA_TEST: [23] Status: Streaming active | Streaming: ON[0m
+[0;32mI (122095) CAMERA_TEST: [24] Status: Streaming active | Streaming: ON[0m
+[0;32mI (125885) CAMERA_SERVER: Streamed 150 frames[0m
+[0;32mI (127095) CAMERA_TEST: [25] Status: Streaming active | Streaming: ON[0m
+[0;32mI (132095) CAMERA_TEST: [26] Status: Streaming active | Streaming: ON[0m
+[0;32mI (134145) CAMERA_SERVER: Streamed 200 frames[0m
+[0;32mI (137095) CAMERA_TEST: [27] Status: Streaming active | Streaming: ON[0m
+[0;32mI (140555) CAMERA_SERVER: Streamed 250 frames[0m
+[0;32mI (142095) CAMERA_TEST: [28] Status: Streaming active | Streaming: ON[0m
+[0;32mI (146835) CAMERA_SERVER: Streamed 300 frames[0m
+[0;32mI (147095) CAMERA_TEST: [29] Status: Streaming active | Streaming: ON[0m
+[0;32mI (152095) CAMERA_TEST: [30] Status: Streaming active | Streaming: ON[0m

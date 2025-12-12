@@ -9,14 +9,12 @@
 
 static const char* TAG = "CAMERA_SERVER";
 
-// ⭐ ДВА ОКРЕМИХ СЕРВЕРА - як в оригінальному коді!
 static httpd_handle_t control_server = NULL;  // Порт 80 - кнопки
 static httpd_handle_t stream_server = NULL;   // Порт 81 - стрім
 
 static bool camera_initialized = false;
 static volatile bool streaming_active = false;
 
-// ⭐ Мьютекс для захисту доступу до камери
 static SemaphoreHandle_t camera_mutex = NULL;
 
 // MJPEG boundary
@@ -57,9 +55,7 @@ static camera_config_t camera_config = {
     .grab_mode = CAMERA_GRAB_WHEN_EMPTY
 };
 
-// ============================================
 // Функції для камери
-// ============================================
 
 bool initCamera(const camera_config_params_t* config) {
     if (camera_initialized) {
@@ -121,7 +117,7 @@ bool initCamera(const camera_config_params_t* config) {
         s->set_colorbar(s, 0);
     }
 
-    // ⭐ Створюємо мьютекс для захисту доступу до камери
+    // Створюємо мьютекс для захисту доступу до камери
     camera_mutex = xSemaphoreCreateMutex();
     if (camera_mutex == NULL) {
         ESP_LOGE(TAG, "Failed to create camera mutex");
@@ -168,9 +164,7 @@ const char* getCameraStatus() {
     return "Camera ready";
 }
 
-// ============================================
 // HTTP Handlers
-// ============================================
 
 esp_err_t handleRootRequest(httpd_req_t* req) {
     const char* html = 
@@ -197,12 +191,12 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
         ".info{font-size:12px;color:#888;margin-top:10px}"
         "</style></head>"
         "<body>"
-        "<h1>🚀 Mars Rover Camera</h1>"
+        "<h1>Mars Rover Camera</h1>"
         "<div id='streamContainer'>Press START to begin streaming</div>"
         "<div class='controls'>"
-        "<button id='startBtn' onclick='startStream()'>▶️ START</button>"
-        "<button id='stopBtn' class='stop' onclick='stopStream()' disabled>⏹ STOP</button>"
-        "<button id='captureBtn' onclick='capturePhoto()'>📸 PHOTO</button>"
+        "<button id='startBtn' onclick='startStream()'>START</button>"
+        "<button id='stopBtn' class='stop' onclick='stopStream()' disabled>STOP</button>"
+        "<button id='captureBtn' onclick='capturePhoto()'>PHOTO</button>"
         "</div>"
         "<div id='status'>Ready</div>"
         "<div class='info'>Control: Port 80 | Stream: Port 81</div>"
@@ -233,13 +227,13 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
         "      streamImg.style.width='100%';"
         "      streamImg.onerror=()=>{"
         "        console.error('Stream error');"
-        "        statusDiv.innerHTML='<span class=\"inactive\">⚠️ Stream error</span>';"
+        "        statusDiv.innerHTML='<span class=\"inactive\">Stream error</span>';"
         "      };"
         "      streamImg.onload=()=>{"
         "        console.log('Stream loaded!');"
         "      };"
         "      container.appendChild(streamImg);"
-        "      statusDiv.innerHTML='<span class=\"active\">🎥 STREAMING</span>';"
+        "      statusDiv.innerHTML='<span class=\"active\">STREAMING</span>';"
         "      stopBtn.disabled=false;"
         "    }else{"
         "      console.error('Failed to start');"
@@ -278,7 +272,7 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
         
         "async function capturePhoto(){"
         "  captureBtn.disabled=true;"
-        "  statusDiv.innerHTML='<span class=\"active\">📸 Capturing...</span>';"
+        "  statusDiv.innerHTML='<span class=\"active\">Capturing...</span>';"
         "  console.log('Capturing photo...');"
         "  try{"
         "    let timestamp=Date.now();"
@@ -291,7 +285,7 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
         "      img.style.width='100%';"
         "      container.innerHTML='';"
         "      container.appendChild(img);"
-        "      statusDiv.innerHTML='<span class=\"active\">✅ Photo captured!</span>';"
+        "      statusDiv.innerHTML='<span class=\"active\">Photo captured!</span>';"
         "      console.log('Photo captured successfully');"
         "      let link=document.createElement('a');"
         "      link.href=url;"
@@ -299,11 +293,11 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
         "      link.click();"
         "    }else{"
         "      console.error('Capture failed');"
-        "      statusDiv.innerHTML='<span class=\"inactive\">❌ Capture failed</span>';"
+        "      statusDiv.innerHTML='<span class=\"inactive\">Capture failed</span>';"
         "    }"
         "  }catch(e){"
         "    console.error('Capture error:',e);"
-        "    statusDiv.innerHTML='<span class=\"inactive\">❌ Error: '+e.message+'</span>';"
+        "    statusDiv.innerHTML='<span class=\"inactive\">Error: '+e.message+'</span>';"
         "  }"
         "  captureBtn.disabled=false;"
         "}"
@@ -346,7 +340,7 @@ esp_err_t handleStatusRequest(httpd_req_t* req) {
     return httpd_resp_send(req, json, strlen(json));
 }
 
-// ⭐ НОВИЙ: Handler для захоплення одного кадру (фотографія)
+// Handler для захоплення одного кадру (фотографія)
 esp_err_t handleCaptureRequest(httpd_req_t* req) {
     camera_fb_t* fb = NULL;
     esp_err_t res = ESP_OK;
@@ -359,7 +353,7 @@ esp_err_t handleCaptureRequest(httpd_req_t* req) {
         return ESP_FAIL;
     }
     
-    // ⭐ КРИТИЧНО: Захоплюємо мьютекс перед доступом до камери
+    // Захоплюємо мьютекс перед доступом до камери
     if (xSemaphoreTake(camera_mutex, pdMS_TO_TICKS(1000)) != pdTRUE) {
         ESP_LOGE(TAG, "Failed to acquire camera mutex for capture");
         httpd_resp_send_500(req);
@@ -398,7 +392,39 @@ esp_err_t handleCaptureRequest(httpd_req_t* req) {
     return res;
 }
 
-// ⭐ СТРІМ НА ОКРЕМОМУ СЕРВЕРІ (порт 81)
+// Функція для захоплення фото з коду (Main Loop)
+bool take_photo_internal() {
+    if (!camera_initialized) {
+        ESP_LOGE(TAG, "Cannot take photo - camera not initialized");
+        return false;
+    }
+
+    // Спроба взяти мьютекс (чекаємо 1000мс, якщо стрім зайняв камеру)
+    if (xSemaphoreTake(camera_mutex, pdMS_TO_TICKS(1000)) != pdTRUE) {
+        ESP_LOGW(TAG, "Camera busy, cannot take photo now");
+        return false;
+    }
+
+    camera_fb_t* fb = esp_camera_fb_get();
+    if (!fb) {
+        ESP_LOGE(TAG, "Camera capture failed");
+        xSemaphoreGive(camera_mutex);
+        return false;
+    }
+
+    // Тут ми "маємо" фото. 
+    // В реальному ровері тут був би код запису на SD або відправки по LoRa/UART.
+    ESP_LOGI(TAG, "📸 PHOTO CAPTURED INTERNAL! Size: %u bytes, Format: %d", fb->len, fb->format);
+
+    // Повертаємо буфер назад драйверу
+    esp_camera_fb_return(fb);
+    
+    // Звільняємо мьютекс, щоб стрім міг продовжитись
+    xSemaphoreGive(camera_mutex);
+    return true;
+}
+
+// СТРІМ НА ОКРЕМОМУ СЕРВЕРІ (порт 81)
 esp_err_t handleStreamRequest(httpd_req_t* req) {
     camera_fb_t* fb = NULL;
     esp_err_t res = ESP_OK;
@@ -417,9 +443,8 @@ esp_err_t handleStreamRequest(httpd_req_t* req) {
     
     int frame_count = 0;
     
-    // Безперервний цикл як в оригінальному коді
     while (streaming_active) {
-        // ⭐ КРИТИЧНО: Захоплюємо мьютекс перед доступом до камери
+        // Захоплюємо мьютекс перед доступом до камери
         if (xSemaphoreTake(camera_mutex, pdMS_TO_TICKS(100)) != pdTRUE) {
             // Якщо не можемо отримати мьютекс (напр. фото робиться), пропускаємо кадр
             vTaskDelay(pdMS_TO_TICKS(10));
@@ -463,7 +488,7 @@ esp_err_t handleStreamRequest(httpd_req_t* req) {
         esp_camera_fb_return(fb);
         fb = NULL;
         
-        // ⭐ Звільняємо мьютекс ОДРАЗУ після отримання кадру
+        // Звільняємо мьютекс ОДРАЗУ після отримання кадру
         xSemaphoreGive(camera_mutex);
         
         frame_count++;
@@ -482,9 +507,9 @@ esp_err_t handleStreamRequest(httpd_req_t* req) {
     return res;
 }
 
-// ============================================
-// ⭐ Ініціалізація ДВОХ серверів
-// ============================================
+
+// Ініціалізація ДВОХ серверів
+
 
 bool initWebServer(uint16_t port) {
     if (control_server != NULL || stream_server != NULL) {
@@ -492,7 +517,7 @@ bool initWebServer(uint16_t port) {
         return true;
     }
 
-    // ⭐ СЕРВЕР 1: Контроль (порт 80)
+    // СЕРВЕР 1: Контроль (порт 80)
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.server_port = port;
     config.ctrl_port = 32768;
@@ -553,7 +578,7 @@ bool initWebServer(uint16_t port) {
 
     ESP_LOGI(TAG, "✅ Control server started on port %d", port);
 
-    // ⭐ СЕРВЕР 2: Стрім (порт 81)
+    // СЕРВЕР 2: Стрім (порт 81)
     config.server_port = port + 1;
     config.ctrl_port = 32769;
     config.max_open_sockets = 2;  // Тільки для стріму
