@@ -10,7 +10,6 @@
 
 // Ваші заголовні файли
 #include "camera_server.h"
-#include "command_get.h" 
 
 // --- НАЛАШТУВАННЯ ПІНІВ ДЛЯ КОМАНД ---
 #define GPIO_CMD_BIT_0 GPIO_NUM_13
@@ -65,6 +64,20 @@ static void init_wifi_ap()
 // 1 = 01 = START STREAM
 // 2 = 10 = STOP STREAM
 // 3 = 11 = TAKE PHOTO
+uint8_t get_pins_status(const pins_t *pins){
+    gpio_num_t pins_array[2] = {
+        pins->pin1,
+        pins->pin2
+    };
+
+    uint8_t mask = 0;
+    for (int i = 0; i < 2; i++){
+        int state = gpio_get_level(pins_array[i]);
+        mask |= (state << i);
+    };
+    return mask;
+
+}
 void process_rover_command(uint8_t command) {
     static uint8_t last_command = 255; // Щоб не спамити логами
     

@@ -1,7 +1,7 @@
 {
     "version":            "1.2",
     "project_name":       "esp_camera",
-    "project_version":    "796f685-dirty",
+    "project_version":    "adaa5c5-dirty",
     "project_path":       "C:/Users/bogda/POK/Curiosity_rebirth/esp_camera",
     "idf_path":           "C:/esp/esp-idf",
     "build_dir":          "C:/Users/bogda/POK/Curiosity_rebirth/esp_camera/build",
@@ -1270,7 +1270,7 @@
             "managed_reqs": [],
             "managed_priv_reqs": [ "espressif__esp32-camera" ],
             "file": "C:/Users/bogda/POK/Curiosity_rebirth/esp_camera/build/esp-idf/main/libmain.a",
-            "sources": [ "C:/Users/bogda/POK/Curiosity_rebirth/esp_camera/main/test_camera.cpp" ],
+            "sources": [ "C:/Users/bogda/POK/Curiosity_rebirth/esp_camera/main/esp_cam_main.cpp" ],
             "include_dirs": [ "." ]
         },
         "mbedtls": {

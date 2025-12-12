@@ -15,7 +15,7 @@
 ########################
 
 //Build full ESP-CAM project
-Build_FULL_Project:BOOL=OFF
+Build_FULL_Project:BOOL=ON
 
 //No help, variable specified on the command line.
 CCACHE_ENABLE:UNINITIALIZED=0
