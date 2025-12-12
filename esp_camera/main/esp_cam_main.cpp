@@ -16,7 +16,6 @@
 #define GPIO_CMD_BIT_1 GPIO_NUM_14
 
 static const char* TAG = "MARS_ROVER_MAIN";
-const pins_t pins = {GPIO_CMD_BIT_0, GPIO_CMD_BIT_1}; // Структура з твого command_get.h
 
 // -------------------------
 // WIFI CONFIGURATION
