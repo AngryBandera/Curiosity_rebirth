@@ -11,10 +11,6 @@
 // Ваші заголовні файли
 #include "camera_server.h"
 
-// --- НАЛАШТУВАННЯ ПІНІВ ДЛЯ КОМАНД ---
-#define GPIO_CMD_BIT_0 GPIO_NUM_13
-#define GPIO_CMD_BIT_1 GPIO_NUM_14
-
 static const char* TAG = "MARS_ROVER_MAIN";
 
 // -------------------------
@@ -99,8 +95,7 @@ extern "C" void app_main(void)
         if (loop_cnt++ % 10 == 0) { // 10 * 500ms = 5 sec
             ESP_LOGI(TAG, "[Status] Cam: %s | Stream: %s | Last Cmd: %d", 
                      isCameraInitialized() ? "OK" : "ERR",
-                     isStreaming() ? "ON" : "OFF",
-                     command);
+                     isStreaming() ? "ON" : "OFF");
         }
 
         vTaskDelay(pdMS_TO_TICKS(500)); // Перевірка команд 2 рази на секунду
