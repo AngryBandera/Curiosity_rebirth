@@ -69,6 +69,7 @@ typedef struct {
     gpio_num_t pin2;
 } pins_t;
 
+pins_t command_pins = {GPIO_CMD_BIT_0, GPIO_CMD_BIT_1};
 uint8_t get_pins_status(const pins_t *pins){
     gpio_num_t pins_array[2] = {
         pins->pin1,
@@ -186,7 +187,7 @@ extern "C" void app_main(void)
         // Отримуємо статус пінів
         // Припускаємо, що get_pins_status повертає десяткове значення (0, 1, 2, 3)
         // на основі двійкового коду з пінів.
-        uint8_t command = get_pins_status(&pins);
+        uint8_t command = get_pins_status(&command_pins);
 
         // Виконуємо логіку
         process_rover_command(command);
