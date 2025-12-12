@@ -161,7 +161,7 @@ extern "C" void app_main(void)
     ESP_LOGI(TAG, "   Bit 1: GPIO %d", GPIO_CMD_BIT_1);
 
     // За замовчуванням запускаємо стрім, щоб одразу бачити картинку
-    startVideoStream();
+    // startVideoStream();
 
     // 6. Main Loop
     while (true) {
