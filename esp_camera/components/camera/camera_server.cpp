@@ -222,10 +222,7 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
         "      streamImg=document.createElement('img');"
         "      let streamPort=parseInt(window.location.port)||80;"
         "      streamPort+=1;"
-        
-        // Додаємо timestamp щоб обійти кеш браузера при перезапуску
         "      streamImg.src='http://'+window.location.hostname+':'+streamPort+'/stream?t=' + Date.now();"
-        
         "      streamImg.style.width='100%';"
         "      streamImg.onerror=()=>{console.error('Stream error');statusDiv.innerHTML='<span class=\"inactive\">Stream Connection Lost</span>';};"
         "      streamImg.onload=()=>{console.log('Stream loaded!');};"
@@ -257,11 +254,20 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
         "}"
         
         "async function capturePhoto(){"
-        "  let wasStreaming = isStreaming;" 
+        // 1. Запам'ятовуємо, чи був стрім
+        "  let needRestart = isStreaming;" 
         "  captureBtn.disabled=true;"
+        
+        // 2. ЯКЩО БУВ СТРІМ — ПРИМУСОВО ЗУПИНЯЄМО ЙОГО НА СЕРВЕРІ
+        "  if (needRestart) {"
+        "      console.log('Stopping stream for photo...');"
+        "      try { await fetch('/stream/stop'); } catch(e){}"
+        "      isStreaming = false;"
+        "      container.innerHTML = 'Taking photo...';" 
+        "  }"
+
         "  statusDiv.innerHTML='<span class=\"active\">Capturing...</span>';"
         "  try{"
-        "    isStreaming = false;" 
         "    let timestamp=Date.now();"
         "    let r=await fetch('/capture?t='+timestamp);"
         "    if(r.ok){"
@@ -279,9 +285,10 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
         "      link.download='capture_'+timestamp+'.jpg';"
         "      link.click();"
         
-        // ЛОГІКА ПЕРЕЗАПУСКУ
-        "      if(wasStreaming) {"
+        // 3. ПЕРЕЗАПУСК (Тільки якщо стрім був активним раніше)
+        "      if(needRestart) {"
         "         setTimeout(() => {"
+        "            console.log('Auto-restarting stream...');"
         "            startStream();"
         "         }, 2000);"
         "      } else {"
@@ -290,11 +297,12 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
         
         "    }else{"
         "      statusDiv.innerHTML='<span class=\"inactive\">Capture failed</span>';"
-        "      isStreaming = wasStreaming;"
+        // Якщо фото не вийшло, але стрім був — пробуємо відновити
+        "      if(needRestart) startStream();" 
         "    }"
         "  }catch(e){"
         "    statusDiv.innerHTML='<span class=\"inactive\">Error: '+e.message+'</span>';"
-        "    isStreaming = wasStreaming;"
+        "    if(needRestart) startStream();"
         "  }"
         "  captureBtn.disabled=false;"
         "}"
@@ -343,6 +351,17 @@ esp_err_t handleCaptureRequest(httpd_req_t* req) {
     esp_err_t res = ESP_OK;
     
     ESP_LOGI(TAG, "📸 Capture photo requested");
+
+    // --- ЗМІНА 1: ПРИМУСОВА ЗУПИНКА СТРІМУ ---
+    // Якщо стрім зараз активний, ми його вимикаємо прямо звідси
+    if (streaming_active) {
+        ESP_LOGI(TAG, "⚠️ Force stopping stream to take photo...");
+        streaming_active = false; 
+        
+        // Важливо: даємо 150 мс, щоб цикл стріму встиг завершитись і відпустити камеру
+        vTaskDelay(pdMS_TO_TICKS(150));
+    }
+    // -----------------------------------------
     
     if (!camera_initialized) {
         ESP_LOGE(TAG, "Camera not initialized");
@@ -350,19 +369,23 @@ esp_err_t handleCaptureRequest(httpd_req_t* req) {
         return ESP_FAIL;
     }
     
-    // Захоплюємо мьютекс перед доступом до камери
-    if (xSemaphoreTake(camera_mutex, pdMS_TO_TICKS(1000)) != pdTRUE) {
+    // --- ЗМІНА 2: БІЛЬШИЙ ТАЙМАУТ ---
+    // Збільшуємо час очікування з 1000 до 4000 мс. 
+    // Це гарантує, що якщо камера ще зайнята останнім кадром стріму, ми дочекаємось її.
+    if (xSemaphoreTake(camera_mutex, pdMS_TO_TICKS(4000)) != pdTRUE) {
         ESP_LOGE(TAG, "Failed to acquire camera mutex for capture");
         httpd_resp_send_500(req);
         return ESP_FAIL;
     }
     
     // Захоплюємо кадр
+    // Додатково: скидаємо старі буфери (опціонально, але корисно для свіжості фото)
+    esp_camera_fb_return(esp_camera_fb_get()); 
     fb = esp_camera_fb_get();
     
     if (!fb) {
         ESP_LOGE(TAG, "Camera capture failed");
-        xSemaphoreGive(camera_mutex);  // Звільняємо мьютекс
+        xSemaphoreGive(camera_mutex);
         httpd_resp_send_500(req);
         return ESP_FAIL;
     }
@@ -372,7 +395,6 @@ esp_err_t handleCaptureRequest(httpd_req_t* req) {
     httpd_resp_set_hdr(req, "Content-Disposition", "inline; filename=capture.jpg");
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     
-    // Додаємо timestamp
     char ts[32];
     snprintf(ts, sizeof(ts), "%lld.%06ld", fb->timestamp.tv_sec, fb->timestamp.tv_usec);
     httpd_resp_set_hdr(req, "X-Timestamp", ts);
@@ -382,7 +404,6 @@ esp_err_t handleCaptureRequest(httpd_req_t* req) {
     
     ESP_LOGI(TAG, "✅ Photo captured: %u bytes", fb->len);
     
-    // Звільняємо буфер і мьютекс
     esp_camera_fb_return(fb);
     xSemaphoreGive(camera_mutex);
     
