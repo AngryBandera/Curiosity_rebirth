@@ -7,15 +7,11 @@
 #include "driver/gpio.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-
-// Ваші заголовні файли
 #include "camera_server.h"
 
 static const char* TAG = "MARS_ROVER_MAIN";
 
-// -------------------------
 // WIFI CONFIGURATION
-// -------------------------
 static void init_wifi_ap()
 {
     ESP_ERROR_CHECK(esp_netif_init());
@@ -52,12 +48,10 @@ static void init_wifi_ap()
 }
 
 
-// -------------------------
 // MAIN
-// -------------------------
 extern "C" void app_main(void)
 {
-    // 1. NVS Init
+    // NVS Init
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
         ESP_ERROR_CHECK(nvs_flash_erase());
@@ -66,18 +60,17 @@ extern "C" void app_main(void)
 
     ESP_LOGI(TAG, "Initializing Mars Rover System...");
 
-    // 2. WiFi
+    // WiFi
     init_wifi_ap();
 
-    // 3. Camera Setup
+    // Camera Setup
     if (!initCamera(NULL)) {
         ESP_LOGE(TAG, "❌ Camera init FAILED! Check connection.");
-        // Блимаємо світлодіодом помилки або перезавантажуємось
         return;
     }
     ESP_LOGI(TAG, "✅ Camera Sensor OK");
 
-    // 4. Web Server
+    // Web Server
     if (!initWebServer(80)) {
         ESP_LOGE(TAG, "❌ Web Server FAILED!");
         return;
@@ -87,12 +80,9 @@ extern "C" void app_main(void)
     ESP_LOGI(TAG, "🌐 Connect to: http://192.168.4.1/");
     ESP_LOGI(TAG, "");
 
-    // За замовчуванням запускаємо стрім, щоб одразу бачити картинку
-    // startVideoStream();
-
-    // 6. Main Loop
+    // Main Loop
     while (true) {
-        // Лог статусу кожні 5 секунд (щоб не засмічувати консоль)
+        // Лог статусу кожні 5 секунд
         static uint32_t loop_cnt = 0;
         if (loop_cnt++ % 10 == 0) { // 10 * 500ms = 5 sec
             ESP_LOGI(TAG, "[Status] Cam: %s | Stream: %s | Last Cmd: %d", 
@@ -100,6 +90,6 @@ extern "C" void app_main(void)
                      isStreaming() ? "ON" : "OFF");
         }
 
-        vTaskDelay(pdMS_TO_TICKS(500)); // Перевірка команд 2 рази на секунду
+        vTaskDelay(pdMS_TO_TICKS(500));
     }
 }

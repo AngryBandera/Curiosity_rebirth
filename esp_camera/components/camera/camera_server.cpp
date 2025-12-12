@@ -352,7 +352,6 @@ esp_err_t handleCaptureRequest(httpd_req_t* req) {
     
     ESP_LOGI(TAG, "📸 Capture photo requested");
 
-    // --- ЗМІНА 1: ПРИМУСОВА ЗУПИНКА СТРІМУ ---
     // Якщо стрім зараз активний, ми його вимикаємо прямо звідси
     if (streaming_active) {
         ESP_LOGI(TAG, "⚠️ Force stopping stream to take photo...");
@@ -361,7 +360,6 @@ esp_err_t handleCaptureRequest(httpd_req_t* req) {
         // Важливо: даємо 150 мс, щоб цикл стріму встиг завершитись і відпустити камеру
         vTaskDelay(pdMS_TO_TICKS(150));
     }
-    // -----------------------------------------
     
     if (!camera_initialized) {
         ESP_LOGE(TAG, "Camera not initialized");
@@ -369,8 +367,7 @@ esp_err_t handleCaptureRequest(httpd_req_t* req) {
         return ESP_FAIL;
     }
     
-    // --- ЗМІНА 2: БІЛЬШИЙ ТАЙМАУТ ---
-    // Збільшуємо час очікування з 1000 до 4000 мс. 
+    // Час очікування з 1000 до 4000 мс. 
     // Це гарантує, що якщо камера ще зайнята останнім кадром стріму, ми дочекаємось її.
     if (xSemaphoreTake(camera_mutex, pdMS_TO_TICKS(4000)) != pdTRUE) {
         ESP_LOGE(TAG, "Failed to acquire camera mutex for capture");
