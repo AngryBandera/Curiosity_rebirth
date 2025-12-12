@@ -83,7 +83,9 @@ extern "C" void app_main(void)
         return;
     }
     ESP_LOGI(TAG, "✅ Web Server Running on Port 80 & 81");
-
+    ESP_LOGI(TAG, "");
+    ESP_LOGI(TAG, "🌐 Connect to: http://192.168.4.1/");
+    ESP_LOGI(TAG, "");
 
     // За замовчуванням запускаємо стрім, щоб одразу бачити картинку
     // startVideoStream();
