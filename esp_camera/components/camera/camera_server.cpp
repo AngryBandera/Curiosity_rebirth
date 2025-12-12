@@ -55,6 +55,9 @@ static camera_config_t camera_config = {
     .grab_mode = CAMERA_GRAB_WHEN_EMPTY
 };
 
+static camera_fb_t* last_saved_fb = NULL; // Тут житиме фото
+static int64_t last_photo_ts = 0;         // Час останнього фото (щоб браузер знав, що воно нове)
+
 // Функції для камери
 
 bool initCamera(const camera_config_params_t* config) {
@@ -192,10 +195,11 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
         "</style></head>"
         "<body>"
         "<h1>Mars Rover Camera</h1>"
-        "<div id='streamContainer'>Press START to begin streaming</div>"
+        "<div id='streamContainer'>Waiting for signal...</div>"
         "<div class='controls'>"
-        "<button id='startBtn' onclick='startStream()'>START</button>"
-        "<button id='stopBtn' class='stop' onclick='stopStream()' disabled>STOP</button>"
+        // Кнопки тепер просто відсилають команди, UI оновиться сам через pollStatus
+        "<button id='startBtn' onclick='sendCmd(\"start\")'>START</button>"
+        "<button id='stopBtn' class='stop' onclick='sendCmd(\"stop\")' disabled>STOP</button>"
         "<button id='captureBtn' onclick='capturePhoto()'>PHOTO</button>"
         "</div>"
         "<div id='status'>Ready</div>"
@@ -205,101 +209,77 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
         "let statusDiv=document.getElementById('status');"
         "let startBtn=document.getElementById('startBtn');"
         "let stopBtn=document.getElementById('stopBtn');"
-        "let captureBtn=document.getElementById('captureBtn');"
-        "let streamImg=null;"
+        
         "let isStreaming=false;"
+        "let lastPhotoTs=0;"
         
-        "async function startStream(){"
-        "  if(isStreaming)return;"
+        // --- ГОЛОВНИЙ ЦИКЛ ОПИТУВАННЯ (1 раз на секунду) ---
+        "setInterval(pollStatus, 1000);"
+        
+        "async function pollStatus(){"
+        "  try{"
+        "    let r=await fetch('/status');"
+        "    let d=await r.json();"
+        "    updateUI(d);"
+        "  }catch(e){console.log('Poll err',e);}"
+        "}"
+
+        "function updateUI(data){"
+        "  // 1. Авто-оновлення СТРІМУ"
+        "  if(data.streaming && !isStreaming){"
+        "    isStreaming=true;"
+        "    enableStreamUI();"
+        "  } else if(!data.streaming && isStreaming){"
+        "    isStreaming=false;"
+        "    disableStreamUI();"
+        "  }"
+        
+        "  // 2. Авто-оновлення ФОТО (якщо timestamp змінився)"
+        "  if(data.photo_ts > lastPhotoTs){"
+        "    lastPhotoTs = data.photo_ts;"
+        "    showLastPhoto();"
+        "  }"
+        "}"
+
+        "function enableStreamUI(){"
+        "  container.innerHTML='';"
+        "  let img=document.createElement('img');"
+        "  let port=parseInt(location.port)||80;"
+        "  img.src='http://'+location.hostname+':'+(port+1)+'/stream';"
+        "  img.style.width='100%';"
+        "  container.appendChild(img);"
+        "  statusDiv.innerHTML='<span class=\"active\">🎥 STREAMING (Remote/Manual)</span>';"
         "  startBtn.disabled=true;"
-        "  console.log('Starting stream...');"
-        "  try{"
-        "    let r=await fetch('/stream/start');"
-        "    let data=await r.json();"
-        "    console.log('Start response:',data);"
-        "    if(r.ok && data.status=='ok'){"
-        "      isStreaming=true;"
-        "      container.innerHTML='';"
-        "      streamImg=document.createElement('img');"
-        "      let streamPort=parseInt(window.location.port)||80;"
-        "      streamPort+=1;"  // Порт 81
-        "      streamImg.src='http://'+window.location.hostname+':'+streamPort+'/stream';"
-        "      streamImg.style.width='100%';"
-        "      streamImg.onerror=()=>{"
-        "        console.error('Stream error');"
-        "        statusDiv.innerHTML='<span class=\"inactive\">Stream error</span>';"
-        "      };"
-        "      streamImg.onload=()=>{"
-        "        console.log('Stream loaded!');"
-        "      };"
-        "      container.appendChild(streamImg);"
-        "      statusDiv.innerHTML='<span class=\"active\">STREAMING</span>';"
-        "      stopBtn.disabled=false;"
-        "    }else{"
-        "      console.error('Failed to start');"
-        "      startBtn.disabled=false;"
-        "    }"
-        "  }catch(e){"
-        "    console.error('Start error:',e);"
-        "    startBtn.disabled=false;"
-        "  }"
+        "  stopBtn.disabled=false;"
         "}"
-        
-        "async function stopStream(){"
-        "  if(!isStreaming)return;"
+
+        "function disableStreamUI(){"
+        "  // Якщо ми тільки що показали фото, не стираємо його написом 'Stopped'"
+        "  if(!container.innerHTML.includes('/saved-photo')) {"
+        "     container.innerHTML='Stream Stopped';"
+        "  }"
+        "  statusDiv.innerHTML='<span class=\"inactive\">⏸ STOPPED</span>';"
+        "  startBtn.disabled=false;"
         "  stopBtn.disabled=true;"
-        "  console.log('Stopping stream...');"
-        "  try{"
-        "    let r=await fetch('/stream/stop');"
-        "    let data=await r.json();"
-        "    console.log('Stop response:',data);"
-        "    if(r.ok){"
-        "      isStreaming=false;"
-        "      if(streamImg){"
-        "        streamImg.src='';"
-        "        streamImg.remove();"
-        "        streamImg=null;"
-        "      }"
-        "      container.innerHTML='Stream stopped - Press START to resume';"
-        "      statusDiv.innerHTML='<span class=\"inactive\">⏸ STOPPED</span>';"
-        "      startBtn.disabled=false;"
-        "    }"
-        "  }catch(e){"
-        "    console.error('Stop error:',e);"
-        "    stopBtn.disabled=false;"
-        "  }"
         "}"
-        
+
+        "function showLastPhoto(){"
+        "  if(isStreaming) return; // Не перебиваємо стрім"
+        "  let ts = new Date().getTime();"
+        "  container.innerHTML='<img src=\"/saved-photo?t='+ts+'\" style=\"width:100%\">';"
+        "  statusDiv.innerHTML='<span class=\"active\">📸 New Photo Received!</span>';"
+        "}"
+
+        // --- ВІДПРАВКА КОМАНД (Кнопки) ---
+        "async function sendCmd(cmd){"
+        "  if(cmd=='start') fetch('/stream/start');"
+        "  if(cmd=='stop') fetch('/stream/stop');"
+        "  // Інтерфейс оновиться автоматично через pollStatus"
+        "}"
+
         "async function capturePhoto(){"
-        "  captureBtn.disabled=true;"
-        "  statusDiv.innerHTML='<span class=\"active\">Capturing...</span>';"
-        "  console.log('Capturing photo...');"
-        "  try{"
-        "    let timestamp=Date.now();"
-        "    let r=await fetch('/capture?t='+timestamp);"
-        "    if(r.ok){"
-        "      let blob=await r.blob();"
-        "      let url=URL.createObjectURL(blob);"
-        "      let img=document.createElement('img');"
-        "      img.src=url;"
-        "      img.style.width='100%';"
-        "      container.innerHTML='';"
-        "      container.appendChild(img);"
-        "      statusDiv.innerHTML='<span class=\"active\">Photo captured!</span>';"
-        "      console.log('Photo captured successfully');"
-        "      let link=document.createElement('a');"
-        "      link.href=url;"
-        "      link.download='capture_'+timestamp+'.jpg';"
-        "      link.click();"
-        "    }else{"
-        "      console.error('Capture failed');"
-        "      statusDiv.innerHTML='<span class=\"inactive\">Capture failed</span>';"
-        "    }"
-        "  }catch(e){"
-        "    console.error('Capture error:',e);"
-        "    statusDiv.innerHTML='<span class=\"inactive\">Error: '+e.message+'</span>';"
-        "  }"
-        "  captureBtn.disabled=false;"
+        "  fetch('/capture');" 
+        "  statusDiv.innerHTML='Capturing...';"
         "}"
         "</script>"
         "</body></html>";
@@ -330,11 +310,13 @@ esp_err_t handleStopStreamRequest(httpd_req_t* req) {
 
 esp_err_t handleStatusRequest(httpd_req_t* req) {
     char json[128];
+    // Додаємо поле photo_ts
     snprintf(json, sizeof(json),
-             "{\"streaming\":%s,\"camera\":\"%s\"}",
+             "{\"streaming\":%s,\"camera\":\"%s\",\"photo_ts\":%lld}",
              streaming_active ? "true" : "false",
-             camera_initialized ? "ready" : "not_ready");
-    
+             camera_initialized ? "ready" : "not_ready",
+             last_photo_ts);
+
     httpd_resp_set_type(req, "application/json");
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     return httpd_resp_send(req, json, strlen(json));
@@ -394,32 +376,36 @@ esp_err_t handleCaptureRequest(httpd_req_t* req) {
 
 // Функція для захоплення фото з коду (Main Loop)
 bool take_photo_internal() {
-    if (!camera_initialized) {
-        ESP_LOGE(TAG, "Cannot take photo - camera not initialized");
-        return false;
-    }
+    if (!camera_initialized) return false;
 
-    // Спроба взяти мьютекс (чекаємо 1000мс, якщо стрім зайняв камеру)
+    // Чекаємо поки камера звільниться від стріму
     if (xSemaphoreTake(camera_mutex, pdMS_TO_TICKS(1000)) != pdTRUE) {
-        ESP_LOGW(TAG, "Camera busy, cannot take photo now");
+        ESP_LOGW(TAG, "Camera busy, cannot take photo");
         return false;
     }
 
-    camera_fb_t* fb = esp_camera_fb_get();
-    if (!fb) {
-        ESP_LOGE(TAG, "Camera capture failed");
+    // Якщо старе фото ще в пам'яті — видаляємо його
+    if (last_saved_fb) {
+        esp_camera_fb_return(last_saved_fb);
+        last_saved_fb = NULL;
+    }
+
+    // Робимо нове фото
+    last_saved_fb = esp_camera_fb_get();
+
+    if (!last_saved_fb) {
+        ESP_LOGE(TAG, "Capture failed");
         xSemaphoreGive(camera_mutex);
         return false;
     }
 
-    // Тут ми "маємо" фото. 
-    // В реальному ровері тут був би код запису на SD або відправки по LoRa/UART.
-    ESP_LOGI(TAG, "📸 PHOTO CAPTURED INTERNAL! Size: %u bytes, Format: %d", fb->len, fb->format);
+    // Оновлюємо мітку часу (timestamp)
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    last_photo_ts = (int64_t)tv.tv_sec * 1000 + (int64_t)tv.tv_usec / 1000;
 
-    // Повертаємо буфер назад драйверу
-    esp_camera_fb_return(fb);
-    
-    // Звільняємо мьютекс, щоб стрім міг продовжитись
+    ESP_LOGI(TAG, "📸 Photo saved in RAM! TS: %lld", last_photo_ts);
+
     xSemaphoreGive(camera_mutex);
     return true;
 }
@@ -507,6 +493,24 @@ esp_err_t handleStreamRequest(httpd_req_t* req) {
     return res;
 }
 
+esp_err_t handleSavedPhotoRequest(httpd_req_t* req) {
+    if (!last_saved_fb) {
+        return httpd_resp_send_404(req);
+    }
+
+    // Потрібен мьютекс, бо ми читаємо буфер
+    if (xSemaphoreTake(camera_mutex, pdMS_TO_TICKS(500)) != pdTRUE) {
+        return httpd_resp_send_500(req);
+    }
+
+    httpd_resp_set_type(req, "image/jpeg");
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    esp_err_t res = httpd_resp_send(req, (const char*)last_saved_fb->buf, last_saved_fb->len);
+
+    xSemaphoreGive(camera_mutex);
+    return res;
+}
+
 
 // Ініціалізація ДВОХ серверів
 
@@ -575,6 +579,14 @@ bool initWebServer(uint16_t port) {
         .user_ctx = NULL
     };
     httpd_register_uri_handler(control_server, &uri_capture);
+
+    httpd_uri_t uri_saved = {
+        .uri = "/saved-photo",
+        .method = HTTP_GET,
+        .handler = handleSavedPhotoRequest,
+        .user_ctx = NULL
+    };
+    httpd_register_uri_handler(control_server, &uri_saved);
 
     ESP_LOGI(TAG, "✅ Control server started on port %d", port);
 
