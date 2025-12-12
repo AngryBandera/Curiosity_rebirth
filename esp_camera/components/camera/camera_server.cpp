@@ -223,9 +223,8 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
         "      let streamPort=parseInt(window.location.port)||80;"
         "      streamPort+=1;"
         
-        // --- ГОЛОВНА ЗМІНА ТУТ: Додано ?t=... для обходу кешу ---
+        // Додаємо timestamp щоб обійти кеш браузера при перезапуску
         "      streamImg.src='http://'+window.location.hostname+':'+streamPort+'/stream?t=' + Date.now();"
-        // -------------------------------------------------------
         
         "      streamImg.style.width='100%';"
         "      streamImg.onerror=()=>{console.error('Stream error');statusDiv.innerHTML='<span class=\"inactive\">Stream Connection Lost</span>';};"
@@ -258,15 +257,11 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
         "}"
         
         "async function capturePhoto(){"
-        "  // Запам'ятовуємо, чи йшов стрім ДО натискання кнопки"
         "  let wasStreaming = isStreaming;" 
-        
         "  captureBtn.disabled=true;"
         "  statusDiv.innerHTML='<span class=\"active\">Capturing...</span>';"
         "  try{"
-        "    // Тимчасово ставимо прапор false, бо зараз ми покажемо статичну картинку"
         "    isStreaming = false;" 
-        
         "    let timestamp=Date.now();"
         "    let r=await fetch('/capture?t='+timestamp);"
         "    if(r.ok){"
@@ -284,21 +279,17 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
         "      link.download='capture_'+timestamp+'.jpg';"
         "      link.click();"
         
-        // --- ЛОГІКА ПЕРЕЗАПУСКУ ---
+        // ЛОГІКА ПЕРЕЗАПУСКУ
         "      if(wasStreaming) {"
         "         setTimeout(() => {"
-        "            // Викликаємо функцію старту, вона сама створить нове посилання з новим часом"
         "            startStream();"
         "         }, 2000);"
-        "      }" else {"
-         // Якщо стріму не було, просто розблокуємо кнопку старту
+        "      } else {"
         "         startBtn.disabled=false;"
         "      }"
-        // -------------------------
         
         "    }else{"
         "      statusDiv.innerHTML='<span class=\"inactive\">Capture failed</span>';"
-        "      // Якщо помилка, повертаємо статус стрімінгу як був"
         "      isStreaming = wasStreaming;"
         "    }"
         "  }catch(e){"
