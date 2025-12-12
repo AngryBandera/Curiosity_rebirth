@@ -222,7 +222,7 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
         "      container.innerHTML='';"
         "      streamImg=document.createElement('img');"
         "      let streamPort=parseInt(window.location.port)||80;"
-        "      streamPort+=1;"  // Порт 81
+        "      streamPort+=1;" 
         "      streamImg.src='http://'+window.location.hostname+':'+streamPort+'/stream';"
         "      streamImg.style.width='100%';"
         "      streamImg.onerror=()=>{"
@@ -285,27 +285,25 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
         "      img.style.width='100%';"
         "      container.innerHTML='';"
         "      container.appendChild(img);"
-        "      statusDiv.innerHTML='<span class=\"active\">Photo captured! Resuming stream in 2s...</span>';"
+        "      statusDiv.innerHTML='<span class=\"active\">Photo captured! Resuming in 2s...</span>';"
         "      console.log('Photo captured successfully');"
         "      let link=document.createElement('a');"
         "      link.href=url;"
         "      link.download='capture_'+timestamp+'.jpg';"
         "      link.click();"
         
-        // --- ОСЬ ТУТ ДОДАНО ЛОГІКУ ПЕРЕЗАПУСКУ ---
+        // --- ВИПРАВЛЕНА ЛОГІКА ПЕРЕЗАПУСКУ ---
         "      if(isStreaming) {"
         "         setTimeout(() => {"
+        "            // 1. Очищаємо контейнер"
         "            container.innerHTML='';"
-        "            streamImg=document.createElement('img');"
-        "            let streamPort=parseInt(window.location.port)||80;"
-        "            streamPort+=1;" 
-        "            streamImg.src='http://'+window.location.hostname+':'+streamPort+'/stream';"
-        "            streamImg.style.width='100%';"
-        "            container.appendChild(streamImg);"
-        "            statusDiv.innerHTML='<span class=\"active\">STREAMING</span>';"
-        "         }, 2000);" // 2000 мс = 2 секунди
+        "            // 2. Скидаємо статус, щоб дозволити функції startStream працювати"
+        "            isStreaming = false;"
+        "            // 3. Викликаємо штатну функцію запуску"
+        "            startStream();"
+        "         }, 2000);"
         "      }"
-        // ----------------------------------------
+        // -------------------------------------
         
         "    }else{"
         "      console.error('Capture failed');"
@@ -315,6 +313,7 @@ esp_err_t handleRootRequest(httpd_req_t* req) {
         "    console.error('Capture error:',e);"
         "    statusDiv.innerHTML='<span class=\"inactive\">Error: '+e.message+'</span>';"
         "  }"
+        "  // Розблоковуємо кнопку в будь-якому випадку"
         "  captureBtn.disabled=false;"
         "}"
         "</script>"
