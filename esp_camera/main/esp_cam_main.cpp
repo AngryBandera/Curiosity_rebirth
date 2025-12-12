@@ -64,6 +64,11 @@ static void init_wifi_ap()
 // 1 = 01 = START STREAM
 // 2 = 10 = STOP STREAM
 // 3 = 11 = TAKE PHOTO
+typedef struct {
+    gpio_num_t pin1;
+    gpio_num_t pin2;
+} pins_t;
+
 uint8_t get_pins_status(const pins_t *pins){
     gpio_num_t pins_array[2] = {
         pins->pin1,
