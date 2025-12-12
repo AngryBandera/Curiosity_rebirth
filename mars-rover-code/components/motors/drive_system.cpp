@@ -52,9 +52,9 @@ DriveSystem::DriveSystem(i2c_dev_t* pca9685)
     // Initialize stepper motor for camera pan
     StepperMotor::Config stepper_config = {
         .gpio_en = GPIO_NUM_0,          // Enable pin
-        .gpio_dir = GPIO_NUM_19,        // Direction pin
-        .gpio_step = GPIO_NUM_18,       // Step pin
-        .servo_pin = GPIO_NUM_5,        // Servo pin for vertical tilt
+        .gpio_dir = GPIO_NUM_27,        // Direction pin
+        .gpio_step = GPIO_NUM_26,       // Step pin
+        .servo_pin = GPIO_NUM_16,        // Servo pin for vertical tilt
         .enable_level = 0,              // A4988 is enabled on low level
         .resolution_hz = 1000000,       // 1MHz resolution
         .min_speed_hz = 500,            // Minimum speed 500Hz
