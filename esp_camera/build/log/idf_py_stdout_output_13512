@@ -1,0 +1,293 @@
+Command: C:\Users\bogda\.espressif\python_env\idf5.5_py3.13_env\Scripts\python.exe C:/esp/esp-idf\tools/idf_monitor.py -p COM9 -b 115200 --toolchain-prefix xtensa-esp32-elf- --target esp32 --revision 0 C:\Users\bogda\POK\Curiosity_rebirth\esp_camera\build\esp_camera.elf C:\Users\bogda\POK\Curiosity_rebirth\esp_camera\build\bootloader\bootloader.elf --force-color -m 'C:\Users\bogda\.espressif\python_env\idf5.5_py3.13_env\Scripts\python.exe' 'C:/esp/esp-idf\tools\idf.py' '-p' 'COM9'
+ets Jul �ets Jul 29 2019 12:21:46
+
+rst:0x1 (POWERON_RESET),boot:0x1b (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:6380
+ho 0 tail 12 room 4
+load:0x40078000,len:15916
+load:0x40080400,len:3860
+entry 0x40080638
+[0;32mI (29) boot: ESP-IDF v5.5 2nd stage bootloader[0m
+[0;32mI (29) boot: compile time Dec 12 2025 16:19:28[0m
+[0;32mI (29) boot: Multicore bootloader[0m
+[0;32mI (30) boot: chip revision: v3.1[0m
+[0;32mI (33) boot.esp32: SPI Speed      : 40MHz[0m
+[0;32mI (37) boot.esp32: SPI Mode       : DIO[0m
+[0;32mI (40) boot.esp32: SPI Flash Size : 2MB[0m
+[0;32mI (44) boot: Enabling RNG early entropy source...[0m
+[0;32mI (49) boot: Partition Table:[0m
+[0;32mI (51) boot: ## Label            Usage          Type ST Offset   Length[0m
+[0;32mI (57) boot:  0 nvs              WiFi data        01 02 00009000 00004000[0m
+[0;32mI (64) boot:  1 phy_init         RF data          01 01 0000d000 00001000[0m
+[0;32mI (71) boot:  2 otadata          OTA data         01 00 0000e000 00002000[0m
+[0;32mI (77) boot:  3 factory          factory app      00 00 00010000 001f0000[0m
+[0;32mI (84) boot: End of partition table[0m
+[0;32mI (87) boot: Defaulting to factory image[0m
+[0;32mI (91) esp_image: segment 0: paddr=00010020 vaddr=3f400020 size=26328h (156456) map[0m
+[0;32mI (151) esp_image: segment 1: paddr=00036350 vaddr=3ff80000 size=00020h (    32) load[0m
+[0;32mI (152) esp_image: segment 2: paddr=00036378 vaddr=3ffb0000 size=067d0h ( 26576) load[0m
+[0;32mI (165) esp_image: segment 3: paddr=0003cb50 vaddr=40080000 size=034c8h ( 13512) load[0m
+[0;32mI (171) esp_image: segment 4: paddr=00040020 vaddr=400d0020 size=a6528h (681256) map[0m
+[0;32mI (404) esp_image: segment 5: paddr=000e6550 vaddr=400834c8 size=19598h (103832) load[0m
+[0;32mI (459) boot: Loaded app from partition at offset 0x10000[0m
+[0;32mI (459) boot: Disabling RNG early entropy source...[0m
+[0;32mI (469) quad_psram: This chip is ESP32-D0WD[0m
+[0;32mI (471) esp_psram: Found 8MB PSRAM device[0m
+[0;32mI (471) esp_psram: Speed: 40MHz[0m
+[0;32mI (471) esp_psram: PSRAM initialized, cache is in low/high (2-core) mode.[0m
+[0;33mW (476) esp_psram: Virtual address not enough for PSRAM, map as much as we can. 4MB is mapped[0m
+[0;32mI (485) cpu_start: Multicore app[0m
+[0;32mI (1393) esp_psram: SPI SRAM memory test OK[0m
+[0;32mI (1401) cpu_start: Pro cpu start user code[0m
+[0;32mI (1401) cpu_start: cpu freq: 160000000 Hz[0m
+[0;32mI (1401) app_init: Application information:[0m
+[0;32mI (1401) app_init: Project name:     esp_camera[0m
+[0;32mI (1406) app_init: App version:      26cb4ba-dirty[0m
+[0;32mI (1410) app_init: Compile time:     Dec 12 2025 17:06:14[0m
+[0;32mI (1415) app_init: ELF file SHA256:  3149dd003...[0m
+[0;32mI (1420) app_init: ESP-IDF:          v5.5[0m
+[0;32mI (1423) efuse_init: Min chip rev:     v0.0[0m
+[0;32mI (1427) efuse_init: Max chip rev:     v3.99 [0m
+[0;32mI (1431) efuse_init: Chip rev:         v3.1[0m
+[0;32mI (1436) heap_init: Initializing. RAM available for dynamic allocation:[0m
+[0;32mI (1442) heap_init: At 3FFAE6E0 len 00001920 (6 KiB): DRAM[0m
+[0;32mI (1447) heap_init: At 3FFBB398 len 00024C68 (147 KiB): DRAM[0m
+[0;32mI (1452) heap_init: At 3FFE0440 len 00003AE0 (14 KiB): D/IRAM[0m
+[0;32mI (1458) heap_init: At 3FFE4350 len 0001BCB0 (111 KiB): D/IRAM[0m
+[0;32mI (1463) heap_init: At 4009CA60 len 000035A0 (13 KiB): IRAM[0m
+[0;32mI (1469) esp_psram: Adding pool of 4096K of PSRAM memory to heap allocator[0m
+[0;32mI (1477) spi_flash: detected chip: generic[0m
+[0;32mI (1479) spi_flash: flash io: dio[0m
+[0;33mW (1482) spi_flash: Detected size(4096k) larger than the size in the binary image header(2048k). Using the size in the binary image header.[0m
+[0;32mI (1496) main_task: Started on CPU0[0m
+[0;32mI (1506) esp_psram: Reserving pool of 32K of internal memory for DMA/internal allocations[0m
+[0;32mI (1506) main_task: Calling app_main()[0m
+[0;32mI (1546) MARS_ROVER_MAIN: Initializing Mars Rover System...[0m
+[0;32mI (1556) wifi:wifi driver task: 3ffc3334, prio:23, stack:6656, core=0[0m
+[0;32mI (1566) wifi:wifi firmware version: f3dbad7[0m
+[0;32mI (1566) wifi:wifi certification version: v7.0[0m
+[0;32mI (1566) wifi:config NVS flash: enabled[0m
+[0;32mI (1566) wifi:config nano formatting: disabled[0m
+[0;32mI (1576) wifi:Init data frame dynamic rx buffer num: 32[0m
+[0;32mI (1576) wifi:Init static rx mgmt buffer num: 5[0m
+[0;32mI (1576) wifi:Init management short buffer num: 32[0m
+[0;32mI (1586) wifi:Init dynamic tx buffer num: 32[0m
+[0;32mI (1586) wifi:Init static rx buffer size: 1600[0m
+[0;32mI (1596) wifi:Init static rx buffer num: 10[0m
+[0;32mI (1596) wifi:Init dynamic rx buffer num: 32[0m
+[0;32mI (1606) wifi_init: rx ba win: 6[0m
+[0;32mI (1606) wifi_init: accept mbox: 6[0m
+[0;32mI (1606) wifi_init: tcpip mbox: 32[0m
+[0;32mI (1606) wifi_init: udp mbox: 6[0m
+[0;32mI (1616) wifi_init: tcp mbox: 6[0m
+[0;32mI (1616) wifi_init: tcp tx win: 5760[0m
+[0;32mI (1616) wifi_init: tcp rx win: 5760[0m
+[0;32mI (1626) wifi_init: tcp mss: 1440[0m
+[0;32mI (1626) wifi_init: WiFi IRAM OP enabled[0m
+[0;32mI (1626) wifi_init: WiFi RX IRAM OP enabled[0m
+[0;32mI (1636) phy_init: phy_version 4860,6b7a6e5,Feb  6 2025,14:47:07[0m
+[0;32mI (1716) wifi:mode : softAP (c8:2e:18:90:a6:e1)[0m
+[0;32mI (1716) wifi:Total power save buffer number: 16[0m
+[0;32mI (1716) wifi:Init max length of beacon: 752/752[0m
+[0;32mI (1716) wifi:Init max length of beacon: 752/752[0m
+[0;32mI (1726) MARS_ROVER_MAIN: ========================================[0m
+[0;32mI (1726) esp_netif_lwip: DHCP server started on interface WIFI_AP_DEF with IP: 192.168.4.1[0m
+[0;32mI (1736) MARS_ROVER_MAIN: 📡 WiFi AP Started![0m
+[0;32mI (1736) MARS_ROVER_MAIN:    SSID: MARS_ROVER_CAM[0m
+[0;32mI (1746) MARS_ROVER_MAIN:    PASS: mars2025[0m
+[0;32mI (1746) MARS_ROVER_MAIN:    URL:  http://192.168.4.1[0m
+[0;32mI (1756) MARS_ROVER_MAIN: ========================================[0m
+[0;32mI (1766) cam_hal: cam init ok[0m
+[0;32mI (1766) sccb-ng: pin_sda 26 pin_scl 27[0m
+[0;32mI (1766) sccb-ng: sccb_i2c_port=1[0m
+[0;32mI (1776) camera: Camera PID=0x26 VER=0x42 MIDL=0x7f MIDH=0xa2[0m
+[0;32mI (1776) camera: Detected OV2640 camera[0m
+[0;32mI (1776) camera: Detected camera at address=0x30[0m
+[0;32mI (1866) cam_hal: PSRAM DMA mode disabled[0m
+[0;32mI (1866) cam_hal: buffer_size: 32768, half_buffer_size: 4096, node_buffer_size: 2048, node_cnt: 16, total_cnt: 23[0m
+[0;32mI (1876) cam_hal: Allocating 96000 Byte frame buffer in PSRAM[0m
+[0;32mI (1876) cam_hal: Allocating 96000 Byte frame buffer in PSRAM[0m
+[0;32mI (1886) cam_hal: cam config ok[0m
+[0;32mI (1886) ov2640: Set PLL: clk_2x: 0, clk_div: 0, pclk_auto: 0, pclk_div: 8[0m
+[0;32mI (1996) CAMERA_SERVER: ✅ Camera initialized successfully[0m
+[0;32mI (1996) MARS_ROVER_MAIN: ✅ Camera Sensor OK[0m
+[0;32mI (1996) CAMERA_SERVER: Starting control server on port 80...[0m
+[0;32mI (2006) CAMERA_SERVER: ✅ Control server started on port 80[0m
+[0;32mI (2006) CAMERA_SERVER: Starting stream server on port 81...[0m
+[0;32mI (2016) CAMERA_SERVER: ✅ Stream server started on port 81[0m
+[0;32mI (2016) CAMERA_SERVER: 🎯 Architecture: Control (port 80, core 0) | Stream (port 81, core 1)[0m
+[0;32mI (2026) MARS_ROVER_MAIN: ✅ Web Server Running on Port 80 & 81[0m
+[0;32mI (2036) MARS_ROVER_MAIN: ✅ GPIO Configured. Waiting for commands...[0m
+[0;32mI (2036) MARS_ROVER_MAIN:    Bit 0: GPIO 13[0m
+[0;32mI (2046) MARS_ROVER_MAIN:    Bit 1: GPIO 14[0m
+[0;32mI (2046) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (7056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (8396) wifi:new:<1,1>, old:<1,1>, ap:<1,1>, sta:<255,255>, prof:1, snd_ch_cfg:0x0[0m
+[0;32mI (8396) wifi:station: 30:c9:ab:8b:a0:7d join, AID=1, bgn, 40U[0m
+[0;32mI (9026) esp_netif_lwip: DHCP server assigned IP to a client, IP is: 192.168.4.2[0m
+[0;32mI (11976) wifi:<ba-add>idx:2 (ifx:1, 30:c9:ab:8b:a0:7d), tid:0, ssn:62, winSize:64[0m
+[0;32mI (12056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (17056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (22056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (27056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (32056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (37056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (42056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (47056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (52056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (57056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (59056) MARS_ROVER_MAIN: 📸 Command received: TAKE PHOTO[0m
+[0;32mI (59056) CAMERA_SERVER: 📸 Photo saved in RAM! TS: 57656[0m
+[0;32mI (59056) MARS_ROVER_MAIN: >> Photo captured successfully via PIN command[0m
+[0;32mI (60556) MARS_ROVER_MAIN: 📸 Command received: TAKE PHOTO[0m
+[0;32mI (60556) CAMERA_SERVER: 📸 Photo saved in RAM! TS: 59156[0m
+[0;32mI (60556) MARS_ROVER_MAIN: >> Photo captured successfully via PIN command[0m
+[0;32mI (62056) MARS_ROVER_MAIN: 📸 Command received: TAKE PHOTO[0m
+[0;32mI (62056) CAMERA_SERVER: 📸 Photo saved in RAM! TS: 60656[0m
+[0;32mI (62056) MARS_ROVER_MAIN: >> Photo captured successfully via PIN command[0m
+[0;32mI (65056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (70056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (75056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (80056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (82556) MARS_ROVER_MAIN: 🚀 Command received: START STREAM[0m
+[0;32mI (82556) CAMERA_SERVER: 🎥 Video streaming STARTED[0m
+[0;32mI (83556) MARS_ROVER_MAIN: 📸 Command received: TAKE PHOTO[0m
+[0;32mI (83556) CAMERA_SERVER: 📸 Photo saved in RAM! TS: 82155[0m
+[0;32mI (83556) MARS_ROVER_MAIN: >> Photo captured successfully via PIN command[0m
+[0;32mI (85056) MARS_ROVER_MAIN: 📸 Command received: TAKE PHOTO[0m
+[0;32mI (85056) CAMERA_SERVER: 📸 Photo saved in RAM! TS: 83656[0m
+[0;32mI (85056) MARS_ROVER_MAIN: >> Photo captured successfully via PIN command[0m
+[0;32mI (86556) MARS_ROVER_MAIN: 🛑 Command received: STOP STREAM[0m
+[0;32mI (86556) CAMERA_SERVER: 🛑 Video streaming STOPPED[0m
+[0;32mI (87056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (92056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (97056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (102056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (107056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (112056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (117056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (122056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (127056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (132056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (133556) MARS_ROVER_MAIN: 📸 Command received: TAKE PHOTO[0m
+[0;32mI (133556) CAMERA_SERVER: 📸 Photo saved in RAM! TS: 132155[0m
+[0;32mI (133556) MARS_ROVER_MAIN: >> Photo captured successfully via PIN command[0m
+[0;32mI (135056) MARS_ROVER_MAIN: 📸 Command received: TAKE PHOTO[0m
+[0;32mI (135056) CAMERA_SERVER: 📸 Photo saved in RAM! TS: 133656[0m
+[0;32mI (135056) MARS_ROVER_MAIN: >> Photo captured successfully via PIN command[0m
+[0;32mI (136556) MARS_ROVER_MAIN: 📸 Command received: TAKE PHOTO[0m
+[0;32mI (136556) CAMERA_SERVER: 📸 Photo saved in RAM! TS: 135156[0m
+[0;32mI (136556) MARS_ROVER_MAIN: >> Photo captured successfully via PIN command[0m
+[0;32mI (138056) MARS_ROVER_MAIN: 📸 Command received: TAKE PHOTO[0m
+[0;32mI (138056) CAMERA_SERVER: 📸 Photo saved in RAM! TS: 136656[0m
+[0;32mI (138056) MARS_ROVER_MAIN: >> Photo captured successfully via PIN command[0m
+[0;32mI (139556) MARS_ROVER_MAIN: 📸 Command received: TAKE PHOTO[0m
+[0;32mI (139556) CAMERA_SERVER: 📸 Photo saved in RAM! TS: 138156[0m
+[0;32mI (139556) MARS_ROVER_MAIN: >> Photo captured successfully via PIN command[0m
+[0;32mI (141056) MARS_ROVER_MAIN: 📸 Command received: TAKE PHOTO[0m
+[0;32mI (141056) CAMERA_SERVER: 📸 Photo saved in RAM! TS: 139656[0m
+[0;32mI (141056) MARS_ROVER_MAIN: >> Photo captured successfully via PIN command[0m
+[0;32mI (142556) MARS_ROVER_MAIN: 📸 Command received: TAKE PHOTO[0m
+[0;32mI (142556) CAMERA_SERVER: 📸 Photo saved in RAM! TS: 141156[0m
+[0;32mI (142556) MARS_ROVER_MAIN: >> Photo captured successfully via PIN command[0m
+[0;32mI (144056) MARS_ROVER_MAIN: 📸 Command received: TAKE PHOTO[0m
+[0;32mI (144056) CAMERA_SERVER: 📸 Photo saved in RAM! TS: 142656[0m
+[0;32mI (144056) MARS_ROVER_MAIN: >> Photo captured successfully via PIN command[0m
+[0;32mI (145056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 3[0m
+[0;32mI (145556) MARS_ROVER_MAIN: 📸 Command received: TAKE PHOTO[0m
+[0;32mI (145556) CAMERA_SERVER: 📸 Photo saved in RAM! TS: 144156[0m
+[0;32mI (145556) MARS_ROVER_MAIN: >> Photo captured successfully via PIN command[0m
+[0;32mI (147056) MARS_ROVER_MAIN: 📸 Command received: TAKE PHOTO[0m
+[0;32mI (147056) CAMERA_SERVER: 📸 Photo saved in RAM! TS: 145656[0m
+[0;32mI (147056) MARS_ROVER_MAIN: >> Photo captured successfully via PIN command[0m
+[0;32mI (148556) MARS_ROVER_MAIN: 📸 Command received: TAKE PHOTO[0m
+[0;32mI (148556) CAMERA_SERVER: 📸 Photo saved in RAM! TS: 147156[0m
+[0;32mI (148556) MARS_ROVER_MAIN: >> Photo captured successfully via PIN command[0m
+[0;32mI (150056) MARS_ROVER_MAIN: 📸 Command received: TAKE PHOTO[0m
+[0;32mI (150056) CAMERA_SERVER: 📸 Photo saved in RAM! TS: 148656[0m
+[0;32mI (150056) MARS_ROVER_MAIN: >> Photo captured successfully via PIN command[0m
+[0;32mI (151556) MARS_ROVER_MAIN: 📸 Command received: TAKE PHOTO[0m
+[0;32mI (151556) CAMERA_SERVER: 📸 Photo saved in RAM! TS: 150156[0m
+[0;32mI (151556) MARS_ROVER_MAIN: >> Photo captured successfully via PIN command[0m
+[0;32mI (153056) MARS_ROVER_MAIN: 📸 Command received: TAKE PHOTO[0m
+[0;32mI (153056) CAMERA_SERVER: 📸 Photo saved in RAM! TS: 151656[0m
+[0;32mI (153056) MARS_ROVER_MAIN: >> Photo captured successfully via PIN command[0m
+[0;32mI (154556) MARS_ROVER_MAIN: 📸 Command received: TAKE PHOTO[0m
+[0;32mI (154556) CAMERA_SERVER: 📸 Photo saved in RAM! TS: 153156[0m
+[0;32mI (154556) MARS_ROVER_MAIN: >> Photo captured successfully via PIN command[0m
+[0;32mI (156056) MARS_ROVER_MAIN: 📸 Command received: TAKE PHOTO[0m
+[0;32mI (156056) CAMERA_SERVER: 📸 Photo saved in RAM! TS: 154656[0m
+[0;32mI (156056) MARS_ROVER_MAIN: >> Photo captured successfully via PIN command[0m
+[0;32mI (157556) MARS_ROVER_MAIN: 📸 Command received: TAKE PHOTO[0m
+[0;32mI (157556) CAMERA_SERVER: 📸 Photo saved in RAM! TS: 156156[0m
+[0;32mI (157556) MARS_ROVER_MAIN: >> Photo captured successfully via PIN command[0m
+[0;32mI (159056) MARS_ROVER_MAIN: 📸 Command received: TAKE PHOTO[0m
+[0;32mI (159056) CAMERA_SERVER: 📸 Photo saved in RAM! TS: 157656[0m
+[0;32mI (159056) MARS_ROVER_MAIN: >> Photo captured successfully via PIN command[0m
+[0;32mI (160056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 3[0m
+[0;32mI (160556) MARS_ROVER_MAIN: 📸 Command received: TAKE PHOTO[0m
+[0;32mI (160556) CAMERA_SERVER: 📸 Photo saved in RAM! TS: 159155[0m
+[0;32mI (160556) MARS_ROVER_MAIN: >> Photo captured successfully via PIN command[0m
+[0;32mI (162056) MARS_ROVER_MAIN: 📸 Command received: TAKE PHOTO[0m
+[0;32mI (162056) CAMERA_SERVER: 📸 Photo saved in RAM! TS: 160656[0m
+[0;32mI (162056) MARS_ROVER_MAIN: >> Photo captured successfully via PIN command[0m
+[0;32mI (167056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (172056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (177056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (182056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (187056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (192056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (197056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (202056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (207056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (212056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (217056) MARS_ROVER_MAIN: 📸 Command received: TAKE PHOTO[0m
+[0;32mI (217056) CAMERA_SERVER: 📸 Photo saved in RAM! TS: 215656[0m
+[0;32mI (217056) MARS_ROVER_MAIN: >> Photo captured successfully via PIN command[0m
+[0;32mI (218056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 3[0m
+[0;32mI (223056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (228056) MARS_ROVER_MAIN: 📸 Command received: TAKE PHOTO[0m
+[0;32mI (228056) CAMERA_SERVER: 📸 Photo saved in RAM! TS: 226656[0m
+[0;32mI (228056) MARS_ROVER_MAIN: >> Photo captured successfully via PIN command[0m
+[0;32mI (229056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 3[0m
+[0;32mI (233056) MARS_ROVER_MAIN: 📸 Command received: TAKE PHOTO[0m
+[0;32mI (233056) CAMERA_SERVER: 📸 Photo saved in RAM! TS: 231656[0m
+[0;32mI (233056) MARS_ROVER_MAIN: >> Photo captured successfully via PIN command[0m
+[0;32mI (235056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (240056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (245056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (250056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (255056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (260056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (265056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (266056) MARS_ROVER_MAIN: 📸 Command received: TAKE PHOTO[0m
+[0;32mI (266056) CAMERA_SERVER: 📸 Photo saved in RAM! TS: 264656[0m
+[0;32mI (266056) MARS_ROVER_MAIN: >> Photo captured successfully via PIN command[0m
+[0;32mI (271056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 0[0m
+[0;32mI (276056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (281056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (286056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (290056) MARS_ROVER_MAIN: 📸 Command received: TAKE PHOTO[0m
+[0;32mI (290056) CAMERA_SERVER: 📸 Photo saved in RAM! TS: 288656[0m
+[0;32mI (290056) MARS_ROVER_MAIN: >> Photo captured successfully via PIN command[0m
+[0;32mI (292056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (297056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (300556) MARS_ROVER_MAIN: 📸 Command received: TAKE PHOTO[0m
+[0;32mI (300556) CAMERA_SERVER: 📸 Photo saved in RAM! TS: 299156[0m
+[0;32mI (300556) MARS_ROVER_MAIN: >> Photo captured successfully via PIN command[0m
+[0;32mI (302056) MARS_ROVER_MAIN: 📸 Command received: TAKE PHOTO[0m
+[0;32mI (302056) CAMERA_SERVER: 📸 Photo saved in RAM! TS: 300656[0m
+[0;32mI (302056) MARS_ROVER_MAIN: >> Photo captured successfully via PIN command[0m
+[0;32mI (304056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (309056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (314056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (319056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (319566) wifi:[ADDBA]RX DELBA, reason:39, delete tid:0, initiator:0(recipient)[0m
+[0;32mI (319566) wifi:station: 30:c9:ab:8b:a0:7d leave, AID = 1, reason = 8, bss_flags is 756851, bss:0x3ffd0fac[0m
+[0;32mI (319576) wifi:new:<1,0>, old:<1,1>, ap:<1,1>, sta:<255,255>, prof:1, snd_ch_cfg:0x0[0m
+[0;32mI (319586) wifi:<ba-del>idx:2, tid:0[0m
+[0;32mI (324056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m
+[0;32mI (329056) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 2[0m

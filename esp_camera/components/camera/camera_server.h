@@ -59,12 +59,10 @@ httpd_handle_t getServerHandle();
 
 // HTTP handler функції
 esp_err_t handleStreamRequest(httpd_req_t* req);
-esp_err_t handlePhotoRequest(httpd_req_t* req);
 esp_err_t handleCaptureRequest(httpd_req_t* req);
-esp_err_t handleQuickCaptureRequest(httpd_req_t* req);  // Новий швидкий endpoint
 esp_err_t handleStatusRequest(httpd_req_t* req);
 esp_err_t handleRootRequest(httpd_req_t* req);
-
+bool take_photo_internal();
 // Допоміжні функції
 const char* getCameraStatus();
 bool isCameraInitialized();

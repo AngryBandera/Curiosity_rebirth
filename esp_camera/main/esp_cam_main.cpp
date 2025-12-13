@@ -4,21 +4,14 @@
 #include "esp_event.h"
 #include "esp_wifi.h"
 #include "esp_netif.h"
-
-#include "camera_server.h"
-#include "command_get.h"
 #include "driver/gpio.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "camera_server.h"
 
-#define GPIO1 GPIO_NUM_13
-#define GPIO2 GPIO_NUM_14
+static const char* TAG = "MARS_ROVER_MAIN";
 
-static const char* TAG = "CAMERA_TEST";
-const pins_t pins = {GPIO1, GPIO2};
-
-
-// -------------------------
-// WiFi AP MODE
-// -------------------------
+// WIFI CONFIGURATION
 static void init_wifi_ap()
 {
     ESP_ERROR_CHECK(esp_netif_init());
@@ -29,65 +22,73 @@ static void init_wifi_ap()
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
     wifi_config_t ap_config = {};
-    strcpy((char*)ap_config.ap.ssid, "ESP32_CAM_AP");
-    strcpy((char*)ap_config.ap.password,"12345678");
-
-    ap_config.ap.ssid_len = strlen("ESP32_CAM_AP");
+    strncpy((char*)ap_config.ap.ssid, "MARS_ROVER_CAM", sizeof(ap_config.ap.ssid) - 1);
+    strncpy((char*)ap_config.ap.password, "mars2025", sizeof(ap_config.ap.password) - 1);
+    
+    ap_config.ap.ssid_len = strlen((char*)ap_config.ap.ssid);
     ap_config.ap.channel = 1;
     ap_config.ap.authmode = WIFI_AUTH_WPA_WPA2_PSK;
     ap_config.ap.max_connection = 4;
+    ap_config.ap.beacon_interval = 100;
+
+    if (strlen((char*)ap_config.ap.password) == 0) {
+        ap_config.ap.authmode = WIFI_AUTH_OPEN;
+    }
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &ap_config));
     ESP_ERROR_CHECK(esp_wifi_start());
 
-    ESP_LOGI(TAG, "AP started. Connect to: http://192.168.4.1/");
+    ESP_LOGI(TAG, "========================================");
+    ESP_LOGI(TAG, "📡 WiFi AP Started!");
+    ESP_LOGI(TAG, "   SSID: %s", ap_config.ap.ssid);
+    ESP_LOGI(TAG, "   PASS: %s", ap_config.ap.password);
+    ESP_LOGI(TAG, "   URL:  http://192.168.4.1");
+    ESP_LOGI(TAG, "========================================");
 }
 
 
+// MAIN
 extern "C" void app_main(void)
 {
-    // ---------- INIT NVS ----------
+    // NVS Init
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
         ESP_ERROR_CHECK(nvs_flash_erase());
         ESP_ERROR_CHECK(nvs_flash_init());
     }
 
-    // ---------- WIFI ----------
+    ESP_LOGI(TAG, "Initializing Mars Rover System...");
+
+    // WiFi
     init_wifi_ap();
 
-    // ---------- CAMERA ----------
+    // Camera Setup
     if (!initCamera(NULL)) {
-        ESP_LOGE(TAG, "Camera initialization FAILED");
+        ESP_LOGE(TAG, "❌ Camera init FAILED! Check connection.");
         return;
     }
-    ESP_LOGI(TAG, "Camera OK");
+    ESP_LOGI(TAG, "✅ Camera Sensor OK");
 
-    // ---------- WEB SERVER ----------
+    // Web Server
     if (!initWebServer(80)) {
-        ESP_LOGE(TAG, "Web server failed");
+        ESP_LOGE(TAG, "❌ Web Server FAILED!");
         return;
     }
+    ESP_LOGI(TAG, "✅ Web Server Running on Port 80 & 81");
+    ESP_LOGI(TAG, "");
+    ESP_LOGI(TAG, "🌐 Connect to: http://192.168.4.1/");
+    ESP_LOGI(TAG, "");
 
-    ESP_LOGI(TAG, "WEB OK");
-
-
-    // ---------- GPIO INPUT INIT ----------
-    gpio_set_direction(GPIO1, GPIO_MODE_INPUT);
-    gpio_set_direction(GPIO2, GPIO_MODE_INPUT);
-
-    ESP_LOGI(TAG, "READY. Waiting for GPIO commands...");
-
-
-    // ---------- MAIN LOOP ----------
-    startVideoStream();
+    // Main Loop
     while (true) {
-        uint8_t command = get_pins_status(&pins);
-
-        do_task_based_on_pins(command);
-
-        ESP_LOGI(TAG, "CAMERA STATUS: %s", getCameraStatus());
+        // Лог статусу кожні 5 секунд
+        static uint32_t loop_cnt = 0;
+        if (loop_cnt++ % 10 == 0) { // 10 * 500ms = 5 sec
+            ESP_LOGI(TAG, "[Status] Cam: %s | Stream: %s | Last Cmd: %d", 
+                     isCameraInitialized() ? "OK" : "ERR",
+                     isStreaming() ? "ON" : "OFF");
+        }
 
         vTaskDelay(pdMS_TO_TICKS(500));
     }

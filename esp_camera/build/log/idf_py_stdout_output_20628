@@ -1,0 +1,212 @@
+Command: C:\Users\bogda\.espressif\python_env\idf5.5_py3.13_env\Scripts\python.exe C:/esp/esp-idf\tools/idf_monitor.py -p COM9 -b 115200 --toolchain-prefix xtensa-esp32-elf- --target esp32 --revision 0 C:\Users\bogda\POK\Curiosity_rebirth\esp_camera\build\esp_camera.elf C:\Users\bogda\POK\Curiosity_rebirth\esp_camera\build\bootloader\bootloader.elf --force-color -m 'C:\Users\bogda\.espressif\python_env\idf5.5_py3.13_env\Scripts\python.exe' 'C:/esp/esp-idf\tools\idf.py' '-p' 'COM9'
+ets Jul �ets Jul 29 2019 12:21:46
+
+rst:0x1 (POWERON_RESET),boot:0x1b (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:6380
+ho 0 tail 12 room 4
+load:0x40078000,len:15916
+load:0x40080400,len:3860
+entry 0x40080638
+[0;32mI (29) boot: ESP-IDF v5.5 2nd stage bootloader[0m
+[0;32mI (29) boot: compile time Dec 12 2025 16:19:28[0m
+[0;32mI (29) boot: Multicore bootloader[0m
+[0;32mI (30) boot: chip revision: v3.1[0m
+[0;32mI (33) boot.esp32: SPI Speed      : 40MHz[0m
+[0;32mI (37) boot.esp32: SPI Mode       : DIO[0m
+[0;32mI (40) boot.esp32: SPI Flash Size : 2MB[0m
+[0;32mI (44) boot: Enabling RNG early entropy source...[0m
+[0;32mI (49) boot: Partition Table:[0m
+[0;32mI (51) boot: ## Label            Usage          Type ST Offset   Length[0m
+[0;32mI (57) boot:  0 nvs              WiFi data        01 02 00009000 00004000[0m
+[0;32mI (64) boot:  1 phy_init         RF data          01 01 0000d000 00001000[0m
+[0;32mI (71) boot:  2 otadata          OTA data         01 00 0000e000 00002000[0m
+[0;32mI (77) boot:  3 factory          factory app      00 00 00010000 001f0000[0m
+[0;32mI (84) boot: End of partition table[0m
+[0;32mI (87) boot: Defaulting to factory image[0m
+[0;32mI (91) esp_image: segment 0: paddr=00010020 vaddr=3f400020 size=26388h (156552) map[0m
+[0;32mI (151) esp_image: segment 1: paddr=000363b0 vaddr=3ff80000 size=00020h (    32) load[0m
+[0;32mI (152) esp_image: segment 2: paddr=000363d8 vaddr=3ffb0000 size=067c0h ( 26560) load[0m
+[0;32mI (165) esp_image: segment 3: paddr=0003cba0 vaddr=40080000 size=03478h ( 13432) load[0m
+[0;32mI (171) esp_image: segment 4: paddr=00040020 vaddr=400d0020 size=a61f8h (680440) map[0m
+[0;32mI (403) esp_image: segment 5: paddr=000e6220 vaddr=40083478 size=195e8h (103912) load[0m
+[0;32mI (458) boot: Loaded app from partition at offset 0x10000[0m
+[0;32mI (458) boot: Disabling RNG early entropy source...[0m
+[0;32mI (469) quad_psram: This chip is ESP32-D0WD[0m
+[0;32mI (471) esp_psram: Found 8MB PSRAM device[0m
+[0;32mI (471) esp_psram: Speed: 40MHz[0m
+[0;32mI (471) esp_psram: PSRAM initialized, cache is in low/high (2-core) mode.[0m
+[0;33mW (476) esp_psram: Virtual address not enough for PSRAM, map as much as we can. 4MB is mapped[0m
+[0;32mI (484) cpu_start: Multicore app[0m
+[0;32mI (1393) esp_psram: SPI SRAM memory test OK[0m
+[0;32mI (1401) cpu_start: Pro cpu start user code[0m
+[0;32mI (1401) cpu_start: cpu freq: 160000000 Hz[0m
+[0;32mI (1401) app_init: Application information:[0m
+[0;32mI (1401) app_init: Project name:     esp_camera[0m
+[0;32mI (1405) app_init: App version:      9c9535b-dirty[0m
+[0;32mI (1410) app_init: Compile time:     Dec 12 2025 18:10:49[0m
+[0;32mI (1415) app_init: ELF file SHA256:  68ba920af...[0m
+[0;32mI (1419) app_init: ESP-IDF:          v5.5[0m
+[0;32mI (1423) efuse_init: Min chip rev:     v0.0[0m
+[0;32mI (1427) efuse_init: Max chip rev:     v3.99 [0m
+[0;32mI (1431) efuse_init: Chip rev:         v3.1[0m
+[0;32mI (1436) heap_init: Initializing. RAM available for dynamic allocation:[0m
+[0;32mI (1442) heap_init: At 3FFAE6E0 len 00001920 (6 KiB): DRAM[0m
+[0;32mI (1447) heap_init: At 3FFBB378 len 00024C88 (147 KiB): DRAM[0m
+[0;32mI (1452) heap_init: At 3FFE0440 len 00003AE0 (14 KiB): D/IRAM[0m
+[0;32mI (1457) heap_init: At 3FFE4350 len 0001BCB0 (111 KiB): D/IRAM[0m
+[0;32mI (1463) heap_init: At 4009CA60 len 000035A0 (13 KiB): IRAM[0m
+[0;32mI (1469) esp_psram: Adding pool of 4096K of PSRAM memory to heap allocator[0m
+[0;32mI (1476) spi_flash: detected chip: generic[0m
+[0;32mI (1479) spi_flash: flash io: dio[0m
+[0;33mW (1482) spi_flash: Detected size(4096k) larger than the size in the binary image header(2048k). Using the size in the binary image header.[0m
+[0;32mI (1495) main_task: Started on CPU0[0m
+[0;32mI (1505) esp_psram: Reserving pool of 32K of internal memory for DMA/internal allocations[0m
+[0;32mI (1505) main_task: Calling app_main()[0m
+[0;32mI (1545) MARS_ROVER_MAIN: Initializing Mars Rover System...[0m
+[0;32mI (1555) wifi:wifi driver task: 3ffc3314, prio:23, stack:6656, core=0[0m
+[0;32mI (1565) wifi:wifi firmware version: f3dbad7[0m
+[0;32mI (1565) wifi:wifi certification version: v7.0[0m
+[0;32mI (1565) wifi:config NVS flash: enabled[0m
+[0;32mI (1565) wifi:config nano formatting: disabled[0m
+[0;32mI (1575) wifi:Init data frame dynamic rx buffer num: 32[0m
+[0;32mI (1575) wifi:Init static rx mgmt buffer num: 5[0m
+[0;32mI (1575) wifi:Init management short buffer num: 32[0m
+[0;32mI (1585) wifi:Init dynamic tx buffer num: 32[0m
+[0;32mI (1585) wifi:Init static rx buffer size: 1600[0m
+[0;32mI (1595) wifi:Init static rx buffer num: 10[0m
+[0;32mI (1595) wifi:Init dynamic rx buffer num: 32[0m
+[0;32mI (1605) wifi_init: rx ba win: 6[0m
+[0;32mI (1605) wifi_init: accept mbox: 6[0m
+[0;32mI (1605) wifi_init: tcpip mbox: 32[0m
+[0;32mI (1605) wifi_init: udp mbox: 6[0m
+[0;32mI (1615) wifi_init: tcp mbox: 6[0m
+[0;32mI (1615) wifi_init: tcp tx win: 5760[0m
+[0;32mI (1615) wifi_init: tcp rx win: 5760[0m
+[0;32mI (1625) wifi_init: tcp mss: 1440[0m
+[0;32mI (1625) wifi_init: WiFi IRAM OP enabled[0m
+[0;32mI (1625) wifi_init: WiFi RX IRAM OP enabled[0m
+[0;32mI (1635) phy_init: phy_version 4860,6b7a6e5,Feb  6 2025,14:47:07[0m
+[0;32mI (1715) wifi:mode : softAP (c8:2e:18:90:a6:e1)[0m
+[0;32mI (1715) wifi:Total power save buffer number: 16[0m
+[0;32mI (1715) wifi:Init max length of beacon: 752/752[0m
+[0;32mI (1715) wifi:Init max length of beacon: 752/752[0m
+[0;32mI (1725) MARS_ROVER_MAIN: ========================================[0m
+[0;32mI (1725) esp_netif_lwip: DHCP server started on interface WIFI_AP_DEF with IP: 192.168.4.1[0m
+[0;32mI (1735) MARS_ROVER_MAIN: 📡 WiFi AP Started![0m
+[0;32mI (1735) MARS_ROVER_MAIN:    SSID: MARS_ROVER_CAM[0m
+[0;32mI (1745) MARS_ROVER_MAIN:    PASS: mars2025[0m
+[0;32mI (1745) MARS_ROVER_MAIN:    URL:  http://192.168.4.1[0m
+[0;32mI (1755) MARS_ROVER_MAIN: ========================================[0m
+[0;32mI (1755) cam_hal: cam init ok[0m
+[0;32mI (1765) sccb-ng: pin_sda 26 pin_scl 27[0m
+[0;32mI (1765) sccb-ng: sccb_i2c_port=1[0m
+[0;32mI (1775) camera: Camera PID=0x26 VER=0x42 MIDL=0x7f MIDH=0xa2[0m
+[0;32mI (1775) camera: Detected OV2640 camera[0m
+[0;32mI (1775) camera: Detected camera at address=0x30[0m
+[0;32mI (1865) cam_hal: PSRAM DMA mode disabled[0m
+[0;32mI (1865) cam_hal: buffer_size: 32768, half_buffer_size: 4096, node_buffer_size: 2048, node_cnt: 16, total_cnt: 45[0m
+[0;32mI (1865) cam_hal: Allocating 184320 Byte frame buffer in PSRAM[0m
+[0;32mI (1875) cam_hal: Allocating 184320 Byte frame buffer in PSRAM[0m
+[0;32mI (1875) cam_hal: cam config ok[0m
+[0;32mI (1885) ov2640: Set PLL: clk_2x: 0, clk_div: 0, pclk_auto: 0, pclk_div: 12[0m
+[0;32mI (1985) CAMERA_SERVER: ✅ Camera initialized successfully[0m
+[0;32mI (1985) MARS_ROVER_MAIN: ✅ Camera Sensor OK[0m
+[0;32mI (1985) CAMERA_SERVER: Starting control server on port 80...[0m
+[0;32mI (1995) CAMERA_SERVER: ✅ Control server started on port 80[0m
+[0;32mI (1995) CAMERA_SERVER: Starting stream server on port 81...[0m
+[0;32mI (1995) CAMERA_SERVER: ✅ Stream server started on port 81[0m
+[0;32mI (2005) CAMERA_SERVER: 🎯 Architecture: Control (port 80, core 0) | Stream (port 81, core 1)[0m
+[0;32mI (2015) MARS_ROVER_MAIN: ✅ Web Server Running on Port 80 & 81[0m
+[0;32mI (2015) MARS_ROVER_MAIN: [0m
+[0;32mI (2015) MARS_ROVER_MAIN: 🌐 Connect to: http://192.168.4.1/[0m
+[0;32mI (2025) MARS_ROVER_MAIN: [0m
+[0;32mI (2025) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 1073469040[0m
+[0;32mI (7035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 1073469040[0m
+[0;32mI (11715) wifi:new:<1,1>, old:<1,1>, ap:<1,1>, sta:<255,255>, prof:1, snd_ch_cfg:0x0[0m
+[0;32mI (11715) wifi:station: 30:c9:ab:8b:a0:7d join, AID=1, bgn, 40U[0m
+[0;32mI (12035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 1073469040[0m
+[0;32mI (12355) esp_netif_lwip: DHCP server assigned IP to a client, IP is: 192.168.4.2[0m
+[0;32mI (17035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 1073469040[0m
+[0;32mI (18925) CAMERA_SERVER: 🟢 START requested[0m
+[0;32mI (18925) CAMERA_SERVER: 🎥 Video streaming STARTED[0m
+[0;32mI (19025) wifi:<ba-add>idx:2 (ifx:1, 30:c9:ab:8b:a0:7d), tid:0, ssn:115, winSize:64[0m
+[0;32mI (19125) CAMERA_SERVER: 📹 Stream client connected[0m
+[0;32mI (22035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: ON | Last Cmd: 1073469040[0m
+[0;32mI (26545) CAMERA_SERVER: 🔴 STOP requested[0m
+[0;32mI (26555) CAMERA_SERVER: 🛑 Video streaming STOPPED[0m
+[0;32mI (26675) CAMERA_SERVER: 🔴 Stream ended after 39 frames[0m
+[0;32mI (27035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 1073469040[0m
+[0;32mI (31455) CAMERA_SERVER: 📸 Capture photo requested[0m
+[0;32mI (31615) CAMERA_SERVER: ✅ Photo captured: 31936 bytes[0m
+[0;32mI (32035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 1073469040[0m
+[0;32mI (37035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: OFF | Last Cmd: 1073469040[0m
+[0;32mI (40455) CAMERA_SERVER: 🟢 START requested[0m
+[0;32mI (40455) CAMERA_SERVER: 🎥 Video streaming STARTED[0m
+[0;32mI (40545) CAMERA_SERVER: 📹 Stream client connected[0m
+[0;32mI (42035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: ON | Last Cmd: 1073469040[0m
+[0;32mI (42785) CAMERA_SERVER: 📸 Capture photo requested[0m
+[0;32mI (42885) CAMERA_SERVER: ✅ Photo captured: 28742 bytes[0m
+[0;32mI (44925) CAMERA_SERVER: 🟢 START requested[0m
+[0;32mI (44925) CAMERA_SERVER: 🎥 Video streaming STARTED[0m
+[0;32mI (47035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: ON | Last Cmd: 1073469040[0m
+[0;32mI (50505) CAMERA_SERVER: Streamed 50 frames[0m
+[0;32mI (52035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: ON | Last Cmd: 1073469040[0m
+[0;32mI (57035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: ON | Last Cmd: 1073469040[0m
+[0;32mI (59115) CAMERA_SERVER: 🔴 STOP requested[0m
+[0;32mI (59115) CAMERA_SERVER: 🛑 Video streaming STOPPED[0m
+[0;32mI (59175) CAMERA_SERVER: 🔴 Stream ended after 89 frames[0m
+[0;32mI (59175) CAMERA_SERVER: 📹 Stream client connected[0m
+[0;32mI (59185) CAMERA_SERVER: 🔴 Stream ended after 0 frames[0m
+[0;32mI (59735) CAMERA_SERVER: 🟢 START requested[0m
+[0;32mI (59735) CAMERA_SERVER: 🎥 Video streaming STARTED[0m
+[0;32mI (59795) CAMERA_SERVER: 📹 Stream client connected[0m
+[0;32mI (62035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: ON | Last Cmd: 1073469040[0m
+[0;32mI (66755) CAMERA_SERVER: 📸 Capture photo requested[0m
+[0;32mI (66825) CAMERA_SERVER: ✅ Photo captured: 46726 bytes[0m
+[0;32mI (67035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: ON | Last Cmd: 1073469040[0m
+[0;32mI (67845) CAMERA_SERVER: Streamed 50 frames[0m
+[0;32mI (68845) CAMERA_SERVER: 🟢 START requested[0m
+[0;32mI (68845) CAMERA_SERVER: 🎥 Video streaming STARTED[0m
+[0;32mI (72035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: ON | Last Cmd: 1073469040[0m
+[0;32mI (75885) CAMERA_SERVER: Streamed 100 frames[0m
+[0;32mI (77035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: ON | Last Cmd: 1073469040[0m
+[0;32mI (82035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: ON | Last Cmd: 1073469040[0m
+[0;32mI (83435) wifi:[ADDBA]RX DELBA, reason:39, delete tid:0, initiator:1(originator)[0m
+[0;32mI (83435) wifi:<ba-del>idx:2, tid:0[0m
+[0;32mI (83435) wifi:[ADDBA]RX DELBA, reason:39, delete tid:0, initiator:0(recipient)[0m
+[0;32mI (83435) wifi:station: 30:c9:ab:8b:a0:7d leave, AID = 1, reason = 8, bss_flags is 756851, bss:0x3ffd14b4[0m
+[0;32mI (83445) wifi:new:<1,0>, old:<1,1>, ap:<1,1>, sta:<255,255>, prof:1, snd_ch_cfg:0x0[0m
+[0;32mI (87035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: ON | Last Cmd: 1073469040[0m
+[0;32mI (92035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: ON | Last Cmd: 1073469040[0m
+[0;33mW (93795) httpd_txrx: httpd_sock_err: error in send : 11[0m
+[0;32mI (97035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: ON | Last Cmd: 1073469040[0m
+[0;33mW (98795) httpd_txrx: httpd_sock_err: error in send : 11[0m
+[0;32mI (98795) CAMERA_SERVER: 🔴 Stream ended after 141 frames[0m
+[0;33mW (98795) httpd_uri: httpd_uri: uri handler execution failed[0m
+[0;32mI (98795) CAMERA_SERVER: 📹 Stream client connected[0m
+[0;32mI (102035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: ON | Last Cmd: 1073469040[0m
+[0;32mI (107035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: ON | Last Cmd: 1073469040[0m
+[0;33mW (109795) httpd_txrx: httpd_sock_err: error in send : 11[0m
+[0;32mI (112035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: ON | Last Cmd: 1073469040[0m
+[0;33mW (114795) httpd_txrx: httpd_sock_err: error in send : 11[0m
+[0;32mI (114795) CAMERA_SERVER: 🔴 Stream ended after 0 frames[0m
+[0;33mW (114795) httpd_uri: httpd_uri: uri handler execution failed[0m
+[0;32mI (117035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: ON | Last Cmd: 1073469040[0m
+[0;32mI (122035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: ON | Last Cmd: 1073469040[0m
+[0;32mI (127035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: ON | Last Cmd: 1073469040[0m
+[0;32mI (132035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: ON | Last Cmd: 1073469040[0m
+[0;32mI (137035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: ON | Last Cmd: 1073469040[0m
+[0;32mI (142035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: ON | Last Cmd: 1073469040[0m
+[0;32mI (147035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: ON | Last Cmd: 1073469040[0m
+[0;32mI (152035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: ON | Last Cmd: 1073469040[0m
+[0;32mI (157035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: ON | Last Cmd: 1073469040[0m
+[0;32mI (162035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: ON | Last Cmd: 1073469040[0m
+[0;32mI (167035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: ON | Last Cmd: 1073469040[0m
+[0;32mI (172035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: ON | Last Cmd: 1073469040[0m
+[0;32mI (177035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: ON | Last Cmd: 1073469040[0m
+[0;32mI (182035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: ON | Last Cmd: 1073469040[0m
+[0;32mI (187035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: ON | Last Cmd: 1073469040[0m
+[0;32mI (192035) MARS_ROVER_MAIN: [Status] Cam: OK | Stream: ON | Last Cmd: 1073469040[0m
