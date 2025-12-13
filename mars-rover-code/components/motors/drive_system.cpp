@@ -5,35 +5,35 @@
 DriveSystem::DriveSystem(i2c_dev_t* pca9685)
     : buffer{new PCA9685Buffer{pca9685}},
     right_back{
-        5, 4,
+        1, 0,
         "RightBackWheel",
         Cfg::BACK_Y, Cfg::RIGHT_X,
-        0},
+        12},
     right_middle{
-        7, 6, 
+        2, 3, 
         "RightMiddleMotor",
         0, Cfg::RIGHT_X},
     right_front{
-        8, 9,
+        5, 4,
         "RightFrontWheel", 
         Cfg::FRONT_Y, Cfg::RIGHT_X,
-        1},
+        13},
 
     left_back {
-        11, 10,
+        6, 7,
         "LeftBackWheel",
         Cfg::BACK_Y, Cfg::LEFT_X,
-        2},
+        14},
     left_middle {
-        12, 13,
+        9, 8,
         "LeftMiddleMotor",
         0, Cfg::LEFT_X},
     left_front {
-        15, 14,
+        10, 11,
         "LeftFrontWheel",
         Cfg::FRONT_Y, Cfg::LEFT_X,
-        3
-    },
+        15},
+
     mem_speed{0}, mem_angle{0.0f}, dest_speed{0}, dest_angle{0.0f}, actual_speed{0.0f} // <<< ІНІЦІАЛІЗАЦІЯ
 {
     all_steerable_wheels[0] = &right_back;
@@ -54,7 +54,7 @@ DriveSystem::DriveSystem(i2c_dev_t* pca9685)
         .gpio_en = GPIO_NUM_0,          // Enable pin
         .gpio_dir = GPIO_NUM_27,        // Direction pin
         .gpio_step = GPIO_NUM_26,       // Step pin
-        .servo_pin = GPIO_NUM_16,        // Servo pin for vertical tilt
+        .servo_pin = GPIO_NUM_4,        // Servo pin for vertical tilt
         .enable_level = 0,              // A4988 is enabled on low level
         .resolution_hz = 1000000,       // 1MHz resolution
         .min_speed_hz = 500,            // Minimum speed 500Hz
@@ -347,11 +347,12 @@ void DriveSystem::update_state() {
             if (is_spinning) {
                 current_state = DriveState::STOPPING;
                 state_tick_counter = 0;
-            } else if (dest_speed == 0 || should_change_direction()) {
-                current_state = DriveState::STOPPING;
-                state_tick_counter = 0;
             } else if (fabsf(dest_angle) <= 5.0f && fabs(mem_angle) <= 5.0f) {
-                current_state = DriveState::MOVING;
+                if (dest_speed == 0 || should_change_direction()) {
+                    current_state = DriveState::STOPPING;
+                } else {
+                    current_state = DriveState::MOVING;
+                }
                 state_tick_counter = 0;
             }
             break;
@@ -436,17 +437,17 @@ void DriveSystem::tick() {
         move_with_angle(mem_speed, mem_angle);
     }
 }
-
+            
 void DriveSystem::print_state() {
     [[maybe_unused]] const char* state_names[] = {
-        "IDLE", "ACCELERATING", "MOVING", "DECELERATING", "TURNING", "STOPPING", "SPINNING"
+        "IDLE", "ACCELERATING", "MOVING", "TURNING", "STOPPING", "SPINNING"
     };
-    // ESP_LOGI(TAG, "State: %s | Speed: %d/%d | Angle: %.1f/%.1f | Inertia: %u | Spinning: %s",
-    //         state_names[static_cast<int>(current_state)],
-    //         mem_speed, dest_speed,
-    //         mem_angle, dest_angle,
-    //         inertia_ticks_remaining,
-    //         is_spinning ? "YES" : "NO");
+    ESP_LOGI(TAG, "State: %s | Speed: %d/%d | Angle: %.1f/%.1f | Inertia: %u | Spinning: %s",
+            state_names[static_cast<int>(current_state)],
+            mem_speed, dest_speed,
+            mem_angle, dest_angle,
+            inertia_ticks_remaining,
+            is_spinning ? "YES" : "NO");
 }
 
 void DriveSystem::stop() {
