@@ -32,14 +32,14 @@ static camera_config_t camera_config = {
     .pin_href = 23,
     .pin_pclk = 22,
 
-    .xclk_freq_hz = 20000000,
+    .xclk_freq_hz = 20000000,         // 20MHz для OV5640 (стабільніше)
     .ledc_timer = LEDC_TIMER_0,
     .ledc_channel = LEDC_CHANNEL_0,
 
     .pixel_format = PIXFORMAT_JPEG,
-    .frame_size = FRAMESIZE_SVGA,    // 800x600, можна FRAMESIZE_XGA для WROVER
-    .jpeg_quality = 12,               // 0-63, менше = краща якість
-    .fb_count = 2,                    // WROVER має багато RAM, можна 2-3
+    .frame_size = FRAMESIZE_VGA,      // 640x480 для OV5640 (краща якість)
+    .jpeg_quality = 35,               // 0-63, вище = більше компресії
+    .fb_count = 2,                    // WROVER має багато RAM
     .fb_location = CAMERA_FB_IN_PSRAM,
     .grab_mode = CAMERA_GRAB_WHEN_EMPTY
 };
@@ -87,29 +87,42 @@ bool initCamera(const camera_config_params_t* config) {
     // Отримання sensor для додаткових налаштувань
     sensor_t* s = esp_camera_sensor_get();
     if (s != NULL) {
-        // Налаштування для кращого відео
+        // Лог інформації про камеру
+        ESP_LOGI(TAG, "Camera sensor detected: PID=0x%04X", s->id.PID);
+        
+        // Налаштування для OV5640 (5MP autofocus sensor)
         s->set_brightness(s, 0);     // -2 to 2
-        s->set_contrast(s, 0);       // -2 to 2
-        s->set_saturation(s, 0);     // -2 to 2
+        s->set_contrast(s, 1);       // Підвищено для чіткості
+        s->set_saturation(s, 0);     // Нормальна насиченість
+        
+        // ВАЖЛИВО: Підвищуємо sharpness для OV5640
+        if (s->set_sharpness) {
+            s->set_sharpness(s, 2);  // Максимальна різкість
+        }
+        
         s->set_special_effect(s, 0); // 0 = No Effect
-        s->set_whitebal(s, 1);       // 0 = disable, 1 = enable
-        s->set_awb_gain(s, 1);       // 0 = disable, 1 = enable
-        s->set_wb_mode(s, 0);        // 0 to 4
-        s->set_exposure_ctrl(s, 1);  // 0 = disable, 1 = enable
-        s->set_aec2(s, 0);           // 0 = disable, 1 = enable
-        s->set_ae_level(s, 0);       // -2 to 2
-        s->set_aec_value(s, 300);    // 0 to 1200
-        s->set_gain_ctrl(s, 1);      // 0 = disable, 1 = enable
-        s->set_agc_gain(s, 0);       // 0 to 30
-        s->set_gainceiling(s, (gainceiling_t)0); // 0 to 6
-        s->set_bpc(s, 0);            // 0 = disable, 1 = enable
-        s->set_wpc(s, 1);            // 0 = disable, 1 = enable
-        s->set_raw_gma(s, 1);        // 0 = disable, 1 = enable
-        s->set_lenc(s, 1);           // 0 = disable, 1 = enable
-        s->set_hmirror(s, 0);        // 0 = disable, 1 = enable
-        s->set_vflip(s, 0);          // 0 = disable, 1 = enable
-        s->set_dcw(s, 1);            // 0 = disable, 1 = enable
-        s->set_colorbar(s, 0);       // 0 = disable, 1 = enable
+        s->set_whitebal(s, 1);       // Auto white balance
+        s->set_awb_gain(s, 1);       // AWB gain enable
+        s->set_wb_mode(s, 0);        // Auto WB mode
+        s->set_exposure_ctrl(s, 1);  // Auto exposure
+        s->set_aec2(s, 1);           // Advanced exposure control
+        s->set_ae_level(s, 0);       // Normal AE level
+        s->set_aec_value(s, 300);    // Середня експозиція
+        s->set_gain_ctrl(s, 1);      // Auto gain
+        s->set_agc_gain(s, 8);       // Вище для низького світла
+        s->set_gainceiling(s, (gainceiling_t)5); // Вище для OV5640
+        s->set_bpc(s, 1);            // Black pixel correction ON
+        s->set_wpc(s, 1);            // White pixel correction ON
+        s->set_raw_gma(s, 1);        // Gamma correction
+        s->set_lenc(s, 1);           // Lens correction ON для OV5640
+        
+        // ПРИМІТКА: Фокус OV5640 потрібно налаштувати ВРУЧНУ!
+        // Поверніть лінзу доки зображення не стане чітким
+        
+        s->set_hmirror(s, 0);        // Horizontal mirror
+        s->set_vflip(s, 0);          // Vertical flip
+        s->set_dcw(s, 1);            // Downsize enable
+        s->set_colorbar(s, 0);       // Test pattern off
     }
 
     camera_initialized = true;
@@ -255,6 +268,9 @@ esp_err_t handleStreamRequest(httpd_req_t* req) {
 
         esp_camera_fb_return(fb);
         fb = NULL;
+        
+        // Невелика затримка для стабільності WiFi і зменшення навантаження
+        vTaskDelay(pdMS_TO_TICKS(10)); // ~100 FPS max, але стабільніше
     }
 
     return res;
