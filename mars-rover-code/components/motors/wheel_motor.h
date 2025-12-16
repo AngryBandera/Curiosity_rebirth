@@ -1,7 +1,6 @@
 #ifndef MOTORS_DRIVE_SYSTEM
 #define MOTORS_DRIVE_SYSTEM
 
-#include "i2cdev.h"
 #include "motors_cfg.h"
 #include "pca_buffer.h"
 #include <cstdint>
