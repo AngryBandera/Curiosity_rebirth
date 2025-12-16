@@ -362,10 +362,10 @@ void DriveSystem::update_state() {
                 if (is_spinning) {
                     break;
                 } else if (dest_speed > actual_speed && dest_speed > 50) {
-                    current_state = DriveState::TURNING;
+                    current_state = DriveState::ACCELERATING;
                     state_tick_counter = 0;
                 } else if (dest_speed < actual_speed && dest_speed < -50) {
-                    current_state = DriveState::TURNING;
+                    current_state = DriveState::ACCELERATING;
                     state_tick_counter = 0;
                 }
             } else if (inertia_ticks_remaining == 0) {
