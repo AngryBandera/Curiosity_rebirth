@@ -1,5 +1,5 @@
 idf_component_register(
-    SRCS "wheel_motor.cpp" "drive_system.cpp"
+    SRCS "wheels.cpp" "drive_system.cpp"
     INCLUDE_DIRS "."
-    REQUIRES esp_driver_ledc esp_driver_gpio pca9685 stepper
+    REQUIRES pca9685 stepper
 )

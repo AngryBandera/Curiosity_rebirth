@@ -2,19 +2,18 @@
 #include "pca9685.h"
 #include "../motors/motors_cfg.h"  // <-- додано
 #include <esp_log.h>
-#include <cstring>
 
-PCA9685Buffer::PCA9685Buffer(i2c_dev_t* pca9685):
+PCA9685Buffer::PCA9685Buffer(i2c_dev_t* pca9685, gpio_num_t I2C_SDA, gpio_num_t I2C_SCL):
     device{pca9685},
     dirty{false}
 {
     ESP_ERROR_CHECK(i2cdev_init());
 
     memset(device, 0, sizeof(i2c_dev_t));
-    ESP_ERROR_CHECK(pca9685_init_desc(device, PCA9685_ADDR, 
+    ESP_ERROR_CHECK(pca9685_init_desc(device, PCA9685_ADDR_BASE, 
                                     I2C_NUM_0, 
-                                    I2C_MASTER_SDA_IO, 
-                                    I2C_MASTER_SCL_IO));
+                                    I2C_SDA, 
+                                    I2C_SCL));
 
     ESP_ERROR_CHECK(pca9685_init(device));
     ESP_ERROR_CHECK(pca9685_set_pwm_frequency(device, Servo::FREQ));
@@ -70,4 +69,8 @@ void PCA9685Buffer::clear() {
     for (uint8_t i = 0; i < 4; i++)  buffer[i] = Servo::CENTER_DUTY;
     for (uint8_t i = 4; i < 16; i++) buffer[i] = 0;
     dirty = true;
+}
+
+PCA9685Buffer::~PCA9685Buffer() {
+    if (device) delete device;
 }

@@ -26,6 +26,7 @@ dependencies.lock
 
 # VSCode
 .vscode/
+.PVS-Studio/
 
 # Eclipse / C++
 .cproject

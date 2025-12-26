@@ -1,6 +1,4 @@
-#include "hal/ledc_types.h"
 #include <cstdint>
-#include <cmath>
 
 constexpr float PI = 3.14159265358979323846f;
 
@@ -43,6 +41,8 @@ namespace Cfg {
     // dc motor acceleration (units per control loop tick)
     constexpr int16_t DC_ACCEL = 10;
     constexpr int16_t DC_DECEL = DC_ACCEL * 2;
+
+    constexpr int16_t INNERT_DECEL = DC_ACCEL * 4;
     // servo speed (degrees per control loop tick)
     constexpr float SERVO_SPEED = 0.8f;
     

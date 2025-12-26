@@ -7,10 +7,13 @@
 
 #define DEAD_ZONE 10
 #define AXIS_MAX_INPUT 512.0f
-#define POWER_EXPONENT 3.0f
+#define POWER_EXPONENT 1.5f
+
+#define MAX_SPEED 4096
+#define MAX_ANGLE 30.0f
 
 static DriveSystem* g_rover = nullptr;
-    
+static StepperMotor* camera_stepper = nullptr;
 
 typedef struct my_platform_instance_s {
     uni_gamepad_seat_t gamepad_seat;
@@ -56,38 +59,18 @@ static uni_error_t my_platform_on_device_ready(uni_hid_device_t* d) {
     return UNI_ERROR_SUCCESS;
 }
 
-static int32_t normalized_speed(int32_t y) {
-    #define MAX_SPEED 4096
+template <typename T>
+T normalized(int32_t value, T max_value, int32_t dead_zone = DEAD_ZONE, float exponent = POWER_EXPONENT) {
+    if (std::abs(value) < dead_zone) return 0;
 
-    if (abs(y) < DEAD_ZONE) return 0;
+    float normalized_input = static_cast<float>(std::abs(value)) / AXIS_MAX_INPUT;
+    float non_linear_scale = std::pow(normalized_input, exponent);
 
-    float normalized_input = abs((float)y / AXIS_MAX_INPUT);
-    
-    float non_linear_scale = std::pow(normalized_input, POWER_EXPONENT);
-    
-    int sign = (y >= 0) ? -1 : 1;
-
-    return (int32_t)(sign * non_linear_scale * MAX_SPEED);
+    return static_cast<T>(std::copysign(non_linear_scale * max_value, value));
 }
 
-static float normalized_angle(int32_t x) {
-    #define MAX_ANGLE 30.0f
-    #define MAX_ANGLE_RAW 512.0f
 
-    if (std::abs(x) < DEAD_ZONE) return 0.0f;
-
-    float normalized_input = abs((float)x / AXIS_MAX_INPUT);
-    
-    float non_linear_scale = std::pow(normalized_input, POWER_EXPONENT);
-    
-    int sign = (x >= 0) ? 1 : -1;
-
-    return (float)(sign * non_linear_scale * MAX_ANGLE);
-}
 static void my_platform_on_controller_data(uni_hid_device_t* d, uni_controller_t* ctl) {
-    static uint8_t leds = 0;
-    static uint8_t enabled = true;
-    
     static uni_controller_t prev = {}; 
     
     uni_gamepad_t* gp;
@@ -100,34 +83,26 @@ static void my_platform_on_controller_data(uni_hid_device_t* d, uni_controller_t
     switch (ctl->klass) {
         case UNI_CONTROLLER_CLASS_GAMEPAD: {
             gp = &ctl->gamepad;
-            int32_t speed = normalized_speed(gp->axis_y);
-            float angle = normalized_angle(gp->axis_rx);
+            int32_t speed = normalized<int32_t>(gp->axis_y, MAX_SPEED);
+            float angle = normalized<float>(gp->axis_rx, MAX_ANGLE);
             
-            float stepper_speed = 0.0f;
-            if (std::abs(gp->axis_rx) > DEAD_ZONE) {
-                stepper_speed = static_cast<float>(gp->axis_rx) / AXIS_MAX_INPUT;
-                stepper_speed = std::copysign(std::pow(std::abs(stepper_speed), POWER_EXPONENT), stepper_speed);
-            }
-            g_rover->set_stepper_speed(stepper_speed);
+            float stepper_speed = normalized<float>(gp->axis_rx, 1.0f);
+            camera_stepper->set_speed(stepper_speed);
             
-            if (std::abs(gp->axis_ry) > DEAD_ZONE) {
-                float servo_delta = static_cast<float>(gp->axis_ry) / AXIS_MAX_INPUT;
-                servo_delta = std::copysign(std::pow(std::abs(servo_delta), POWER_EXPONENT), servo_delta);
-                float current_angle = g_rover->get_stepper_motor()->get_servo_angle();
-                float new_angle = current_angle + servo_delta * 0.05f;
-                new_angle = std::max(-1.0f, std::min(1.0f, new_angle));
-                g_rover->set_servo_angle(new_angle);
+            float servo_delta = normalized<float>(gp->axis_ry, 1.0f);
+            if (servo_delta != 0.0f) {
+                float current_angle = camera_stepper->get_servo_angle();
+                float new_angle = std::clamp<float>(current_angle + servo_delta * 0.05f, -1.0f, 1.0f);
+                camera_stepper->set_servo_angle(new_angle);
             }
             
-            if (gp->throttle > 10 || gp->brake > 10) {
-                g_rover->set_spin_input(gp->throttle, gp->brake);
-            } else {
-                g_rover->stop_spinning();
-                g_rover->set(speed, angle);
+            g_rover->set(speed, angle);
+            g_rover->set_spin_input(gp->throttle, gp->brake);
 
-                if ((abs(gp->axis_y) >= 450) && d->report_parser.play_dual_rumble != NULL) {
-                    d->report_parser.play_dual_rumble(d, 0, 100, 255, 0);
-                }
+            if ((std::abs(gp->throttle - gp->brake) > 450 || abs(gp->axis_y) >= 450)
+                && d->report_parser.play_dual_rumble != NULL)
+            {
+                d->report_parser.play_dual_rumble(d, 0, 100, 255, 0);
             }
             break;
         }
@@ -191,10 +166,11 @@ static void trigger_event_on_gamepad(uni_hid_device_t* d) {
     }
 }
 
-extern "C" struct uni_platform* get_my_platform(DriveSystem* ds) {
+extern "C" struct uni_platform* get_my_platform(DriveSystem* ds, StepperMotor* stepper) {
     static struct uni_platform plat = {};
 
     g_rover = ds;
+    camera_stepper = stepper;
     plat.name = "custom";
     plat.init = my_platform_init;
     plat.on_init_complete = my_platform_on_init_complete;

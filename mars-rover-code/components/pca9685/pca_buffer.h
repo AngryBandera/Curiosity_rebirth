@@ -21,8 +21,8 @@ private:
     const char* TAG = "PCA9685Buffer";
     
 public:
-    PCA9685Buffer(i2c_dev_t* pca9685);
-    ~PCA9685Buffer() = default;
+    PCA9685Buffer(i2c_dev_t* pca9685, gpio_num_t I2C_SDA, gpio_num_t I2C_SCL);
+    ~PCA9685Buffer();
     
     void set_channel_value(uint8_t channel, uint16_t value);
     uint16_t get_channel_value(uint8_t channel);
