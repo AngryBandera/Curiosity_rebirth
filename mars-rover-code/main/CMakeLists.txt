@@ -1,5 +1,5 @@
 idf_component_register(SRCS "main.cpp" 
-                    PRIV_REQUIRES driver esp_driver_mcpwm bt nvs_flash vfs
-                    REQUIRES driver motors bluepad32 btstack bluetooth
+                    PRIV_REQUIRES esp_driver_mcpwm bt nvs_flash vfs
+                    REQUIRES motors bluepad32 btstack bluetooth stepper
                     INCLUDE_DIRS ".")
 

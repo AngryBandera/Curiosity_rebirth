@@ -1,5 +1,5 @@
 idf_component_register(
     SRCS "wheels.cpp" "drive_system.cpp"
     INCLUDE_DIRS "."
-    REQUIRES pca9685 stepper
+    REQUIRES pca_buffer
 )

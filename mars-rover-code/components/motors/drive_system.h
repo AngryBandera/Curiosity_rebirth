@@ -2,7 +2,6 @@
 #define DRIVE_SYSTEM_H
 
 #include "wheels.h"
-#include "stepper_motor.h"
 #include "freertos/semphr.h"
 
 // Enum for states of the drive system

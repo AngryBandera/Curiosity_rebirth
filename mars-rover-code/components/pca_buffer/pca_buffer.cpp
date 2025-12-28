@@ -1,6 +1,6 @@
 #include "pca_buffer.h"
 #include "pca9685.h"
-#include "../motors/motors_cfg.h"  // <-- додано
+#include "drivesystem_cfg.h"  // <-- додано
 #include <esp_log.h>
 
 PCA9685Buffer::PCA9685Buffer(i2c_dev_t* pca9685, gpio_num_t I2C_SDA, gpio_num_t I2C_SCL):

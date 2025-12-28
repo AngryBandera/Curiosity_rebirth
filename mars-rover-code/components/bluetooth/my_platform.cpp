@@ -1,9 +1,9 @@
 #include <cstring>
-#include <iostream>
 #include <uni.h>
-#include <drive_system.h>
 #include <cmath>
-#include <math.h>
+#include <algorithm>
+#include "drive_system.h"
+#include "stepper_motor.h"
 
 #define DEAD_ZONE 10
 #define AXIS_MAX_INPUT 512.0f

@@ -1,7 +1,7 @@
 #include "drive_system.h"
 #include "esp_log.h"
-#include "motors_cfg.h"
-#include <memory>
+#include "drivesystem_cfg.h"
+#include <algorithm>
 #include <cmath>
 
 inline uint32_t isqrt(uint32_t n) {
@@ -210,9 +210,10 @@ void DriveSystem::handle_idle() {
 void DriveSystem::handle_moving() {
     constexpr float MAX_ANGLE = 30.0f;
 
-    float ratio = mem_angle / MAX_ANGLE;
+    float angle_ratio = mem_angle / MAX_ANGLE;
+    float speed_ratio = static_cast<float>(mem_speed) / 4096.0f;
 
-    int16_t max_speed = (1.0f - std::pow(ratio, 3) / 2) * Cfg::MOTOR_INTERNAL_MAX;
+    int16_t max_speed = (1.0f - std::pow(angle_ratio, 3) / 2) * Cfg::MOTOR_INTERNAL_MAX;
 
     mem_speed += static_cast<int16_t>(std::clamp(dest_speed - mem_speed,
         (mem_speed > 0) ? -Cfg::DC_DECEL : -Cfg::DC_ACCEL,
@@ -220,7 +221,7 @@ void DriveSystem::handle_moving() {
 
     if (mem_speed > max_speed) mem_speed = max_speed;
 
-    mem_angle = approach_angle(mem_angle, dest_angle, Cfg::SERVO_SPEED);
+    mem_angle = approach_angle(mem_angle, dest_angle, Cfg::SERVO_SPEED * (4.0f - 3.0f * speed_ratio) * 0.25);
 }
 
 

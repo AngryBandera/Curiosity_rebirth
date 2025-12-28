@@ -1,3 +1,6 @@
+#ifndef DRIVESYSTEM_CONFIG_PARAMS
+#define DRIVESYSTEM_CONFIG_PARAMS
+
 #include <cstdint>
 
 constexpr float PI = 3.14159265358979323846f;
@@ -67,3 +70,5 @@ namespace Cfg {
     // Max speed in spinning mode (internal units)
     constexpr int16_t SPIN_MAX_SPEED = 600;
 }
+
+#endif

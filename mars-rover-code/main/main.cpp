@@ -1,6 +1,6 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
-//#include "freertos/task.h"
+#include "freertos/task.h"
 #include "esp_log.h"
 
 // includes for bluepad32
@@ -12,6 +12,7 @@
 
 // Rover C++ headers
 #include "drive_system.h"
+#include "stepper_motor.h"
 
 static DriveSystem* g_rover = nullptr;
 static StepperMotor* camera_stepper = nullptr;

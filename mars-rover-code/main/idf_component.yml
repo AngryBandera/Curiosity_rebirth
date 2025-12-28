@@ -14,4 +14,4 @@ dependencies:
   #   # `public` flag doesn't have an effect dependencies of the `main` component.
   #   # All dependencies of `main` are public by default.
   #   public: true
-  espressif/servo: '*'
+  esp-idf-lib/pca9685: ^1.0.7
