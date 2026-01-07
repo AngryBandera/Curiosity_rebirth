@@ -9,6 +9,10 @@
 #define AXIS_MAX_INPUT 512.0f
 #define POWER_EXPONENT 3.0f
 
+// Camera pan control speeds (easily configurable)
+#define CAMERA_PAN_STEPPER_SPEED 0.7f  // Left/Right movement speed (0.0 to 1.0)
+#define CAMERA_TILT_SERVO_SPEED 0.02f  // Up/Down movement speed (smaller = slower, smoother)
+
 static DriveSystem* g_rover = nullptr;
     
 
@@ -103,18 +107,26 @@ static void my_platform_on_controller_data(uni_hid_device_t* d, uni_controller_t
             int32_t speed = normalized_speed(gp->axis_y);
             float angle = normalized_angle(gp->axis_rx);
             
+            // Camera pan stepper control with buttons (left/right)
             float stepper_speed = 0.0f;
-            if (std::abs(gp->axis_rx) > DEAD_ZONE) {
-                stepper_speed = static_cast<float>(gp->axis_rx) / AXIS_MAX_INPUT;
-                stepper_speed = std::copysign(std::pow(std::abs(stepper_speed), POWER_EXPONENT), stepper_speed);
+            if (gp->buttons & BUTTON_X) {
+                stepper_speed = -CAMERA_PAN_STEPPER_SPEED;  // Move left
+            } else if (gp->buttons & BUTTON_B) {
+                stepper_speed = CAMERA_PAN_STEPPER_SPEED;   // Move right
             }
             g_rover->set_stepper_speed(stepper_speed);
             
-            if (std::abs(gp->axis_ry) > DEAD_ZONE) {
-                float servo_delta = static_cast<float>(gp->axis_ry) / AXIS_MAX_INPUT;
-                servo_delta = std::copysign(std::pow(std::abs(servo_delta), POWER_EXPONENT), servo_delta);
+            // Camera tilt servo control with buttons (up/down)
+            if (gp->buttons & BUTTON_Y) {
+                // Move up
                 float current_angle = g_rover->get_stepper_motor()->get_servo_angle();
-                float new_angle = current_angle + servo_delta * 0.05f;
+                float new_angle = current_angle - CAMERA_TILT_SERVO_SPEED;
+                new_angle = std::max(-1.0f, std::min(1.0f, new_angle));
+                g_rover->set_servo_angle(new_angle);
+            } else if (gp->buttons & BUTTON_A) {
+                // Move down
+                float current_angle = g_rover->get_stepper_motor()->get_servo_angle();
+                float new_angle = current_angle + CAMERA_TILT_SERVO_SPEED;
                 new_angle = std::max(-1.0f, std::min(1.0f, new_angle));
                 g_rover->set_servo_angle(new_angle);
             }
