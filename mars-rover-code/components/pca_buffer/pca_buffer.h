@@ -3,6 +3,7 @@
 
 #include "i2cdev.h"
 #include <stdint.h>
+#include "pca9685.h"
 
 // I2C and PCA9685 definitions
 #define I2C_MASTER_SCL_IO    GPIO_NUM_22    // GPIO for SCL

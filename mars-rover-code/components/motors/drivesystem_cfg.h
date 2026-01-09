@@ -1,12 +1,10 @@
-#ifndef DRIVESYSTEM_CONFIG_PARAMS
-#define DRIVESYSTEM_CONFIG_PARAMS
-
 #include <cstdint>
 
 constexpr float PI = 3.14159265358979323846f;
 
 namespace Servo {
     // Parameters for servo motors    
+    constexpr float ANGLE_TOLERANCE = 1.0f; // degrees
     constexpr uint16_t MIN_PULSE_US = 500;
     constexpr uint16_t MAX_PULSE_US = 2500;
     constexpr uint16_t PERIOD_US = 3333; // was 20000
@@ -24,7 +22,7 @@ namespace Cfg {
     // Wheel motor: speed is signed in internal units (e.g. -4095..+4095).
     // We map absolute speed -> PWM (0..4095). If you have a different internal max (e.g. 1000),
     // adjust `SCALE` accordingly or pass a max parameter.
-    constexpr int16_t MOTOR_INTERNAL_MAX = 2000;
+    constexpr int16_t MOTOR_INTERNAL_MAX = 4095; // Increased from 2000 to allow full range of speed
     constexpr float MOTOR_SCALE = 4095.0f / static_cast<float>(MOTOR_INTERNAL_MAX);
 
     // Default angles for steerable wheels
@@ -70,5 +68,3 @@ namespace Cfg {
     // Max speed in spinning mode (internal units)
     constexpr int16_t SPIN_MAX_SPEED = 600;
 }
-
-#endif

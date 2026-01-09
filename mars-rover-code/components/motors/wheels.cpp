@@ -30,7 +30,7 @@ void FixedWheel::set_speed(int16_t speed) {
     uint16_t pwm = std::abs(speed);
 
     buffer->set_channel_value(pca1, (speed > 0) ? pwm : 0);
-    buffer->set_channel_value(pca2, (speed < 0) ? 0 : pwm);
+    buffer->set_channel_value(pca2, (speed > 0) ? 0 : pwm);
     // ESP_LOGD(TAG, "speed=%d -> pwm=%u (ch%u/%u)", speed, pwm, pca1, pca2);
 }
 
@@ -56,7 +56,7 @@ SteerableWheel::SteerableWheel(PCA9685Buffer* buffer,
 }
 
 void SteerableWheel::set_angle(float angle) {
-    angle = std::clamp(angle, -45.0f, 45.0f);
+    angle = std::clamp(angle, -60.0f, 60.0f);
 
 //===========================================
     debug_angle = angle;

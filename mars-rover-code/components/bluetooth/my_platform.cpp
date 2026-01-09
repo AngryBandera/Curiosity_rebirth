@@ -83,7 +83,7 @@ static void my_platform_on_controller_data(uni_hid_device_t* d, uni_controller_t
     switch (ctl->klass) {
         case UNI_CONTROLLER_CLASS_GAMEPAD: {
             gp = &ctl->gamepad;
-            int32_t speed = normalized<int32_t>(gp->axis_y, MAX_SPEED);
+            int32_t speed = -normalized<int32_t>(gp->axis_y, MAX_SPEED);
             float angle = normalized<float>(gp->axis_rx, MAX_ANGLE);
             
             float stepper_speed = normalized<float>(gp->axis_rx, 1.0f);
@@ -99,7 +99,7 @@ static void my_platform_on_controller_data(uni_hid_device_t* d, uni_controller_t
             g_rover->set(speed, angle);
             g_rover->set_spin_input(gp->throttle, gp->brake);
 
-            if ((std::abs(gp->throttle - gp->brake) > 450 || abs(gp->axis_y) >= 450)
+            if (( abs(gp->axis_y) >= 450)
                 && d->report_parser.play_dual_rumble != NULL)
             {
                 d->report_parser.play_dual_rumble(d, 0, 100, 255, 0);

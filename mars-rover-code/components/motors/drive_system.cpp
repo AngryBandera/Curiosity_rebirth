@@ -1,8 +1,10 @@
 #include "drive_system.h"
 #include "esp_log.h"
+#include "esp_err.h"
 #include "drivesystem_cfg.h"
 #include <algorithm>
 #include <cmath>
+#include <cstdint>
 
 inline uint32_t isqrt(uint32_t n) {
     if (n == 0) return 0;
@@ -57,8 +59,6 @@ DriveSystem::DriveSystem(PCA9685Buffer* buffer)
 
     mem_speed{0}, mem_angle{0.0f}, dest_speed{0}, dest_angle{0.0f}
 {
-    mutex = xSemaphoreCreateMutex();
-
     all_steerable_wheels[0] = &right_front;
     all_steerable_wheels[1] = &right_back;
     all_steerable_wheels[2] = &left_front;
@@ -83,8 +83,12 @@ void DriveSystem::move(int16_t speed, float rvr_angle) {
     if (fabsf(rvr_angle) <= 0.5f) {
         for (SteerableWheel* wheel : all_steerable_wheels) wheel->set_angle(0.0f);
 
-        for (SteerableWheel* wheel : all_steerable_wheels) wheel->set_speed(speed);
-        for (FixedWheel* wheel : all_fixed_wheels) wheel->set_speed(speed);
+        for (SteerableWheel* wheel : all_steerable_wheels) {
+            wheel->set_speed(speed);
+        }
+        for (FixedWheel* wheel : all_fixed_wheels) {
+            wheel->set_speed(speed);
+        }
     } else {
 
         float alpha_rad = rvr_angle * PI / 180.0f;
@@ -169,41 +173,27 @@ void DriveSystem::rotate_in_place(int16_t speed) {
 
 
 void DriveSystem::set(int16_t speed, float rvr_angle) {
-    if (xSemaphoreTake(mutex, portMAX_DELAY)) {
-        dest_speed = speed;
-        dest_angle = rvr_angle;
-        xSemaphoreGive(mutex);
-    }
+    dest_speed = speed;    dest_angle = rvr_angle;
 }
 
 void DriveSystem::set_speed(int16_t speed) {
-    if (xSemaphoreTake(mutex, portMAX_DELAY)) {
-        dest_speed = speed;
-        xSemaphoreGive(mutex);
-    }
+    dest_speed = speed;
 }
 
 void DriveSystem::set_angle(float rvr_angle) {
-    if (xSemaphoreTake(mutex, portMAX_DELAY)) {
-        dest_angle = rvr_angle;
-        xSemaphoreGive(mutex);
-    }
+    dest_angle = rvr_angle;
 }
 
 void DriveSystem::set_spin_input(int16_t throttle, int16_t brake) {
-    if (xSemaphoreTake(mutex, portMAX_DELAY)) {
-        spin_input_throttle = throttle;
-        spin_input_brake = brake;
+    spin_speed_input = throttle - brake;
 
-        spin_active = (throttle > 5 || brake > 5);
-        xSemaphoreGive(mutex);
-    }
+    spin_active = (throttle > 5 || brake > 5);
 }
 
 
 void DriveSystem::handle_idle() {
     mem_speed = 0;
-    mem_angle = 0.0f;
+    if (mem_angle) mem_angle = approach_angle(mem_angle, 0.0f, Cfg::SERVO_SPEED);
 }
 
 
@@ -229,9 +219,6 @@ void DriveSystem::handle_stopping() {
     if (mem_speed != 0) {
         inertia_speed = mem_speed;
         mem_speed = 0;
-
-        ESP_LOGD(TAG, "STOPPING: Inertia time = %u ticks (~%.1f sec)", 
-                 inertia_ticks_remaining, inertia_ticks_remaining * 0.01f);
     }
 
     mem_angle = approach_angle(mem_angle, dest_angle, Cfg::SERVO_SPEED);
@@ -240,29 +227,42 @@ void DriveSystem::handle_stopping() {
 void DriveSystem::handle_angle_preparation() {
     bool all_reached = true;
 
-    const float front_target = spin_active ? Cfg::SPIN_FRONT_ANGLE : 0.0f;
-    const float back_target = spin_active ? Cfg::SPIN_BACK_ANGLE : 0.0f;
-
-    all_reached &= (left_front.debug_angle == front_target);
-    all_reached &= (right_front.debug_angle == -front_target);
-    all_reached &= (right_back.debug_angle == back_target);
-    all_reached &= (left_back.debug_angle == -back_target);
-
+    if (spin_active) {
+        all_reached &= (fabsf(left_front.debug_angle - left_front.spin_target_angle) < Servo::ANGLE_TOLERANCE);
+        all_reached &= (fabsf(right_front.debug_angle - right_front.spin_target_angle) < Servo::ANGLE_TOLERANCE);
+        all_reached &= (fabsf(right_back.debug_angle - right_back.spin_target_angle) < Servo::ANGLE_TOLERANCE);
+        all_reached &= (fabsf(left_back.debug_angle - left_back.spin_target_angle) < Servo::ANGLE_TOLERANCE);
+    } else {
+        all_reached &= (fabsf(left_front.debug_angle) < Servo::ANGLE_TOLERANCE);
+        all_reached &= (fabsf(right_front.debug_angle) < Servo::ANGLE_TOLERANCE);
+        all_reached &= (fabsf(right_back.debug_angle) < Servo::ANGLE_TOLERANCE);
+        all_reached &= (fabsf(left_back.debug_angle) < Servo::ANGLE_TOLERANCE);
+    }
+    //ESP_LOGI(TAG, "ALL ANGLESSS ACHIVED: %s | Current: %.2f | Target: %.2f \n ",
+    //        all_reached ? "YES" : "NO", left_front.debug_angle, left_front.spin_target_angle);
     if (all_reached) angle_achieved = true;
 }
 
 void DriveSystem::handle_spinning() {
-    // Speed = throttle - brake
-    int16_t spin_speed_input = spin_input_throttle - spin_input_brake;
     
     // Normalize to range [-SPIN_MAX_SPEED, SPIN_MAX_SPEED]
     float normalized = (float)spin_speed_input / 512.0f;  // 512 - max speed
     int16_t spin_speed = static_cast<int16_t>(normalized * (float)Cfg::SPIN_MAX_SPEED);
 
+    //int16_t speed_diff = dest_speed - mem_speed;
     mem_speed += static_cast<int16_t>(std::clamp(spin_speed - mem_speed,
         (mem_speed > 0) ? -Cfg::DC_DECEL : -Cfg::DC_ACCEL,
         (mem_speed > 0) ? +Cfg::DC_ACCEL : +Cfg::DC_DECEL));
 
+    // if (speed_diff > 0) {
+    //     // Прискорюємося
+    //     mem_speed += std::min(speed_diff, Cfg::DC_ACCEL);
+    // } else if (speed_diff < 0) {
+    //     // Сповільнюємося
+    //     mem_speed += std::max(+speed_diff, -Cfg::DC_DECEL);
+    // }
+
+    //mem_speed = dest_speed;
     //ESP_LOGI(TAG, "SPINNING: speed=%d, throttle=%d, brake=%d", 
     //         mem_speed, spin_input_throttle, spin_input_brake);
 }
@@ -280,27 +280,28 @@ void DriveSystem::update_state() {
     switch (current_state) {
         case DriveState::IDLE:
             if (spin_active) {
-                current_state = DriveState::ANGLE_PREPARATION;
                 angle_achieved = false;
+                current_state = DriveState::ANGLE_PREPARATION;
             } else if (std::abs(dest_speed) > 10 || fabsf(dest_angle) > 0.5f) {
                 current_state = DriveState::MOVING;
             }
             break;
 
         case DriveState::MOVING:
-            if (spin_active) {
+            if (std::abs(dest_speed) < 10) {
                 current_state = DriveState::STOPPING;
-            } else if (std::abs(dest_speed) < 10 && fabsf(dest_angle) < 0.5f) {
+            } else if (std::abs(dest_angle) < 0.5f && std::abs(mem_angle) < 0.5f
+                       && std::abs(dest_speed) < 10 && std::abs(mem_speed) < 10) {
                 current_state = DriveState::IDLE;
             }
             break;
 
         case DriveState::STOPPING:
-            if (inertia_ticks_remaining == 0) {
+            if (inertia_speed == 0) {
                 current_state = DriveState::IDLE;
             } else if (!spin_active && abs(dest_speed) > 10) {
                 current_state = DriveState::MOVING;
-                inertia_ticks_remaining = 0;
+                inertia_speed = 0;
             }
             break;
 
@@ -319,61 +320,57 @@ void DriveSystem::update_state() {
                 current_state = (spin_active) ?
                         DriveState::SPINNING : DriveState::IDLE;
             }
+            
             break;
     }
 }
 
 void DriveSystem::tick() {
-    if (xSemaphoreTake(mutex, portMAX_DELAY)) {
+    update_state();
 
-        update_state();
-
-        print_state();
-        
-        switch (current_state) {
-            case DriveState::IDLE:
-                handle_idle();
-                move(mem_speed, mem_angle);
-                break;
-            case DriveState::MOVING:
-                handle_moving();
-                move(mem_speed, mem_angle);
-                break;
-            case DriveState::STOPPING:
-                handle_stopping();
-                move(mem_speed, mem_angle);
-                break;
-            case DriveState::SPINNING:
-                handle_spinning();
-                rotate_in_place(mem_speed);
-                break;
-            case DriveState::ANGLE_PREPARATION:
-                handle_angle_preparation();
-                set_angles_in_place(spin_active);
-                break;
-        }
-
-        // Apply innertian
-        // it is used mainly in STOPPING state
-        apply_inertia();
-
-        xSemaphoreGive(mutex);
+    print_state();
+    
+    switch (current_state) {
+        case DriveState::IDLE:
+            handle_idle();
+            move(mem_speed, mem_angle);
+            break;
+        case DriveState::MOVING:
+            handle_moving();
+            move(mem_speed, mem_angle);
+            break;
+        case DriveState::STOPPING:
+            handle_stopping();
+            move(mem_speed, mem_angle);
+            break;
+        case DriveState::SPINNING:
+            handle_spinning();
+            rotate_in_place(mem_speed);
+            break;
+        case DriveState::ANGLE_PREPARATION:
+            handle_angle_preparation();
+            set_angles_in_place(spin_active);
+            break;
     }
+
+    // Apply innertian
+    // it is used mainly in STOPPING state
+    apply_inertia();
 }
             
 void DriveSystem::print_state() {
     [[maybe_unused]] const char* state_names[] = {
         "IDLE", "MOVING", "STOPPING", "SPINNING", "ANGLE_PREPARATION"
     };
-    ESP_LOGI(TAG, "State: %s | Speed: %d/%d | Angle: %.1f/%.1f | Inertia: %u | Spinning: %s",
+    ESP_LOGI(TAG, "State: %s | Speed: %d/%d | Angle: %.1f/%.1f | Inertia: %d | Spinning: %s | Spin input: %d",
             state_names[static_cast<int>(current_state)],
             mem_speed, dest_speed,
             mem_angle, dest_angle,
-            inertia_ticks_remaining,
-            spin_active ? "YES" : "NO");
+            inertia_speed,
+            spin_active ? "YES" : "NO",
+            spin_speed_input); 
 }
 
 DriveSystem::~DriveSystem() {
-    if (mutex) vSemaphoreDelete(mutex);
     delete buffer;
 }

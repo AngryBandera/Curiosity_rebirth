@@ -2,7 +2,6 @@
 #define DRIVE_SYSTEM_H
 
 #include "wheels.h"
-#include "freertos/semphr.h"
 
 // Enum for states of the drive system
 enum class DriveState {
@@ -36,8 +35,6 @@ private:
 
     // Logging tag for debugging
     const char* TAG = "DriverSystem";
-
-    SemaphoreHandle_t mutex;
 
     // Wheel motor and steerable wheel instances
     SteerableWheel right_back;
@@ -75,12 +72,10 @@ private:
 
     // === Innercia parameters ===
     int16_t inertia_speed{0};
-    uint16_t inertia_ticks_remaining{0};
 
     // === PARAMETERS FOR SPIN MODE ===
     // throttle and brake are buttons on joystick on front
-    int16_t spin_input_throttle{0};    // Throttle value (0-512)
-    int16_t spin_input_brake{0};       // Brake value (0-512)
+    int16_t spin_speed_input{0}; // Current speed input from joystick buttons
     bool spin_active{false};           // Whether we are in spinning mode
 
     bool angle_achieved{true};
@@ -142,7 +137,6 @@ public:
     // DON'T USE THESE VARIABLES, METHOD IN FINAL PRODUCT
 
     // Methods to get internal parameters for debugging
-    uint16_t get_inertia_ticks_remaining() const { return inertia_ticks_remaining; }
     bool get_is_spinning() const { return spin_active; }
 
     // Method to get current drive state for external monitoring
